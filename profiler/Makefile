@@ -1,36 +1,17 @@
-TOPDIR ?= ../../../..
+PROG_CXX=profiler
+WARNS=3
+CFLAGS=-I/usr/local/include -DPACKAGE=${name} -DPACKAGE_VERSION=${version}
+NO_MAN=
 
-LOCAL_INCLUDE=-I. -I$(OPENSOURCE_INCLUDE)/gcc/$(GCC_VERSION)
-LOCAL_CFLAGS=-Wall
-LIB=profiler
-OBJS=main.o Profiler.o EventFactory.o Image.o Process.o sharedLib.o ProfilePrinter.o
+SRCS=	\
+	EventFactory.cpp \
+	Image.cpp \
+	main.cpp \
+	Profiler.cpp \
+	Process.cpp \
+	ProfilePrinter.cpp \
+	sharedLib.cpp \
 
-.PHONY: all profiler release
-all: profiler
+LDADD=	-lbfd -liberty -lintl -lz -lpmc -lkvm -L/usr/local/lib
 
-include $(TOPDIR)/make/macros
-include $(TOPDIR)/make/library
-
-OUTPUT_DIR=../$(BSPEC)/sandvine/bin
-EXEC=$(OUTPUT_DIR)/profiler
-
-# Not threaded
-THREAD_LIBS=
-QUICKEXIT=
-
- LOCAL_LIBS=-lbfd -liberty -lintl -lpmc -lkvm -lz
-
-ifeq ($(BUILD_OPTS), BULLSEYE)
-	LOCAL_LIBS+=-lpthread
-endif
-
-profiler: ${EXEC}
-
-${EXEC}: lib 
-	@echo `date  +%H:%M:%S` "Making $@"
-	@mkdir -p `dirname $@`
-	@${LD} $(BBJS) -o $(EXEC) ${LOCAL_LIBS} 
-
-# appease make and give it a release target that does nothing
-release:
-
+.include <bsd.prog.mk>

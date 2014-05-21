@@ -26,10 +26,11 @@
 
 #include <string>
 #include <algorithm>
+#include <functional>
 #include <vector>
 #include <map>
 #include <set>
-#include <portable/hash_map>
+#include <unordered_map>
 
 extern "C" {
 #include <stdio.h>
@@ -183,7 +184,7 @@ public:
     {
         size_t operator()(const FunctionLocation & loc) const
         {
-            return __gnu_cxx::hash<char *>()(loc.getFunctionName());
+            return std::hash<const char *>()(loc.getFunctionName());
         }
     };
 
@@ -217,7 +218,7 @@ public:
 
         std::vector<const char *>::const_iterator it = vec.begin();
         size_t val = 0;
-        __gnu_cxx::hash<const char *> hasher;
+        std::hash<const char *> hasher;
 
         for(; it != vec.end(); ++it)
         {
@@ -280,8 +281,8 @@ public:
     }
 };
 
-typedef std::hash_map<std::string, FunctionLocation> FunctionLocationMap;
-typedef std::hash_map<Callchain, FunctionLocationMap, Callchain::Hasher> CallchainMap;
+typedef std::unordered_map<std::string, FunctionLocation> FunctionLocationMap;
+typedef std::unordered_map<Callchain, FunctionLocationMap, Callchain::Hasher> CallchainMap;
 typedef std::vector<FunctionLocation> FunctionList;
 typedef std::vector<std::vector<Location> > LocationList;
 
@@ -291,7 +292,7 @@ class Image
     typedef std::map<std::string, Image*> ImageMap;
     typedef std::map<bfd_vma, std::string> LoadableImageMap;
     typedef std::map<uintptr_t, Location> LocationCache;
-    typedef std::hash_map<const char*, asymbol*> FuncSymbolCache;
+    typedef std::unordered_map<const char*, asymbol*> FuncSymbolCache;
 
 
     static bool firstTimeInit;

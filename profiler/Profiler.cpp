@@ -21,13 +21,13 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include <Profiler.h>
-#include <EventFactory.h>
-#include <Process.h>
-#include <Image.h>
-#include <ProcessState.h>
-#include <Sample.h>
-#include <ProfilePrinter.h>
+#include "Profiler.h"
+#include "EventFactory.h"
+#include "Process.h"
+#include "Image.h"
+#include "ProcessState.h"
+#include "Sample.h"
+#include "ProfilePrinter.h"
 #include <cassert>
 
 extern "C" {

@@ -1,5 +1,5 @@
 PROG_CXX=profiler
-WARNS=3
+WARNS=0
 CFLAGS=-I/usr/local/include -DPACKAGE=${name} -DPACKAGE_VERSION=${version}
 NO_MAN=
 

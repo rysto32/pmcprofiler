@@ -24,9 +24,9 @@
 #ifndef PROFILER_PRINTER_H
 #define PROFILER_PRINTER_H
 
-#include <Profiler.h>
-#include <Image.h>
-#include <Process.h>
+#include "Profiler.h"
+#include "Image.h"
+#include "Process.h"
 #include <cstdio>
 #include <cassert>
 

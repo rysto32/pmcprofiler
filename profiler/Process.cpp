@@ -21,13 +21,14 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include <Process.h>
-#include <Sample.h>
-#include <ProcessState.h>
+#include "Process.h"
+#include "Sample.h"
+#include "ProcessState.h"
 #include "sharedLib.h"
+#include "Image.h"
+
 #include <algorithm>
 #include <cstring>
-#include <Image.h>
 
 extern "C" {
 #include <fcntl.h>

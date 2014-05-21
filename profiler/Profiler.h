@@ -28,6 +28,8 @@
 #include <vector>
 #include <stdint.h>
 
+#include <sys/types.h>
+
 class Process;
 class ProcessExit;
 class ProcessExec;

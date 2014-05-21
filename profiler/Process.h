@@ -24,19 +24,19 @@
 #if !defined(PROCESS_H)
 #define PROCESS_H
 
-#include <Sample.h>
-#include <Image.h>
+#include "Sample.h"
+#include "Image.h"
 
 #include <string>
 #include <vector>
-#include <portable/hash_map>
+#include <unordered_map>
 #include <bfd.h>
 
 class Process
 {
 public:
-    typedef std::hash_map<pid_t, Process*> ProcessMap;
-    typedef std::hash_map<Sample, unsigned, Sample::hash> SampleMap;
+    typedef std::unordered_map<pid_t, Process*> ProcessMap;
+    typedef std::unordered_map<Sample, unsigned, Sample::hash> SampleMap;
     typedef std::map<bfd_vma, std::string> LoadableImageMap;
 
 private:
@@ -126,7 +126,7 @@ Process::mapAllFunctions(LocationList& locationList, ProcessStrategy strategy)
     for(ProcessMap::iterator it = processMap.begin(); it != processMap.end(); ++it)
     {
         Process * process = it->second;
-        process->m_callchainMap.resize(4*process->m_numCallchains/3);
+        process->m_callchainMap.rehash(4*process->m_numCallchains/3);
     }
 
     for (LocationList::iterator it = locationList.begin(); it != locationList.end(); ++it)

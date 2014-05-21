@@ -21,21 +21,19 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include <EventFactory.h>
-#include <Profiler.h>
-#include <ProcessState.h>
-#include <Sample.h>
+#include "EventFactory.h"
+#include "Profiler.h"
+#include "ProcessState.h"
+#include "Sample.h"
 
-extern "C" {
 #include <stdio.h>
 #include <sys/queue.h>
 #include <pmc.h>
-#include <pmcstat.h>
 #include <pmclog.h>
 #include <assert.h>
 #include <fcntl.h>
 #include <sys/types.h>
-}
+#include <unistd.h>
 
 extern void usage(void);
 

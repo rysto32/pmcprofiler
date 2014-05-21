@@ -21,7 +21,7 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include <ProfilePrinter.h>
+#include "ProfilePrinter.h"
 #include <paths.h>
 #include <libgen.h>
 #include <cassert>

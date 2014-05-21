@@ -21,12 +21,13 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
+#include "Image.h"
+#include "Process.h"
+#include "Profiler.h"
+#include "ProfilePrinter.h"
+
 #include <stdlib.h>
 #include <unistd.h>
-#include <Image.h>
-#include <Process.h>
-#include <Profiler.h>
-#include <ProfilePrinter.h>
 #include <memory>
 
 void usage(void);

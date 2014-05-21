@@ -21,15 +21,14 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include <Image.h>
-#include <Process.h>
+#include "Image.h"
+#include "Process.h"
 
-extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h> 
-#include <demangle.h>
+#include <libiberty/demangle.h>
 #include <paths.h>
 #include <libgen.h>
 #include <sys/types.h>
@@ -37,7 +36,7 @@ extern "C" {
 #include <sys/module.h>
 #include <sys/linker.h>
 #include <sys/sysctl.h>
-}
+#include <unistd.h>
 
 bool Image::firstTimeInit = true;
 

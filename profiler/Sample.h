@@ -30,8 +30,7 @@ extern "C" {
 #include <pmclog.h>
 }
 
-#include <portable/hash_fun>
-#include <portable/hash_fun_extension>
+#include <unordered_map>
 
 #include <algorithm>
 #include <vector>
@@ -108,7 +107,7 @@ public:
             int i;
             size_t val = sample.isKernel();
             for(i = 0; i < sample.getChainDepth(); i++) {
-                val += svhash::hash<uintptr_t>()(sample.getAddress(i));
+                val += sample.getAddress(i);
             }
 
             return val;

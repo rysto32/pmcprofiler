@@ -25,10 +25,7 @@
 #define PROCESSSTATE_H
 
 #include <string>
-
-extern "C" {
 #include <sys/types.h>
-}
 
 class ProcessState
 {

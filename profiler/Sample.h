@@ -24,11 +24,9 @@
 #if !defined(SAMPLE_H)
 #define SAMPLE_H
 
-extern "C" {
 #include <sys/types.h>
 #include <sys/param.h>
 #include <pmclog.h>
-}
 
 #include <unordered_map>
 

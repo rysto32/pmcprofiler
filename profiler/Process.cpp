@@ -29,16 +29,13 @@
 #include <algorithm>
 #include <cstring>
 
-extern "C" {
 #include <fcntl.h>
-#include <kvm.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <sys/user.h>
 #include <sys/proc.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-}
 
 Process::ProcessMap Process::processMap;
 

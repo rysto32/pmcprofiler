@@ -30,10 +30,8 @@
 #include "ProfilePrinter.h"
 #include <cassert>
 
-extern "C" {
 #include <paths.h>
 #include <libgen.h>
-}
 
 void
 Profiler::createProfile(ProfilePrinter & printer)

@@ -46,7 +46,6 @@ private:
     unsigned m_sampleCount;
     unsigned m_numCallchains;
     std::string m_name;
-    bool m_loadedLibs;
 
     SampleMap m_samples;
 
@@ -54,9 +53,9 @@ private:
     FunctionLocationMap m_functionLocationMap;
     CallchainMap m_callchainMap;
 
-    Process(const Sample & sample, bool offline);
-    Process(const ProcessExec& processExec, bool offline);
-    Process(const char * name, pid_t pid, bool offline);
+    Process(const Sample & sample);
+    Process(const ProcessExec& processExec);
+    Process(const char * name, pid_t pid);
 
     class ProcessSampleCompare
     {
@@ -74,9 +73,9 @@ public:
     static void fillProcessMap();
     static void freeProcessMap();
 
-    static Process& getProcess(const Sample& sample, bool offline);
-    static Process& getProcess(const ProcessExec& processExec, bool offline);
-    static Process& getProcess(const char * name, pid_t pid, bool offline);
+    static Process& getProcess(const Sample& sample);
+    static Process& getProcess(const ProcessExec& processExec);
+    static Process& getProcess(const char * name, pid_t pid);
 
     static Process* getProcess( pid_t pid )
     {

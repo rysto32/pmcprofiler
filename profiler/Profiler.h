@@ -44,15 +44,13 @@ private:
 
     const std::string& m_dataFile;
     bool m_showlines;
-    bool m_offline;
 
 public:
 
-    Profiler(const std::string& dataFile, bool showlines, bool offline) :
+    Profiler(const std::string& dataFile, bool showlines) :
         m_sampleCount(0),
         m_dataFile( dataFile ),
-        m_showlines(showlines),
-        m_offline(offline)
+        m_showlines(showlines)
     {
     }
 

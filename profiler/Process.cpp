@@ -24,7 +24,6 @@
 #include "Process.h"
 #include "Sample.h"
 #include "ProcessState.h"
-#include "sharedLib.h"
 #include "Image.h"
 
 #include <algorithm>
@@ -60,68 +59,6 @@ Process::clearOldSamples()
 void
 Process::fillProcessMap()
 {
-    int processCount = 0;
-
-    kvm_t* kd = kvm_open( 0, 0, 0, O_RDONLY, 0 );
-
-    if ( kd == 0 )
-    {
-        printf( "could not get list of procs\n" );
-        return;
-    }
-
-    kinfo_proc* procInfoArray = kvm_getprocs( kd, KERN_PROC_PROC, 0, &processCount );
-
-    if ( procInfoArray == 0 )
-    {
-        kvm_close( kd );
-        printf( "could not get list of procs\n" );
-        return;
-    }
-
-    for ( int it = 0; it < processCount; it++ )
-    {
-        bool isFullPathValid = false;
-
-        char ** procArgv = 0;
-        procArgv = kvm_getargv( kd, procInfoArray + it, 1024 );
-        if ( procArgv != 0 )
-        {
-            struct stat fileStat;            
-            isFullPathValid = stat( *procArgv, &fileStat ) == 0;
-        }
-        char commandBuffer[ 1024 ];
-        const char* execName = isFullPathValid ? *procArgv : ( procInfoArray + it ) -> ki_comm;
-        if ( !isFullPathValid )
-        {
-            sprintf( commandBuffer, "%s %s\n", "which", execName );
-            FILE* command = popen( commandBuffer, "r" );
-            if ( command != 0 )
-            {
-                fgets( commandBuffer, sizeof( commandBuffer ), command );
-                int freadResult = ferror( command );
-                int closeResult = pclose( command );
-
-                if ( ( freadResult == 0 ) && ( closeResult == 0 ) )
-                {
-                    char * carriageReturn = strchr( commandBuffer, '\n' );
-                    if ( carriageReturn != 0 )
-                    {
-                        *carriageReturn = 0;
-                    }
-                    execName = commandBuffer;
-                }
-            }
-        }
-        pid_t pid = ( procInfoArray + it ) -> ki_pid;
-
-        if ( processMap[ pid ] == 0 )
-        {
-            processMap[pid] = new Process(ProcessExec(pid, execName), false);
-        }
-    }
-
-    kvm_close( kd );
 }
 
 void
@@ -135,50 +72,32 @@ Process::freeProcessMap()
     processMap.clear();
 }
 
-Process::Process(const Sample& sample, bool offline) :
+Process::Process(const Sample& sample) :
     m_pid( sample.getProcessID() ),
     m_sampleCount(0),
     m_numCallchains(0),
-    /* if we are doing an offline profile, we don't want to try and
-     * read in shared library info from the kernel, so set m_loadedLibs
-     * to true here which will cause us to never read shared lib info
-     * from the kernel
-     */
-    m_loadedLibs(offline),
     m_samples(1),
     m_functionLocationMap(1),
     m_callchainMap(1)
 {
 }
 
-Process::Process(const ProcessExec& processExec, bool offline) :
+Process::Process(const ProcessExec& processExec) :
     m_pid( processExec.getProcessID() ),
     m_sampleCount( 0 ),
     m_numCallchains(0),
     m_name(processExec.getProcessName()),
-    /* if we are doing an offline profile, we don't want to try and
-     * read in shared library info from the kernel, so set m_loadedLibs
-     * to true here which will cause us to never read shared lib info
-     * from the kernel
-     */
-    m_loadedLibs(offline),
     m_samples(1),
     m_functionLocationMap(1),
     m_callchainMap(1)
 {
 }
 
-Process::Process(const char * name, pid_t pid, bool offline) :
+Process::Process(const char * name, pid_t pid) :
     m_pid(pid),
     m_sampleCount( 0 ),
     m_numCallchains(0),
     m_name(name),
-    /* if we are doing an offline profile, we don't want to try and
-     * read in shared library info from the kernel, so set m_loadedLibs
-     * to true here which will cause us to never read shared lib info
-     * from the kernel
-     */
-    m_loadedLibs(offline),
     m_samples(1),
     m_functionLocationMap(1),
     m_callchainMap(1)
@@ -188,27 +107,6 @@ Process::Process(const char * name, pid_t pid, bool offline) :
 std::string
 Process::getLoadableImageName( const Location& location, uintptr_t& loadOffset )
 {
-    if(!m_loadedLibs && !m_name.empty())
-    {
-
-        try
-        {
-            sharedLibInfo sli(m_pid);
-
-            unsigned n = sli.numLibs();
-            for (unsigned i = 0; i < n; ++i)
-            {
-                const sharedLib& sl = sli.getLib(i);
-                /* XXX check if this overlaps with anything else... */
-                m_loadableImageMap[sl.getBase()] = sl.getName();
-            }
-        }
-        catch (...) // can't get shared lib info...
-        {
-        }
-        m_loadedLibs = true;
-    }
-
     loadOffset = 0;
  
     LoadableImageMap::iterator it = m_loadableImageMap.lower_bound(location.getAddress());
@@ -223,27 +121,27 @@ Process::getLoadableImageName( const Location& location, uintptr_t& loadOffset )
 }
 
 Process&
-Process::getProcess(const Sample& sample, bool offline)
+Process::getProcess(const Sample& sample)
 {
     pid_t pid = sample.getProcessID();
     Process* process = processMap[ pid ];
 
     if ( process == 0 )
     {
-        process = processMap[pid] = new Process(sample, offline);
+        process = processMap[pid] = new Process(sample);
     }
     return *process;
 }
 
 Process&
-Process::getProcess(const ProcessExec& processExec, bool offline)
+Process::getProcess(const ProcessExec& processExec)
 {
     pid_t pid = processExec.getProcessID();
     Process* process = processMap[ pid ];
 
     if ( process == 0 )
     {
-        process = processMap[pid] = new Process(processExec, offline);
+        process = processMap[pid] = new Process(processExec);
     }
 
     if ( ( *process ).m_name.empty() && !processExec.getProcessName().empty() )
@@ -255,7 +153,7 @@ Process::getProcess(const ProcessExec& processExec, bool offline)
 }
 
 Process&
-Process::getProcess(const char * name, pid_t pid, bool offline)
+Process::getProcess(const char * name, pid_t pid)
 {
     Process* process = processMap[pid];
 
@@ -264,7 +162,7 @@ Process::getProcess(const char * name, pid_t pid, bool offline)
         /* we use the name of the first map-in file as our name, as that
          * should be the name of our executable
          */
-        process = processMap[pid] = new Process(name, pid, offline);
+        process = processMap[pid] = new Process(name, pid);
     }
 
     return *process;

@@ -10,8 +10,7 @@ SRCS=	\
 	Profiler.cpp \
 	Process.cpp \
 	ProfilePrinter.cpp \
-	sharedLib.cpp \
 
-LDADD=	-lbfd -liberty -lintl -lz -lpmc -lkvm -L/usr/local/lib
+LDADD=	-lbfd -liberty -lintl -lz -lpmc -L/usr/local/lib
 
 .include <bsd.prog.mk>

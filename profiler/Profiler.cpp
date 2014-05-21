@@ -40,8 +40,6 @@ Profiler::createProfile(ProfilePrinter & printer)
 {
     m_sampleCount = 0;
     Process::clearOldSamples();
-    if(!m_offline)
-        Process::fillProcessMap();
     EventFactory::createEvents(*this, printer.getMaxDepth());
     Process::ActiveProcessList activeProcessList;
     Process::collectActiveProcesses( activeProcessList ); 
@@ -52,13 +50,13 @@ Profiler::createProfile(ProfilePrinter & printer)
 void
 Profiler::processEvent( const ProcessExec& processExec )
 {
-    Process::getProcess(processExec, m_offline);
+    Process::getProcess(processExec);
 }
 
 void
 Profiler::processEvent( const Sample& sample )
 {
-    Process::getProcess(sample, m_offline).addSample( sample );
+    Process::getProcess(sample).addSample( sample );
     m_sampleCount++;
 }
 
@@ -74,7 +72,7 @@ Profiler::processMapIn(pid_t pid, uintptr_t map_start, const char * image)
     }
     else
     {
-        Process & process = Process::getProcess(image, pid, m_offline);
+        Process & process = Process::getProcess(image, pid);
         process.mapIn(map_start, image);
     }
 }

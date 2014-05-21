@@ -67,9 +67,8 @@ main(int argc, char *argv[])
     g_quitOnError = false;    
     FILE * file;
     std::vector<ProfilePrinter*> printers;
-    bool offlineProfiling = false;
     
-    while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:t:r:ON:m:")) != -1)
+    while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:t:r:N:m:")) != -1)
     {
         switch (ch)
         {
@@ -121,11 +120,6 @@ main(int argc, char *argv[])
 
             break;
         }
-        case 'O':
-        {
-            offlineProfiling = true;
-            break;
-        }
         case 'N':
         {
             Image::setBootfile(optarg);
@@ -149,7 +143,7 @@ main(int argc, char *argv[])
         printers.push_back(new FlatProfilePrinter(stdout));
     }
 
-    Profiler profiler(samplefile, showlines, offlineProfiling);
+    Profiler profiler(samplefile, showlines);
     std::vector<ProfilePrinter* >::iterator it = printers.begin();
     for(; it != printers.end(); ++it) {
         profiler.createProfile(**it);
@@ -165,7 +159,7 @@ void
 usage()
 {
     fprintf(stderr,
-               "usage: profiler [-lqb] [-f samplefile] [-o flat_output] [-G leaf_output]\n"
+               "usage: pmcprofiler [-lqb] [-f samplefile] [-o flat_output] [-G leaf_output]\n"
                "[-r root_output] [-d <max depth>] [-t theshold] \n"
                "    l - show line numbers\n"
                "    q - quit on error\n"
@@ -176,7 +170,6 @@ usage()
                "    r - file to print root-down callchain profile to(- for stdout)\n"
                "    d - maximum depth to go to in subsequent leaf-up callchain profiles\n"
                "    t - print only entries greater than threshold in subsequent profiles\n"
-               "    O - offline profiling mode\n"
                "    default samplefile is /tmp/samples.out\n"    
                "    default output is flat profile to standard out\n");
     exit(1);

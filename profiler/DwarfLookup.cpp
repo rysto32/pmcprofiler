@@ -41,11 +41,13 @@ DwarfLookup::DwarfLookup(const std::string &filename)
 		return;
 
 	elf = elf_begin(fd, ELF_C_READ, NULL);
-	if (elf == NULL)
+	if (elf == NULL) {
+		warnx("elf_begin failed: filename=%s elf_errno=%s",
+		      filename.c_str(), elf_errmsg(elf_errno()));
 		return;
+	}
 
 	FindTextRange(elf);
-	FillFunctionMap(elf);
 
 	/* 
 	 * It is not fatal if this fails: we'll do out best without debug
@@ -84,188 +86,48 @@ DwarfLookup::FindTextRange(Elf *elf)
 	if (elf_getshdrstrndx(elf, &shdrstrndx) != 0)
 		return;
 
+	section = NULL;
 	while ((section = elf_nextscn(elf, section)) != NULL) {
 		if (gelf_getshdr(section, &shdr) == NULL)
-			return;
+			continue;
 
 		name = elf_strptr(elf, shdrstrndx, shdr.sh_name);
-		if (name == NULL)
-			return;
-
-		if (strcmp(name, ".text") == 0) {
+		if (name != NULL &  (strcmp(name, ".text") == 0)) {
 			m_text_start = shdr.sh_offset;
 			m_text_end = shdr.sh_offset + shdr.sh_size;
-			return;
-		}
-	}
-	
-}
-
-void
-DwarfLookup::FillFunctionMap(Elf *elf)
-{
-	Dwarf_Die die;
-	Dwarf_Error derr;
-	int error;
-	
-	while ((error = dwarf_next_cu_header(dwarf, NULL, NULL, NULL, NULL,
-	    NULL, &derr)) == DW_DLV_OK) {
-		if (dwarf_siblingof(dwarf, NULL, &die, &derr) == DW_DLV_OK)
-			FillFunctionsFromDie(dwarf, die);
-	}
-}
-
-void
-DwarfLookup::FillFunctionsFromDie(Dwarf_Debug dwarf, Dwarf_Die die)
-{
-	Dwarf_Die last_die, child;
-	Dwarf_Error derr;
-	Dwarf_Half tag;
-	int error;
-
-	do {
-		if (dwarf_tag(die, &tag, &derr) == DW_DLV_OK) {
-			if (tag == DW_TAG_subprogram)
-				AddFunction(dwarf, die);
 		}
 
-		error = dwarf_child(die, &child, &derr);
-		if (error == DW_DLV_OK)
-			FillFunctionsFromDie(dwarf, child);
-
-		last_die = die;
-		error = dwarf_siblingof(dwarf, last_die, &die, &derr);
-		dwarf_dealloc(dwarf, last_die, DW_DLA_DIE);
-	} while (error == DW_DLV_OK);
+		gelf_getshdr(section, &shdr);
+		if (shdr.sh_type == SHT_SYMTAB)
+			FillFunctionsFromSymtab(elf, section, &shdr);
+	}
+	
 }
 
 void
-DwarfLookup::AddFunction(Dwarf_Debug dwarf, Dwarf_Die die)
+DwarfLookup::FillFunctionsFromSymtab(Elf *elf, Elf_Scn *section,
+    GElf_Shdr *header)
 {
-	Dwarf_Die attr_die;
-	Dwarf_Attribute attr;
-	Dwarf_Unsigned addr;
-	Dwarf_Error derr;
-	std::string func;
-	std::string file;
-	int line, error;
+	GElf_Sym symbol;
+	Elf_Data *data;
+	size_t i, count;
 
-	if (dwarf_attrval_unsigned(die, DW_AT_low_pc, &addr, &derr) != 0)
-		return;
+	count = header->sh_size / header->sh_entsize;
+	data = elf_getdata(section, NULL);
 
-	error = dwarf_attr(die, DW_AT_name, &attr, &derr);
-	if (error == DW_DLV_OK)
-		func = GetFuncNameFromAttr(attr);
-	else
-		func = GetFuncNameFromSpec(dwarf, die);
-
-	if (!GetFileNameFromAttr(dwarf, die, file))
-		warnx("Failed for %s", func.c_str());
-		file = m_image_file;
-
-	if (!GetLineNumberFromAttr(dwarf, die, line)) {
-		warnx("Failed for %s", func.c_str());
-		line = 0;
+	for (i = 0; i < count; i++) {
+		gelf_getsym(data, i, &symbol);
+		if (GELF_ST_TYPE(symbol.st_info) == STT_FUNC)
+			AddFunction(symbol.st_value,
+			    elf_strptr(elf, header->sh_link, symbol.st_name));
 	}
-
-	m_functions[addr] = new DwarfLocation(file, func, line);
 }
 
-std::string
-DwarfLookup::GetFuncNameFromAttr(Dwarf_Attribute attr)
+void
+DwarfLookup::AddFunction(GElf_Addr addr, const std::string &func)
 {
-	char *attrStr;
-	Dwarf_Error derr;
 
-	if (dwarf_formstring(attr, &attrStr, &derr) != 0)
-		return ("");
-
-	return (attrStr);
-}
-
-std::string
-DwarfLookup::GetFuncNameFromSpec(Dwarf_Debug dwarf, Dwarf_Die die)
-{
-	Dwarf_Die attr_die;
-	Dwarf_Attribute attr;
-	Dwarf_Error derr;
-	Dwarf_Off off;
-	const char *func;
-	int error;
-	
-	if (dwarf_attr(die, DW_AT_specification, &attr, &derr) != 0)
-		return ("");
-	if (dwarf_global_formref(attr, &off, &derr) != 0)
-		return ("");
-	if (dwarf_offdie(dwarf, off, &attr_die, &derr) != 0)
-		return ("");
-
-	error = dwarf_attrval_string(attr_die, DW_AT_name, &func, &derr);
-	dwarf_dealloc(dwarf, attr_die, DW_DLA_DIE);
-	if (error != 0)
-		return ("");
-	
-	return (func);
-}
-
-bool
-DwarfLookup::GetFileNameFromAttr(Dwarf_Debug dwarf, Dwarf_Die die,
-    std::string &file)
-{
-	Dwarf_Die attr_die;
-	Dwarf_Attribute attr;
-	Dwarf_Error derr;
-	Dwarf_Off off;
-	const char *str;
-	int error;
-	
-	if (dwarf_attr(die, DW_AT_decl_file, &attr, &derr) != 0) {
-		warnx("Error @ %s:%d: %s", __FILE__, __LINE__, dwarf_errmsg(derr));
-		return (false);
-	}
-	if (dwarf_global_formref(attr, &off, &derr) != 0){
-		warnx("Error @ %s:%d: %s", __FILE__, __LINE__, dwarf_errmsg(derr));
-		return (false);
-	}
-	if (dwarf_offdie(dwarf, off, &attr_die, &derr) != 0){
-		warnx("Error @ %s:%d: %s", __FILE__, __LINE__, dwarf_errmsg(derr));
-		return (false);
-	}
-
-	error = dwarf_attrval_string(attr_die, DW_AT_name, &str, &derr);
-	dwarf_dealloc(dwarf, attr_die, DW_DLA_DIE);
-	if (error != 0){
-		warnx("Error @ %s:%d: %s", __FILE__, __LINE__, dwarf_errmsg(derr));
-		return (false);
-	}
-	
-	file = str;
-	return (true);
-}
-
-bool
-DwarfLookup::GetLineNumberFromAttr(Dwarf_Debug dwarf, Dwarf_Die die,
-    int &lineno)
-{
-	Dwarf_Attribute attr;
-	Dwarf_Error derr;
-	Dwarf_Unsigned line;
-	int error;
-	
-	error = dwarf_attr(die, DW_AT_decl_line, &attr, &derr);
-	if (error != 0) {
-		warnx("Error @ %s:%d: %s", __FILE__, __LINE__, dwarf_errmsg(derr));
-		return (false);
-	}
-
-	error = dwarf_formudata(attr, &line, &derr);
-	if (error != 0) {
-		warnx("Error @ %s:%d: %s", __FILE__, __LINE__, dwarf_errmsg(derr));
-		return (false);
-	}
-
-	lineno = line;
-	return (true);
+	m_functions[addr] = new DwarfLocation(m_image_file, func);
 }
 
 void
@@ -337,9 +199,11 @@ DwarfLookup::AddLocations(Dwarf_Debug dwarf, Dwarf_Die die)
 			fileStr = file;
 
 		LocationMap::const_iterator it = m_functions.lower_bound(addr);
-		if (it != m_functions.end())
+		if (it != m_functions.end()) {
 			func = it->second->GetFunc();
-		else
+			if (it->second->NeedsDebug() && line != 0)
+				it->second->SetDebug(file, line);
+		} else
 			func = "";
 		m_locations[addr] = new DwarfLocation(fileStr, func, line);
 	}
@@ -366,15 +230,26 @@ bool
 DwarfLookup::LookupLine(uintptr_t addr, std::string &file, std::string &func,
 	int &line) const
 {
+	bool success;
 
-	return Lookup(addr, m_locations, file, func, line);
+	success = Lookup(addr, m_locations, file, func, line);
+	if (success)
+		return (true);
+
+	/*
+	 * If debug symbols are not present then fall back on ELF data.  We
+	 * won't get the source line or file, but the function name is better
+	 * than nothing.
+	 */
+	return (LookupFunc(addr, file, func, line));
 }
 
 bool
 DwarfLookup::LookupFunc(uintptr_t addr, std::string &file, std::string &func,
 	int &line) const
 {
-	return Lookup(addr, m_functions, file, func, line);
+
+	return (Lookup(addr, m_functions, file, func, line));
 }
 
 bool

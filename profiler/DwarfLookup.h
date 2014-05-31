@@ -30,7 +30,9 @@
 #include <dwarf.h>
 #include <libdwarf.h>
 #include <libelf.h>
+#include <gelf.h>
 
+#include <functional>
 #include <map>
 #include <string>
 
@@ -39,7 +41,11 @@ class DwarfLocation;
 class DwarfLookup
 {
 private:
-	typedef std::map<uintptr_t, DwarfLocation *> LocationMap;
+	/* 
+	 * Use the std::greater comparator so that map::lower_bound returns the
+	 * DwarfLocation whose address is <= the address we're searching for.
+	 */
+	typedef std::map<uintptr_t, DwarfLocation *, std::greater<uintptr_t> > LocationMap;
 
 	std::string m_image_file;
 	LocationMap m_functions;
@@ -48,16 +54,8 @@ private:
 	uint64_t m_text_end;
 
 	void FindTextRange(Elf *);
-
-	void FillFunctionMap(Elf *);
-	void FillFunctionsFromDie(Dwarf_Debug, Dwarf_Die);
-	void AddFunction(Dwarf_Debug, Dwarf_Die);
-	std::string GetFuncNameFromAttr(Dwarf_Attribute attr);
-	std::string GetFuncNameFromSpec(Dwarf_Debug dwarf, Dwarf_Die die);
-	bool GetFileNameFromAttr(Dwarf_Debug dwarf, Dwarf_Die die,
-	    std::string &file);
-	bool GetLineNumberFromAttr(Dwarf_Debug dwarf, Dwarf_Die die,
-	    int &lineno);
+	void FillFunctionsFromSymtab(Elf *, Elf_Scn *, GElf_Shdr *);
+	void AddFunction(GElf_Addr, const std::string &);
 	
 	void FillLocationMap(Dwarf_Debug);
 	void FillLocationsFromDie(Dwarf_Debug, Dwarf_Die);

@@ -1,9 +1,10 @@
 PROG_CXX=pmcprofiler
 WARNS=0
-CFLAGS=-I/usr/local/include -DPACKAGE=${name} -DPACKAGE_VERSION=${version}
 NO_MAN=
 
 SRCS=	\
+	DwarfLocation.cpp \
+	DwarfLookup.cpp \
 	EventFactory.cpp \
 	Image.cpp \
 	main.cpp \
@@ -11,6 +12,6 @@ SRCS=	\
 	Process.cpp \
 	ProfilePrinter.cpp \
 
-LDADD=	-lbfd -liberty -lintl -lz -lpmc -L/usr/local/lib
+LDADD=	-lpmc
 
 .include <bsd.prog.mk>

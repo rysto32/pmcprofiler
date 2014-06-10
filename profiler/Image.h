@@ -24,6 +24,8 @@
 #if !defined(IMAGE_H)
 #define IMAGE_H
 
+#include "DwarfLookup.h"
+
 #include <string>
 #include <algorithm>
 #include <functional>
@@ -32,11 +34,11 @@
 #include <set>
 #include <unordered_map>
 
+#include <dwarf.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h> 
-#include <bfd.h>
 
 extern bool g_quitOnError;
 
@@ -46,14 +48,14 @@ class Location
 {
     friend              class Image;
 
-    bfd_vma             m_address;
+    uintptr_t           m_address;
     bool                m_isKernel;
     bool                m_isMapped;
     unsigned            m_count;
     pid_t               m_pid;
-    const char*         m_modulename;
-    const char*         m_filename;
-    const char*         m_functionname;
+    std::string         m_modulename;
+    std::string         m_filename;
+    std::string         m_functionname;
     unsigned            m_linenumber;
 
 public:
@@ -63,14 +65,14 @@ public:
     m_isMapped( false ),
     m_count( count ),
     m_pid( pid ),
-    m_modulename( 0 ),
-    m_filename( 0 ),
-    m_functionname( 0 ),
+    m_modulename(),
+    m_filename(),
+    m_functionname(),
     m_linenumber( -1 )
     {
     }
 
-    bfd_vma getAddress() const
+    uintptr_t getAddress() const
     {
         return m_address;
     }
@@ -100,19 +102,19 @@ public:
         return m_pid;
     }
 
-    const char* getModuleName() const
+    const std::string &getModuleName() const
     {
-        return m_modulename == 0 ? "" : m_modulename;
+        return (m_modulename);
     }
 
-    const char* getFileName() const
+    const std::string &getFileName() const
     {
-        return m_filename == 0 ? "" : m_filename;
+        return (m_filename);
     }
 
-    const char* getFunctionName() const
+    const std::string &getFunctionName() const
     {
-        return m_functionname == 0 ? "" : m_functionname;
+        return (m_functionname);
     }
 
     unsigned getLineNumber() const
@@ -182,13 +184,13 @@ public:
     {
         size_t operator()(const FunctionLocation & loc) const
         {
-            return std::hash<const char *>()(loc.getFunctionName());
+            return std::hash<std::string>()(loc.getFunctionName());
         }
     };
 
     bool operator==(const FunctionLocation & other) const
     {
-        return strcmp(getFunctionName(), other.getFunctionName()) == 0;
+        return (getFunctionName() == other.getFunctionName());
     }
 };
 
@@ -198,7 +200,7 @@ class Location;
 
 class Callchain
 {
-    std::vector<const char *> vec;
+    std::vector<std::string> vec;
     mutable size_t hash_value;
     mutable bool hash_valid;
     
@@ -214,9 +216,9 @@ public:
         if(hash_valid)
             return hash_value;
 
-        std::vector<const char *>::const_iterator it = vec.begin();
+        std::vector<std::string>::const_iterator it = vec.begin();
         size_t val = 0;
-        std::hash<const char *> hasher;
+        std::hash<std::string> hasher;
 
         for(; it != vec.end(); ++it)
         {
@@ -236,7 +238,7 @@ public:
         return val;
     }
 
-    void push_back(const char * t)
+    void push_back(const std::string& t)
     {
         vec.push_back(t);
         hash_valid = false;
@@ -248,7 +250,7 @@ public:
         hash_valid = false;
     }
 
-    const char * back()
+    const std::string & back()
     {
         return vec.back();
     }
@@ -266,7 +268,7 @@ public:
         }
     };
 
-    typedef std::vector<const char *>::iterator iterator;
+    typedef std::vector<std::string>::iterator iterator;
 
     iterator begin()
     {
@@ -288,13 +290,8 @@ class Image
 {
     
     typedef std::map<std::string, Image*> ImageMap;
-    typedef std::map<bfd_vma, std::string> LoadableImageMap;
-    typedef std::map<uintptr_t, Location> LocationCache;
-    typedef std::unordered_map<const char*, asymbol*> FuncSymbolCache;
+    typedef std::map<uintptr_t, std::string> LoadableImageMap;
 
-
-    static bool firstTimeInit;
-    static bool loadedKldModules;
     static std::string KERNEL_NAME;
     static std::vector<std::string> MODULE_PATH;
     static const std::string TEXT_SECTION_NAME;
@@ -302,81 +299,38 @@ class Image
     static ImageMap imageMap;
     static LoadableImageMap kernelLoadableImageMap;
 
-    int m_fd;
-
-    long m_symCount;
-    long m_dynCount;
-
-    bfd* m_bfdHandle;
-
-    bfd_vma m_startAddress;
-    bfd_size_type m_textSize;
-    bfd_vma m_endAddress;
-
-    asection* m_textSection;
-
-    asymbol **m_symTable;
-    asymbol **m_dynTable;
-
-    FuncSymbolCache m_symFuncCache;
-    FuncSymbolCache m_dynFuncCache;
-
-    LocationCache m_mappedLocations;
+    DwarfLookup m_lookup;
 
     static Image& getKernel();
 
     Image( const std::string& imageName );
     ~Image();
 
-    void loadSymtab();
-    void loadDyntab();
-    void dumpSymtab();
-    void dumpDyntab();
-
-    void findFunctionSymbol(Location& location, const FuncSymbolCache & cache);
-
-    bfd_vma getStartAddress()
-    {
-        return m_startAddress;
-    }
-
-    bfd_size_type getSize()
-    {
-        return m_textSize;
-    }
-
-    bfd_vma getEndAddress()
-    {
-        return m_endAddress;
-    }
-
-    bool isContained( Location& location, uintptr_t loadOffset = 0 );
+    bool isContained(const Location& location, uintptr_t loadOffset = 0);
     void mapLocation( Location& location, uintptr_t loadOffset = 0 );
-    void mapLocationFromCaches(Location& location, LocationCache::iterator & it, uintptr_t address);
-    void functionStart( Location& location );
+    void functionStart(Location& location, uintptr_t loadOffset);
+    static Image *findImage(const Location &location, uintptr_t &loadOffset);
 
     static bool findKldModule(const char * kldName, std::string & kldPath);
     static std::vector<std::string> getModulePath();
     static void parseModulePath(char * path_buf, std::vector<std::string> & vec);
 
 public:
-    static char* demangle(const char* name);
+    static char* demangle(const std::string &name);
     static std::string getLoadableImageName( const Location& location, uintptr_t& loadOffset );
     static void mapAllLocations( LocationList& locationList );
 
-    static void loadSymbolCache(asymbol ** symtab, long symCount, FuncSymbolCache & symmap);
-
     static void freeImages();
 
-    bool isOk() const;
     static void mapFunctionStart( FunctionLocation& functionLocation );
 
     static void loadKldImage(uintptr_t loadAddress, const char * moduleName);
-    static void offlineProfiling();
 
     static void setBootfile(const char * file);
     static void setModulePath(char * path);
     static void setUnknownFile(const std::string & path);
+
+    const std::string & getImageFile() const;
 };
 
 #endif // #if !defined(IMAGE_H)

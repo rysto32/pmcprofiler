@@ -92,9 +92,9 @@ DwarfLookup::FindTextRange(Elf *elf)
 			continue;
 
 		name = elf_strptr(elf, shdrstrndx, shdr.sh_name);
-		if (name != NULL &  (strcmp(name, ".text") == 0)) {
-			m_text_start = shdr.sh_offset;
-			m_text_end = shdr.sh_offset + shdr.sh_size;
+		if (name != NULL && (strcmp(name, ".text") == 0)) {
+			m_text_start = shdr.sh_addr;
+			m_text_end = m_text_start + shdr.sh_size;
 		}
 
 		gelf_getshdr(section, &shdr);
@@ -211,7 +211,7 @@ DwarfLookup::AddLocations(Dwarf_Debug dwarf, Dwarf_Die die)
 
 bool
 DwarfLookup::Lookup(uintptr_t addr, const LocationMap &map,
-    std::string &fileStr, std::string &funcStr, int &line) const
+    std::string &fileStr, std::string &funcStr, u_int &line) const
 {
 
 	LocationMap::const_iterator it = map.lower_bound(addr);
@@ -228,7 +228,7 @@ DwarfLookup::Lookup(uintptr_t addr, const LocationMap &map,
 
 bool
 DwarfLookup::LookupLine(uintptr_t addr, std::string &file, std::string &func,
-	int &line) const
+	u_int &line) const
 {
 	bool success;
 
@@ -246,10 +246,17 @@ DwarfLookup::LookupLine(uintptr_t addr, std::string &file, std::string &func,
 
 bool
 DwarfLookup::LookupFunc(uintptr_t addr, std::string &file, std::string &func,
-	int &line) const
+	u_int &line) const
 {
 
 	return (Lookup(addr, m_functions, file, func, line));
+}
+
+const std::string &
+DwarfLookup::getImageFile() const
+{
+
+	return (m_image_file);
 }
 
 bool
@@ -257,11 +264,4 @@ DwarfLookup::isContained(uintptr_t addr) const
 {
 
 	return ((addr >= m_text_start) && (addr < m_text_end));
-}
-
-bool
-DwarfLookup::isOk() const
-{
-
-	return (m_text_end != 0);
 }

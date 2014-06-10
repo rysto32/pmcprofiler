@@ -24,11 +24,11 @@
 #include "Image.h"
 #include "Process.h"
 
+#include <cxxabi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h> 
-#include <libiberty/demangle.h>
 #include <paths.h>
 #include <libgen.h>
 #include <sys/types.h>
@@ -37,8 +37,6 @@
 #include <sys/linker.h>
 #include <sys/sysctl.h>
 #include <unistd.h>
-
-bool Image::firstTimeInit = true;
 
 void Image::parseModulePath(char * path_buf, std::vector<std::string> & vec)
 {
@@ -83,7 +81,6 @@ const std::string Image::TEXT_SECTION_NAME( ".text" );
 Image* Image::kernelImage = 0;
 
 Image::ImageMap Image::imageMap;
-bool Image::loadedKldModules = false;
 Image::LoadableImageMap Image::kernelLoadableImageMap;
 
 void 
@@ -144,365 +141,71 @@ Image::freeImages()
 }
 
 Image::Image( const std::string& imageName ) :
-    m_fd( 0 ),
-    m_symCount( 0 ),
-    m_dynCount( 0 ),
-    m_bfdHandle( 0 ),
-    m_startAddress( 0 ),
-    m_textSize( 0 ),
-    m_endAddress( 0 ),
-    m_textSection( 0 ),
-    m_symTable( 0 ),
-    m_dynTable(0),
-    m_symFuncCache(1),
-    m_dynFuncCache(1)
+    m_lookup(imageName)
 {
-    if ( firstTimeInit )
-    {
-        bfd_init();
-        firstTimeInit = false;
-    }
-
-    std::string debugName = imageName + ".debug";
-    const std::string * fileName;
-
-    int test_fd = open(debugName.c_str(), O_RDONLY);
-    if(test_fd < 0)
-    {
-        m_fd = open(imageName.c_str(), O_RDONLY);
-
-        if(m_fd < 0)
-        {
-            if (imageName.size())
-            {
-                fprintf(stderr, "%s: unable to open file %s\n", 
-                        g_quitOnError ? "error" : "warning", imageName.c_str());
-                if (g_quitOnError)
-                {
-                    exit(5);
-                }
-            }
-            return;
-        }
-
-        fileName = &imageName;
-    }
-    else
-    {
-        m_fd = test_fd;
-        fileName = &debugName;
-    }
-
-    m_bfdHandle = bfd_fdopenr(fileName->c_str(), 0, m_fd);
-    
-
-    if ( m_bfdHandle == 0 )
-    {
-        return;
-    }
-
-    //must check the format!
-    if ( bfd_check_format( m_bfdHandle, bfd_object ) == 0 )
-    {
-        return;
-    }
-
-    if ( ( bfd_get_file_flags( m_bfdHandle ) & HAS_SYMS ) == 0 )
-    {
-        return;
-    }
-
-    m_textSection = bfd_get_section_by_name( m_bfdHandle, TEXT_SECTION_NAME.c_str() );
-    m_startAddress = bfd_get_section_vma( m_bfdHandle, m_textSection );
-    m_textSize = bfd_get_section_size( m_textSection );
-    m_endAddress = m_startAddress + m_textSize;
 }
 
 Image::~Image()
 {
-    if ( m_symTable != 0 )
-    {
-        free( m_symTable );
-        m_symTable = 0;
-    }
+}
 
-    if ( m_dynTable != 0 )
-    {
-        free( m_dynTable );
-        m_dynTable = 0;
-    }
+const std::string &
+Image::getImageFile() const
+{
 
-    if ( m_bfdHandle != 0 )
-    {
-        bfd_close( m_bfdHandle );
-        m_bfdHandle = 0;
-    }
+	return (m_lookup.getImageFile());
 }
 
 bool
-Image::isOk() const
+Image::isContained(const Location& location, uintptr_t loadOffset)
 {
-    return ( m_fd > 0 ) && ( m_textSize > 0 );
-}
+    uintptr_t addr;
 
-void
-Image::loadSymbolCache(asymbol ** symtab, long symCount, FuncSymbolCache & symmap)
-{
-    for (long it = 0; it < symCount; it++)
-    {
-        asymbol* symbol = symtab[it];
-
-        if (bfd_asymbol_name(symbol) == 0 || bfd_asymbol_name(symbol) == '\0')
-        {
-            continue;
-        }
-
-        symmap[bfd_asymbol_name(symbol)] = symbol;
-    }
-}
-
-void
-Image::loadSymtab()
-{
-    if(m_symTable == NULL)
-    {
-        m_symCount = bfd_get_symtab_upper_bound( m_bfdHandle );
-        if(m_symCount <= 0)
-        {
-            return;
-        }
-
-        m_symTable = (asymbol **) malloc( m_symCount );
-        m_symCount = bfd_canonicalize_symtab( m_bfdHandle, m_symTable );
-
-        if ( m_symCount < 0 )
-        {
-            printf( "canonicalize symtab failed %ld\n", m_symCount );
-        }        
-        else
-        {
-            loadSymbolCache(m_symTable, m_symCount, m_symFuncCache);
-        }
-    }
-}
-
-void
-Image::loadDyntab()
-{
-    if(m_dynTable == NULL)
-    {
-        m_dynCount = bfd_get_dynamic_symtab_upper_bound(m_bfdHandle);
-        if(m_dynCount <= 0)
-        {
-            return;
-        }
-
-        m_dynTable = (asymbol **) malloc(m_dynCount);
-        m_dynCount = bfd_canonicalize_dynamic_symtab(m_bfdHandle, m_dynTable);
-
-        if(m_dynCount < 0)
-        {
-            printf( "canonicalize dynamic symtab failed %ld \n", m_dynCount);
-        }
-        else
-        {
-            loadSymbolCache(m_dynTable, m_dynCount, m_dynFuncCache);
-        }
-    }
-}
-
-void
-Image::dumpSymtab()
-{
-    if ( m_symTable == 0 )
-    {
-        loadSymtab();
-    }
-
-    for ( long it = 0; it < m_symCount; it++ ) {
-
-        asymbol* symbol = m_symTable[ it ];
-
-        if (bfd_asymbol_name(symbol) == 0 || *bfd_asymbol_name(symbol) == '\0' )
-        {
-            continue;
-        }
-
-        printf( "symtab " );
-        bfd_print_symbol_vandf( m_bfdHandle, stdout, symbol );
-
-        char * symbol_name = demangle(bfd_asymbol_name(symbol));
-        if (symbol_name)
-        {
-            printf(" section: %s, symbol: %s\n", bfd_get_section_name(0, bfd_get_section(symbol)), symbol_name);
-        }
-        free(symbol_name);
-    }
-}
-
-void
-Image::dumpDyntab()
-{
-    if ( m_dynTable == 0 )
-    {
-        loadDyntab();
-    }
-
-    for ( long it = 0; it < m_dynCount; it++ ) {
-
-        asymbol* symbol = m_dynTable[ it ];
-
-        if (bfd_asymbol_name(symbol) == 0 || *bfd_asymbol_name(symbol) == '\0' )
-        {
-            continue;
-        }
-
-        printf( "dyntab " );
-        bfd_print_symbol_vandf( m_bfdHandle, stdout, symbol );
-
-        char * symbol_name = demangle(bfd_asymbol_name(symbol));
-        if (symbol_name)
-        {
-            printf(" section: %s, symbol: %s\n", bfd_get_section_name(0, bfd_get_section(symbol)), symbol_name);
-        }
-        free(symbol_name);
-    }
-}
-
-bool
-Image::isContained( Location& location, uintptr_t loadOffset )
-{
-    const bfd_vma& address( location.getAddress() );
-
-    return ( ( address - loadOffset ) >= m_startAddress ) &&
-        ( ( address - loadOffset ) < m_endAddress );
-}
-
-void 
-Image::mapLocationFromCaches(Location& location, LocationCache::iterator & it, uintptr_t address)
-{
-    /* calling bfd_find_nearest_line is extremely expensive, so we cache our 
-     * results in mappedLocations.  Check whether we've already mapped this
-     * address and if so, grab the debug information out of the cache
-     */
-    it = m_mappedLocations.lower_bound(address);
-    if(it != m_mappedLocations.end() && (m_mappedLocations.key_comp()(address, it->first) == 0))
-    {
-        location.isMapped(it->second.m_isMapped);
-        location.m_filename = it->second.m_filename;
-        location.m_functionname = it->second.m_functionname;
-        location.m_linenumber = it->second.m_linenumber;
-    }
+    addr = location.getAddress() - loadOffset;
+    return m_lookup.isContained(addr);
 }
 
 void
 Image::mapLocation( Location& location, uintptr_t loadOffset )
 {
-    uintptr_t address = location.getAddress() - loadOffset - m_startAddress;
+    uintptr_t address = location.getAddress() - loadOffset;
 
-    loadSymtab();
-
-    
-    LocationCache::iterator it;
-    mapLocationFromCaches(location, it, address);
-
-    if(location.m_isMapped)
-        return;
-
-    location.isMapped( false );
-
-    if ( m_symCount > 0 )
-    {
-        location.isMapped( bfd_find_nearest_line( m_bfdHandle, m_textSection, m_symTable,
-            address, &location.m_filename, &location.m_functionname, &location.m_linenumber ) != 0 );
-    }
-
-    
-    loadDyntab();
-
-    if(!location.m_isMapped)
-    {
-        loadDyntab();
-
-        if(m_dynCount > 0)
-        {
-            location.isMapped(bfd_find_nearest_line(m_bfdHandle, m_textSection, m_dynTable,
-                address, &location.m_filename, &location.m_functionname,
-                &location.m_linenumber) != 0);
-        }
-    }
-
-    /* put the location in our cache so we can use it for subsequent lookups of this address */
-    m_mappedLocations.insert(it, LocationCache::value_type(address, location));
+    location.isMapped(m_lookup.LookupLine(address, location.m_filename,
+        location.m_functionname, location.m_linenumber));
 }
 
 void
-Image::findFunctionSymbol(Location& location, const FuncSymbolCache & cache)
+Image::functionStart(Location& location, uintptr_t loadOffset)
 {
-    FuncSymbolCache::const_iterator it = cache.find(location.m_functionname);
+    uintptr_t address = location.getAddress() - loadOffset;
 
-    if(it != cache.end())
-    {
-        asymbol* symbol = it->second;
-        Location testLocation = location;
-        testLocation.m_address = bfd_asymbol_value(symbol);
-        mapLocation(testLocation);
-        if(testLocation.m_isMapped)
-        {
-            if((testLocation.m_filename != 0 && location.m_filename) && (strcmp(testLocation.m_filename, location.m_filename) == 0))
-            {
-                location = testLocation;
-            }
-        }
-    }
-}
-
-void
-Image::functionStart( Location& location )
-{
-    findFunctionSymbol(location, m_symFuncCache);
-    if(!location.m_isMapped)
-    {
-        findFunctionSymbol(location, m_dynFuncCache);
-    }
+    location.isMapped(m_lookup.LookupFunc(address, location.m_filename,
+        location.m_functionname, location.m_linenumber));
 }
 
 void
 Image::mapFunctionStart( FunctionLocation& functionLocation )
 {
-    if ( !functionLocation.m_isMapped )
-    {
-        return;
-    }
+    uintptr_t loadOffset;
 
-    Image* image = functionLocation.m_isKernel ? kernelImage : imageMap[ functionLocation.m_modulename ];
-
-    if ( image == 0 )
-    {
-        return;
-    }
+    Image* image = findImage(functionLocation, loadOffset);
 
     functionLocation.m_isMapped = false;
-    image -> functionStart( functionLocation );
-
-    if ( !functionLocation.m_isMapped )
+    if (image == NULL || !image->isContained(functionLocation))
     {
-        if(functionLocation.m_lineLocationList.empty())
+        return;
+    }
+
+    image->functionStart(functionLocation, loadOffset);
+
+    if (functionLocation.m_isMapped)
+    {
+        if (functionLocation.m_lineLocationList.empty())
             functionLocation.m_linenumber = -1;
         else
             functionLocation.m_linenumber = *functionLocation.m_lineLocationList.begin();
     }
 }
-
-void 
-Image::offlineProfiling()
-{
-    /* set this to true to prevent us from loading whatever modules are
-     * loaded on this system.
-     */
-    loadedKldModules = true;
-}
-
 
 bool
 Image::findKldModule(const char * kldName, std::string & kldPath)
@@ -530,7 +233,7 @@ Image::loadKldImage(uintptr_t loadAddress, const char * moduleName)
 
     if(findKldModule(moduleName, kldPath))
     {
-        kernelLoadableImageMap[bfd_vma(loadAddress)] = kldPath;
+        kernelLoadableImageMap[loadAddress] = kldPath;
     }
     else
     {
@@ -546,38 +249,6 @@ Image::loadKldImage(uintptr_t loadAddress, const char * moduleName)
 std::string
 Image::getLoadableImageName( const Location& location, uintptr_t& loadOffset )
 {
-    if (!loadedKldModules)
-    {
-        int fileid = 0;
-        for ( fileid = kldnext( fileid ); fileid > 0; fileid = kldnext( fileid ) )
-        {
-            kld_file_stat stat;
-            stat.version = sizeof( kld_file_stat );
-            if ( kldstat( fileid, &stat ) < 0 )
-            {
-                printf( "can't stat module\n" );
-            }
-            else
-            {
-                std::string path;
-                bool found = findKldModule(stat.name, path);
-
-                if(found)
-                    kernelLoadableImageMap[bfd_vma(stat.address)] = path;
-                else
-                {
-                    fprintf(stderr, "%s: unable to find kld module %s\n", 
-                        g_quitOnError ? "error" : "warning", stat.name);
-                    if (g_quitOnError)
-                    {
-                        exit(5);
-                    }
-                }
-            }
-        }
-
-        loadedKldModules = true;
-    }
 
     loadOffset = 0;
 
@@ -591,111 +262,92 @@ Image::getLoadableImageName( const Location& location, uintptr_t& loadOffset )
     return it->second;
 }
 
+Image *
+Image::findImage(const Location &location, uintptr_t &loadOffset)
+{
+
+	loadOffset = 0;
+	if(location.m_isKernel)
+	{
+		if(getKernel().isContained(location))
+		{
+			loadOffset = 0;
+			return (&getKernel());
+		}
+		else
+		{
+			const std::string& loadableImageName(Image::getLoadableImageName(location, loadOffset));
+
+			Image* kernelModuleImage = imageMap[loadableImageName];
+			if(kernelModuleImage == NULL)
+			{
+				kernelModuleImage = new Image(loadableImageName);
+				imageMap[loadableImageName] = kernelModuleImage;
+			}
+			return (kernelModuleImage);
+		}
+	}
+	else
+	{
+		Process* process = Process::getProcess(location.m_pid);
+
+		if(process == NULL)
+		{
+			return (NULL);
+		}
+
+		const std::string& processName(process->getName());
+		Image* processImage = imageMap[processName];
+		if(processImage == 0)
+		{
+			processImage = imageMap[processName] = new Image(processName);
+		}
+
+		if(processImage->isContained(location))
+		{
+			return (processImage);
+		}
+		else
+		{
+			const std::string& loadableImageName(
+				process->getLoadableImageName(location, loadOffset));
+
+			Image* processLoadableImage = imageMap[loadableImageName];
+			if(processLoadableImage == 0)
+			{
+				processLoadableImage = imageMap[loadableImageName] = new Image(loadableImageName);
+			}
+
+			return (processLoadableImage);
+		}
+	}
+}
+
 void
 Image::mapAllLocations( LocationList& locationList )
 {
+    uintptr_t loadOffset;
+
     for ( LocationList::iterator it = locationList.begin(); it != locationList.end(); ++it )
     {
         std::vector<Location> & stack(*it);
         for(std::vector<Location>::iterator jt = stack.begin(); jt != stack.end(); ++jt)
         {
             Location& location(*jt);
-        
-            if(location.m_isKernel)
+
+            Image *image = findImage(location, loadOffset);
+
+            if (image == NULL)
             {
-                if(getKernel().isContained(location))
-                {
-                    getKernel().mapLocation(location);
-                    if(location.m_isMapped)
-                    {
-                        location.m_modulename = KERNEL_NAME.c_str();
-                    }
-                }
-                else
-                {
-                    uintptr_t loadOffset = 0;
-                    const std::string& loadableImageName(Image::getLoadableImageName(location, loadOffset));
-
-                    Image* kernelModuleImage = imageMap[loadableImageName];
-
-                    if(kernelModuleImage == 0)
-                    {
-                        kernelModuleImage = new Image(loadableImageName);
-                        imageMap[loadableImageName] = kernelModuleImage;
-                    }
-
-                    if(!kernelModuleImage->isOk())
-                    {
-                        continue;
-                    }
-
-                    if(kernelModuleImage->isContained(location, loadOffset))
-                    {
-                        kernelModuleImage->mapLocation(location, loadOffset);
-                        if(location.m_isMapped)
-                        {
-                            location.m_modulename = loadableImageName.c_str();
-                        }
-                    }
-                }
+                continue;
             }
-            else
+
+            if(image->isContained(location, loadOffset))
             {
-                Process* process = Process::getProcess(location.m_pid);
-
-                if(process == 0)
+                image->mapLocation(location, loadOffset);
+                if(location.m_isMapped)
                 {
-                    continue;
-                }
-
-                const std::string& processName(process->getName());
-
-                Image* processImage = imageMap[processName];
-
-                if(processImage == 0)
-                {
-                    processImage = imageMap[processName] = new Image(processName);
-                }
-
-                if(!processImage->isOk())
-                {
-                    continue;
-                }
-
-                if(processImage->isContained(location))
-                {
-                    processImage->mapLocation(location);
-                    if(location.m_isMapped)
-                    {
-                        location.m_modulename = processName.c_str();
-                    }
-                }
-                else
-                {
-                    uintptr_t loadOffset = 0;
-                    const std::string& loadableImageName(
-                        process->getLoadableImageName(location, loadOffset));
-
-                    Image* processLoadableImage = imageMap[loadableImageName];
-
-                    if(processLoadableImage == 0)
-                    {
-                        processLoadableImage = imageMap[loadableImageName] = new Image(loadableImageName);
-                    }
-
-                    if(!processLoadableImage->isOk())
-                    {
-                        continue;
-                    }
-
-                    if(processLoadableImage->isContained(location, loadOffset))
-                    {
-                        processLoadableImage->mapLocation(location, loadOffset);
-                        if(location.m_isMapped)
-                        {
-                            location.m_modulename = loadableImageName.c_str();
-                        }
-                    }
+                    location.m_modulename = image->getImageFile().c_str();
                 }
             }
         }
@@ -703,14 +355,17 @@ Image::mapAllLocations( LocationList& locationList )
 }
 
 char*
-Image::demangle(const char* name)
+Image::demangle(const std::string &name)
 {
-    if ( name == 0 )
-    {
-        return 0;
-    }
+	char *demangled, *str;
+	size_t len;
+	int status;
 
-    char* result = cplus_demangle(name, DMGL_ANSI | DMGL_PARAMS);
+	len = 0;
+	demangled = (abi::__cxa_demangle(name.c_str(), NULL, &len, &status));
 
-    return result ? result : strdup(name);
+	if (demangled == NULL)
+		return (strdup(name.c_str()));
+
+	return (demangled);
 }

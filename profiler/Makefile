@@ -1,5 +1,5 @@
 PROG_CXX=pmcprofiler
-WARNS=0
+WARNS=3
 NO_MAN=
 
 SRCS=	\
@@ -12,6 +12,6 @@ SRCS=	\
 	Process.cpp \
 	ProfilePrinter.cpp \
 
-LDADD=	-lpmc
+LDADD=	-lpmc -ldwarf -lelf
 
 .include <bsd.prog.mk>

@@ -82,7 +82,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
             location.getAddress(),
             location.isMapped() ? "mapped  " : "unmapped",
             execPath,
-            *location.getFileName() == '\0' ? location.getModuleName() : location.getFileName(),
+            location.getFileName().empty() ? location.getModuleName().c_str() : location.getFileName().c_str(),
             location.getLineNumber(),
             functionName ? functionName : "<unknown>");
         free(functionName);
@@ -108,7 +108,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
                     (cumulativeCount * 100.0) / process.getSampleCount(),
                     functionLocation.getCount(),
                     functionLocation.isKernelImage() ? "kern" : "user",
-                    *( functionLocation.getFileName() ) == '\0' ? functionLocation.getModuleName() : functionLocation.getFileName(),
+                    functionLocation.getFileName().empty() ? functionLocation.getModuleName().c_str() : functionLocation.getFileName().c_str(),
                     functionLocation.getLineNumber(),
                     functionName ? functionName : "<unknown>");
             printLineNumbers(profiler, functionLocation.getLineLocationList());

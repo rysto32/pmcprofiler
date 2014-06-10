@@ -26,6 +26,7 @@
 #include "Profiler.h"
 #include "ProfilePrinter.h"
 
+#include <err.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <memory>
@@ -67,6 +68,9 @@ main(int argc, char *argv[])
     g_quitOnError = false;    
     FILE * file;
     std::vector<ProfilePrinter*> printers;
+
+    if (elf_version(EV_CURRENT) == EV_NONE)
+        err(1, "libelf incompatible");
     
     while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:t:r:N:m:")) != -1)
     {

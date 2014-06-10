@@ -62,19 +62,19 @@ private:
 	void AddLocations(Dwarf_Debug, Dwarf_Die);
 	
 	bool Lookup(uintptr_t addr, const LocationMap &map,
-	    std::string &fileStr, std::string &funcStr, int &line) const;
+	    std::string &fileStr, std::string &funcStr, u_int &line) const;
 
 public:
 	DwarfLookup(const std::string &file);
 	~DwarfLookup();
 
 	bool LookupLine(uintptr_t addr, std::string &file, std::string &func,
-            int &line) const;
+            u_int &line) const;
 	bool LookupFunc(uintptr_t addr, std::string &file, std::string &func,
-            int &line) const;
-	    
+            u_int &line) const;
+
+	const std::string & getImageFile() const;
 	bool isContained(uintptr_t addr) const;
-	bool isOk() const;
 };
 
 #endif

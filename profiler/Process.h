@@ -30,14 +30,13 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <bfd.h>
 
 class Process
 {
 public:
     typedef std::unordered_map<pid_t, Process*> ProcessMap;
     typedef std::unordered_map<Sample, unsigned, Sample::hash> SampleMap;
-    typedef std::map<bfd_vma, std::string> LoadableImageMap;
+    typedef std::map<uintptr_t, std::string> LoadableImageMap;
 
 private:
     static ProcessMap processMap;
@@ -137,8 +136,8 @@ Process::mapAllFunctions(LocationList& locationList, ProcessStrategy strategy)
             continue;
 
         Location& location(*jt);
-        const char* functionName = location.getFunctionName();
-        const char* fileName = location.getFileName();
+        std::string functionName = location.getFunctionName();
+        std::string fileName = location.getFileName();
         std::string key(fileName); 
         key += functionName;
         Process & process = *getProcess(location.getPid());

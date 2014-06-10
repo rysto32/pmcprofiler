@@ -214,14 +214,14 @@ public:
 
 	size_t hash() const
 	{
-		if(hash_valid)
+		if (hash_valid)
 			return hash_value;
 
 		std::vector<std::string>::const_iterator it = vec.begin();
 		size_t val = 0;
 		std::hash<std::string> hasher;
 
-		for(; it != vec.end(); ++it)
+		for (; it != vec.end(); ++it)
 		{
 			/*
 			 * The default hasher for strings multiplies the hash

@@ -79,7 +79,7 @@ public:
 	static Process* getProcess(pid_t pid)
 	{
 		ProcessMap::iterator it = processMap.find(pid);
-		if(it == processMap.end())
+		if (it == processMap.end())
 			return NULL;
 		return it->second;
 	}
@@ -121,7 +121,7 @@ void
 Process::mapAllFunctions(LocationList& locationList, ProcessStrategy strategy)
 {
 	/* try to avoid hash-table resizes by pre-allocating a large enough hash map */
-	for(ProcessMap::iterator it = processMap.begin(); it != processMap.end(); ++it)
+	for (ProcessMap::iterator it = processMap.begin(); it != processMap.end(); ++it)
 	{
 		Process * process = it->second;
 		process->m_callchainMap.rehash(4*process->m_numCallchains/3);
@@ -132,7 +132,7 @@ Process::mapAllFunctions(LocationList& locationList, ProcessStrategy strategy)
 		typename ProcessStrategy::iterator jt = strategy.begin(*it);
 		typename ProcessStrategy::iterator jt_end = strategy.end(*it);
 
-		if(jt == jt_end)
+		if (jt == jt_end)
 			continue;
 
 		Location& location(*jt);
@@ -154,11 +154,11 @@ Process::mapAllFunctions(LocationList& locationList, ProcessStrategy strategy)
 		Callchain callchain;
 		callchain.push_back(functionName);
 		++jt;
-		for(; jt != jt_end; ++jt)
+		for (; jt != jt_end; ++jt)
 		{
 			FunctionLocation funcLoc = *jt;
 
-			if(!funcLoc.isMapped()) {
+			if (!funcLoc.isMapped()) {
 				funcLoc.setFunctionName("[unmapped_function]");
 			}
 

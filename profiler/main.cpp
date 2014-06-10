@@ -43,12 +43,12 @@ bool g_quitOnError = false;
 FILE * openOutFile(const char * path)
 {
 	FILE * file;
-	if(strcmp(path, "-") == 0) {
+	if (strcmp(path, "-") == 0) {
 		file = stdout;
 	} else {
 		file = fopen(path, "w");
 
-		if(!file) {
+		if (!file) {
 			fprintf(stderr, "Could not open %s for writing\n", path);
 			usage();
 		}
@@ -109,7 +109,7 @@ main(int argc, char *argv[])
 				char * temp;
 				threshold = strtol(optarg, &temp, 0);
 
-				if(*temp != '\0' || threshold < 0 || threshold > 100)
+				if (*temp != '\0' || threshold < 0 || threshold > 100)
 					usage();
 
 				break;
@@ -119,7 +119,7 @@ main(int argc, char *argv[])
 				char * temp;
 				maxDepth = strtoul(optarg, &temp, 0);
 
-				if(*temp != '\0')
+				if (*temp != '\0')
 					usage();
 
 				break;
@@ -143,13 +143,13 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	if(printers.empty()) {
+	if (printers.empty()) {
 		printers.push_back(new FlatProfilePrinter(stdout));
 	}
 
 	Profiler profiler(samplefile, showlines);
 	std::vector<ProfilePrinter* >::iterator it = printers.begin();
-	for(; it != printers.end(); ++it) {
+	for (; it != printers.end(); ++it) {
 		profiler.createProfile(**it);
 		delete *it;
 	}

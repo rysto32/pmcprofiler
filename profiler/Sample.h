@@ -46,7 +46,7 @@ public:
 	{
 		uint32_t i;
 		uint32_t depth = std::min(maxDepth, event.pl_npc);
-		for(i = 0; i < depth; i++) {
+		for (i = 0; i < depth; i++) {
 			m_address.push_back(event.pl_pc[i]-1);
 		}
 	}
@@ -80,17 +80,17 @@ public:
 
 	bool operator==(const Sample & other) const
 	{
-		if(m_isKernel != other.m_isKernel)
+		if (m_isKernel != other.m_isKernel)
 			return false;
 
-		if(m_processID != other.m_processID)
+		if (m_processID != other.m_processID)
 			return false;
 
-		if(getChainDepth() != other.getChainDepth())
+		if (getChainDepth() != other.getChainDepth())
 			return false;
 
-		for(int i = 0; i < getChainDepth(); i++) {
-			if(m_address[i] != other.m_address[i]) {
+		for (int i = 0; i < getChainDepth(); i++) {
+			if (m_address[i] != other.m_address[i]) {
 				return false;
 			}
 		}
@@ -104,7 +104,7 @@ public:
 		{
 			int i;
 			size_t val = sample.isKernel();
-			for(i = 0; i < sample.getChainDepth(); i++) {
+			for (i = 0; i < sample.getChainDepth(); i++) {
 				val += sample.getAddress(i);
 			}
 

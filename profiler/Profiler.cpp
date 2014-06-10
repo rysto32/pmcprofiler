@@ -64,7 +64,7 @@ Profiler::processMapIn(pid_t pid, uintptr_t map_start, const char * image)
 	/* a pid of -1 indicates that this is for the kernel, but we don't have a process
 	 * for the kernel.  Load the images directly to get around this:
 	 */
-	if(pid == -1)
+	if (pid == -1)
 	{
 		Image::loadKldImage(map_start, image);
 	}

@@ -53,7 +53,7 @@ public:
 
 	virtual ~ProfilePrinter()
 	{
-		if(m_outfile != stdout)
+		if (m_outfile != stdout)
 			fclose(m_outfile);
 	}
 
@@ -111,7 +111,7 @@ struct PrintCallchainStrategy
 			ProfilePrinter &printer, const Profiler &profiler, FunctionLocation& functionLocation,
 		 Process &process, const char *functionName, Callchain & chain __unused)
 	{
-		for(int i = 0; i < depth; i++) {
+		for (int i = 0; i < depth; i++) {
 			fprintf(outfile, "  ");
 		}
 
@@ -178,7 +178,7 @@ struct RootProcessStrategy
 	{
 		iterator it = vec.rbegin();
 
-		while(!it->isMapped() && it != end(vec)) {
+		while (!it->isMapped() && it != end(vec)) {
 			++it;
 		}
 
@@ -196,7 +196,7 @@ struct RootProcessStrategy
 		callchainMap.insert(CallchainMap::value_type(callchain, FunctionLocationMap(1)));
 		std::pair<FunctionLocationMap::iterator, bool> inserted =
 		mapInserted.first->second.insert(FunctionLocationMap::value_type("[self]", FunctionLocation(vec.front())));
-		if(!inserted.second)
+		if (!inserted.second)
 			inserted.first->second += vec.front();
 		else
 			inserted.first->second.setFunctionName("[self]");
@@ -210,9 +210,9 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::isCallChainBoring(Proce
 	std::vector<FunctionLocation> functions;
 	process.getCallers(chain, functions);
 
-	if(functions.size() > 1)
+	if (functions.size() > 1)
 		return false;
-	else if(functions.size() == 0)
+	else if (functions.size() == 0)
 		return true;
 	else
 	{
@@ -232,16 +232,16 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printCallChain(const Pr
 	unsigned total_samples = process.getCallers(chain, functions);
 
 	bool isBoring = false;
-	if(!m_printBoring && functions.size() == 1)
+	if (!m_printBoring && functions.size() == 1)
 		isBoring = isCallChainBoring(process, chain);
 
 	std::vector<FunctionLocation>::iterator it = functions.begin();
-	for(; it != functions.end(); ++it)
+	for (; it != functions.end(); ++it)
 	{
 		double parent_percent = (it->getCount() * 100.0) / total_samples;
 		double total_percent = (it->getCount() * 100.0) / process.getSampleCount();
 
-		if(total_percent < m_threshold)
+		if (total_percent < m_threshold)
 			continue;
 
 		char * functionName = Image::demangle(it->getFunctionName());
@@ -249,7 +249,7 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printCallChain(const Pr
 				    process, functionName, chain);
 		free(functionName);
 
-		if(!isBoring)
+		if (!isBoring)
 		{
 			chain.push_back(it->getFunctionName());
 			printCallChain(profiler, process, chain, depth + 1, strategy);
@@ -286,7 +286,7 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printProfile(const Prof
 			     FunctionLocation& functionLocation(*functionListIterator);
 
 			     double percent = (functionLocation.getCount() * 100.0) / process.getSampleCount();
-			     if(percent >= m_threshold)
+			     if (percent >= m_threshold)
 			     {
 				     Callchain chain;
 

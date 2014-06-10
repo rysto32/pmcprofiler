@@ -64,10 +64,8 @@ std::vector<std::string> Image::getModulePath()
 	path_buf = new char[path_len+1];
 
 	error = sysctlbyname("kern.module_path", path_buf, &path_len, NULL, 0);
-
-	if(!error) {
+	if (error == 0)
 		parseModulePath(path_buf, vec);
-	}
 
 	delete [] path_buf;
 
@@ -140,12 +138,8 @@ Image::freeImages()
 	imageMap.clear();
 }
 
-Image::Image(const std::string& imageName) :
-m_lookup(imageName)
-{
-}
-
-Image::~Image()
+Image::Image(const std::string& imageName)
+  : m_lookup(imageName)
 {
 }
 

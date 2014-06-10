@@ -69,35 +69,35 @@ Process::freeProcessMap()
 	processMap.clear();
 }
 
-Process::Process(const Sample& sample) :
-m_pid(sample.getProcessID()),
-m_sampleCount(0),
-m_numCallchains(0),
-m_samples(1),
-m_functionLocationMap(1),
-m_callchainMap(1)
+Process::Process(const Sample& sample)
+ :  m_pid(sample.getProcessID()),
+    m_sampleCount(0),
+    m_numCallchains(0),
+    m_samples(1),
+    m_functionLocationMap(1),
+    m_callchainMap(1)
 {
 }
 
-Process::Process(const ProcessExec& processExec) :
-m_pid(processExec.getProcessID()),
-m_sampleCount(0),
-m_numCallchains(0),
-m_name(processExec.getProcessName()),
-m_samples(1),
-m_functionLocationMap(1),
-m_callchainMap(1)
+Process::Process(const ProcessExec& processExec)
+ :  m_pid(processExec.getProcessID()),
+    m_sampleCount(0),
+    m_numCallchains(0),
+    m_name(processExec.getProcessName()),
+    m_samples(1),
+    m_functionLocationMap(1),
+    m_callchainMap(1)
 {
 }
 
-Process::Process(const char * name, pid_t pid) :
-m_pid(pid),
-m_sampleCount(0),
-m_numCallchains(0),
-m_name(name),
-m_samples(1),
-m_functionLocationMap(1),
-m_callchainMap(1)
+Process::Process(const char * name, pid_t pid)
+  : m_pid(pid),
+    m_sampleCount(0),
+    m_numCallchains(0),
+    m_name(name),
+    m_samples(1),
+    m_functionLocationMap(1),
+    m_callchainMap(1)
 {
 }
 
@@ -123,7 +123,7 @@ Process::getProcess(const Sample& sample)
 	pid_t pid = sample.getProcessID();
 	Process* process = processMap[pid];
 
-	if (process == 0)
+	if (process == NULL)
 	{
 		process = processMap[pid] = new Process(sample);
 	}
@@ -136,12 +136,12 @@ Process::getProcess(const ProcessExec& processExec)
 	pid_t pid = processExec.getProcessID();
 	Process* process = processMap[pid];
 
-	if (process == 0)
+	if (process == NULL)
 	{
 		process = processMap[pid] = new Process(processExec);
 	}
 
-	if ((*process).m_name.empty() && !processExec.getProcessName().empty())
+	if (process->m_name.empty() && !processExec.getProcessName().empty())
 	{
 		process->m_name = processExec.getProcessName();
 	}
@@ -154,7 +154,7 @@ Process::getProcess(const char * name, pid_t pid)
 {
 	Process* process = processMap[pid];
 
-	if(process == 0)
+	if(process == NULL)
 	{
 		/* we use the name of the first map-in file as our name, as that
 		 * should be the name of our executable

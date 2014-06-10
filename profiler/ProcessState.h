@@ -34,9 +34,9 @@ class ProcessState
 	const std::string& m_processName;
 
 protected:
-	ProcessState(pid_t& processID, const std::string& processName) :
-	m_processID(processID),
-	m_processName(processName)
+	ProcessState(pid_t& processID, const std::string& processName)
+	  : m_processID(processID),
+	    m_processName(processName)
 	{
 	}
 
@@ -55,8 +55,8 @@ public:
 class ProcessExec : public ProcessState
 {
 public:
-	ProcessExec(pid_t& processID, const std::string& processName) :
-	ProcessState(processID, processName)
+	ProcessExec(pid_t& processID, const std::string& processName)
+	  : ProcessState(processID, processName)
 	{
 	}
 };
@@ -64,8 +64,8 @@ public:
 class ProcessExit : public ProcessState
 {
 public:
-	ProcessExit(pid_t& processID) :
-	ProcessState(processID, "")
+	ProcessExit(pid_t& processID)
+	  : ProcessState(processID, "")
 	{
 	}
 };

@@ -39,14 +39,6 @@ extern void usage(void);
 
 static bool debug = false;
 
-// getting rid of compiler warning from profile.h
-void
-_mcount(uintfptr_t, uintfptr_t)
-{
-}
-
-void (*e)(uintfptr_t, uintfptr_t) = _mcount;
-
 void
 EventFactory::createEvents(Profiler& profiler, uint32_t maxDepth)
 {

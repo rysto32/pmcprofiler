@@ -29,7 +29,9 @@
 #include <gelf.h>
 
 DwarfLookup::DwarfLookup(const std::string &filename)
-    : m_image_file(filename), m_text_start(0), m_text_end(0)
+  : m_image_file(filename),
+    m_text_start(0),
+    m_text_end(0)
 {
 	Dwarf_Debug dwarf;
 	Dwarf_Error derr;

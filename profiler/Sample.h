@@ -41,7 +41,7 @@ class Sample
 
 public:
 	Sample(const pmclog_ev_callchain & event, uint32_t maxDepth)
-	: m_isKernel(!PMC_CALLCHAIN_CPUFLAGS_TO_USERMODE(event.pl_cpuflags)),
+	  : m_isKernel(!PMC_CALLCHAIN_CPUFLAGS_TO_USERMODE(event.pl_cpuflags)),
 	m_processID(event.pl_pid)
 	{
 		uint32_t i;
@@ -52,7 +52,7 @@ public:
 	}
 
 	Sample(const pmclog_ev_pcsample & event)
-	: m_isKernel(event.pl_usermode == 0),
+	  : m_isKernel(event.pl_usermode == 0),
 	m_processID(event.pl_pid)
 	{
 		m_address.push_back(event.pl_pc-1);

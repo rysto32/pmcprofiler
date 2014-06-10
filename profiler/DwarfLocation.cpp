@@ -27,18 +27,18 @@
 
 DwarfLocation::DwarfLocation(const std::string &file, const std::string &func,
     u_int line)
-    : m_file(file),
-      m_func(func),
-      m_lineno(line),
-      m_needsDebug(false)
+  : m_file(file),
+    m_func(func),
+    m_lineno(line),
+    m_needsDebug(false)
 {
 }
 
 DwarfLocation::DwarfLocation(const std::string &file, const std::string &func)
-    : m_file(file),
-      m_func(func),
-      m_lineno(0),
-      m_needsDebug(true)
+  : m_file(file),
+    m_func(func),
+    m_lineno(0),
+    m_needsDebug(true)
 {
 }
 

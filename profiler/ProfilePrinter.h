@@ -38,7 +38,7 @@ protected:
 
 public:
 	ProfilePrinter(FILE * file, uint32_t maximumDepth)
-	: m_outfile(file),
+	  : m_outfile(file),
 	m_maxDepth(maximumDepth)
 	{
 	}
@@ -49,27 +49,27 @@ public:
 	}
 
 	virtual void printProfile(const Profiler & profiler,
-				  const Process::ActiveProcessList & activeProcessList) = 0;
+	    const Process::ActiveProcessList & activeProcessList) = 0;
 
-				  virtual ~ProfilePrinter()
-				  {
-					  if(m_outfile != stdout)
-						  fclose(m_outfile);
-				  }
+	virtual ~ProfilePrinter()
+	{
+		if(m_outfile != stdout)
+			fclose(m_outfile);
+	}
 
-				  void printLineNumbers(const Profiler & profiler, const LineLocationList & functionLocation);
+	void printLineNumbers(const Profiler & profiler, const LineLocationList & functionLocation);
 };
 
 class FlatProfilePrinter : public ProfilePrinter
 {
 public:
 	FlatProfilePrinter(FILE * file)
-	: ProfilePrinter(file, 1)
+	  : ProfilePrinter(file, 1)
 	{
 	}
 
 	virtual void printProfile(const Profiler & profiler,
-				  const Process::ActiveProcessList & activeProcessList);
+	    const Process::ActiveProcessList & activeProcessList);
 };
 
 template <class ProcessStrategy, class PrintStrategy>
@@ -83,14 +83,14 @@ class CallchainProfilePrinter : public ProfilePrinter
 
 public:
 	CallchainProfilePrinter(FILE * file, uint32_t maximumDepth, int threshold, bool printBoring)
-	: ProfilePrinter(file, maximumDepth),
+	  : ProfilePrinter(file, maximumDepth),
 	m_threshold(threshold),
 	m_printBoring(printBoring)
 	{
 	}
 
 	virtual void printProfile(const Profiler & profiler,
-				  const Process::ActiveProcessList & activeProcessList);
+	    const Process::ActiveProcessList & activeProcessList);
 };
 
 
@@ -232,9 +232,8 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printCallChain(const Pr
 	unsigned total_samples = process.getCallers(chain, functions);
 
 	bool isBoring = false;
-	if(!m_printBoring && functions.size() == 1) {
+	if(!m_printBoring && functions.size() == 1)
 		isBoring = isCallChainBoring(process, chain);
-	}
 
 	std::vector<FunctionLocation>::iterator it = functions.begin();
 	for(; it != functions.end(); ++it)

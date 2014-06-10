@@ -137,14 +137,14 @@ typedef std::set<unsigned> LineLocationList;
 
 class FunctionLocation : public Location
 {
-	friend              class Image;
+	friend class Image;
 	unsigned m_totalCount;
 	LineLocationList m_lineLocationList;
 
 public:
-	FunctionLocation(const Location& location) :
-	Location(location),
-	m_totalCount(location.getCount())
+	FunctionLocation(const Location& location)
+	  : Location(location),
+	    m_totalCount(location.getCount())
 	{
 		m_lineLocationList.insert(location.getLineNumber());
 	}
@@ -160,7 +160,8 @@ public:
 	FunctionLocation& operator+=(const FunctionLocation & location)
 	{
 		m_totalCount += location.getCount();
-		m_lineLocationList.insert(location.m_lineLocationList.begin(), location.m_lineLocationList.end());
+		m_lineLocationList.insert(location.m_lineLocationList.begin(),
+		    location.m_lineLocationList.end());
 
 		return *this;
 	}
@@ -207,7 +208,7 @@ class Callchain
 public:
 
 	Callchain()
-	: hash_valid(false)
+	  : hash_valid(false)
 	{
 	}
 
@@ -222,12 +223,14 @@ public:
 
 		for(; it != vec.end(); ++it)
 		{
-			/* the default hasher for strings multiplies the hash value
-			 * by 5 for each iteration, so we follow that hash function
-			 * here.
+			/*
+			 * The default hasher for strings multiplies the hash
+			 * value by 5 for each iteration, so we follow that hash
+			 * function here.
 			 *
-			 * We essentially act as if we have concatenated all of the
-			 * strings in vec together and hashed that one string.
+			 * We essentially act as if we have concatenated all of
+			 * the strings in vec together and hashed that one
+			 * string.
 			 */
 			val = 5 * val + hasher(*it);
 		}
@@ -304,7 +307,6 @@ class Image
 	static Image& getKernel();
 
 	Image(const std::string& imageName);
-	~Image();
 
 	bool isContained(const Location& location, uintptr_t loadOffset = 0);
 	void mapLocation(Location& location, uintptr_t loadOffset = 0);

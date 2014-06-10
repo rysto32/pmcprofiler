@@ -45,7 +45,8 @@ private:
 	 * Use the std::greater comparator so that map::lower_bound returns the
 	 * DwarfLocation whose address is <= the address we're searching for.
 	 */
-	typedef std::map<uintptr_t, DwarfLocation *, std::greater<uintptr_t> > LocationMap;
+	typedef std::map<uintptr_t, DwarfLocation *, std::greater<uintptr_t> >
+	    LocationMap;
 
 	std::string m_image_file;
 	LocationMap m_functions;

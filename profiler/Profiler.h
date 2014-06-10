@@ -47,10 +47,10 @@ private:
 
 public:
 
-	Profiler(const std::string& dataFile, bool showlines) :
-	m_sampleCount(0),
-	m_dataFile(dataFile),
-	m_showlines(showlines)
+	Profiler(const std::string& dataFile, bool showlines)
+	: m_sampleCount(0),
+	  m_dataFile(dataFile),
+	  m_showlines(showlines)
 	{
 	}
 

@@ -31,7 +31,7 @@ class Profiler;
 class EventFactory
 {
 public:
-    static void createEvents(Profiler& profiler, uint32_t maxDepth);
+	static void createEvents(Profiler& profiler, uint32_t maxDepth);
 };
 
 #endif // #if !defined(EVENTFACTORY_H)

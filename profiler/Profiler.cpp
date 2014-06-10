@@ -36,42 +36,42 @@
 void
 Profiler::createProfile(ProfilePrinter & printer)
 {
-    m_sampleCount = 0;
-    Process::clearOldSamples();
-    EventFactory::createEvents(*this, printer.getMaxDepth());
-    Process::ActiveProcessList activeProcessList;
-    Process::collectActiveProcesses(activeProcessList); 
-
-    printer.printProfile(*this, activeProcessList);
+	m_sampleCount = 0;
+	Process::clearOldSamples();
+	EventFactory::createEvents(*this, printer.getMaxDepth());
+	Process::ActiveProcessList activeProcessList;
+	Process::collectActiveProcesses(activeProcessList); 
+	
+	printer.printProfile(*this, activeProcessList);
 }
 
 void
 Profiler::processEvent(const ProcessExec& processExec)
 {
-    Process::getProcess(processExec);
+	Process::getProcess(processExec);
 }
 
 void
 Profiler::processEvent(const Sample& sample)
 {
-    Process::getProcess(sample).addSample(sample);
-    m_sampleCount++;
+	Process::getProcess(sample).addSample(sample);
+	m_sampleCount++;
 }
 
 void 
 Profiler::processMapIn(pid_t pid, uintptr_t map_start, const char * image)
 {
-    /* a pid of -1 indicates that this is for the kernel, but we don't have a process
-     * for the kernel.  Load the images directly to get around this:
-     */
-    if(pid == -1) 
-    {
-        Image::loadKldImage(map_start, image);
-    }
-    else
-    {
-        Process & process = Process::getProcess(image, pid);
-        process.mapIn(map_start, image);
-    }
+	/* a pid of -1 indicates that this is for the kernel, but we don't have a process
+	 * for the kernel.  Load the images directly to get around this:
+	 */
+	if(pid == -1) 
+	{
+		Image::loadKldImage(map_start, image);
+	}
+	else
+	{
+		Process & process = Process::getProcess(image, pid);
+		process.mapIn(map_start, image);
+	}
 }
 

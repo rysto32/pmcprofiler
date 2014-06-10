@@ -40,38 +40,38 @@
 
 void Image::parseModulePath(char * path_buf, std::vector<std::string> & vec)
 {
-    char * path;
-    char * next = path_buf;
-
-    vec.clear();
-
-    while((path = strsep(&next, ";")) != NULL) {
-        if(*path == '\0')
-            continue;
-
-        vec.push_back(path);
-    }
+	char * path;
+	char * next = path_buf;
+	
+	vec.clear();
+	
+	while((path = strsep(&next, ";")) != NULL) {
+		if(*path == '\0')
+			continue;
+		
+		vec.push_back(path);
+	}
 }
 
 std::vector<std::string> Image::getModulePath()
 {
-    std::vector<std::string> vec;
-    char * path_buf;
-    size_t path_len = 0;
-    int error;
-
-    sysctlbyname("kern.module_path", NULL, &path_len, NULL, 0);
-    path_buf = new char[path_len+1];
-
-    error = sysctlbyname("kern.module_path", path_buf, &path_len, NULL, 0);
-
-    if(!error) {
-        parseModulePath(path_buf, vec);
-    }
-
-    delete [] path_buf;
-
-    return vec;
+	std::vector<std::string> vec;
+	char * path_buf;
+	size_t path_len = 0;
+	int error;
+	
+	sysctlbyname("kern.module_path", NULL, &path_len, NULL, 0);
+	path_buf = new char[path_len+1];
+	
+	error = sysctlbyname("kern.module_path", path_buf, &path_len, NULL, 0);
+	
+	if(!error) {
+		parseModulePath(path_buf, vec);
+	}
+	
+	delete [] path_buf;
+	
+	return vec;
 }
 
 std::string Image::KERNEL_NAME(getbootfile());
@@ -86,62 +86,62 @@ Image::LoadableImageMap Image::kernelLoadableImageMap;
 void 
 Image::setBootfile(const char * file)
 {
-    KERNEL_NAME = file;
-
-    delete kernelImage;
-    kernelImage = NULL;
+	KERNEL_NAME = file;
+	
+	delete kernelImage;
+	kernelImage = NULL;
 }
 
 void 
 Image::setModulePath(char * path)
 {
-    parseModulePath(path, MODULE_PATH);
+	parseModulePath(path, MODULE_PATH);
 }
 
 Image&
 Image::getKernel()
 {
-    if (Image::kernelImage == NULL)
-    {
-        kernelImage = new Image(KERNEL_NAME);
-    }
-    return *kernelImage;
+	if (Image::kernelImage == NULL)
+	{
+		kernelImage = new Image(KERNEL_NAME);
+	}
+	return *kernelImage;
 }
 
 void
 Image::setUnknownFile(const std::string & path)
 {
-    Image * newImage = new Image(path);
-
-    std::pair<ImageMap::iterator, bool> inserted = 
-        imageMap.insert(ImageMap::value_type("unknown", newImage));
-
-    if(!inserted.second)
-    {
-        delete inserted.first->second;
-        inserted.first->second = newImage;
-    }
+	Image * newImage = new Image(path);
+	
+	std::pair<ImageMap::iterator, bool> inserted = 
+	imageMap.insert(ImageMap::value_type("unknown", newImage));
+	
+	if(!inserted.second)
+	{
+		delete inserted.first->second;
+		inserted.first->second = newImage;
+	}
 }
 
 void
 Image::freeImages()
 {
-    delete kernelImage;
-    kernelImage = NULL;
-
-    kernelLoadableImageMap.clear();
-
-    Image::ImageMap::iterator it;
-    for(it = imageMap.begin(); it != imageMap.end(); ++it)
-    {
-        delete it->second;
-    }
-
-    imageMap.clear();
+	delete kernelImage;
+	kernelImage = NULL;
+	
+	kernelLoadableImageMap.clear();
+	
+	Image::ImageMap::iterator it;
+	for(it = imageMap.begin(); it != imageMap.end(); ++it)
+	{
+		delete it->second;
+	}
+	
+	imageMap.clear();
 }
 
 Image::Image(const std::string& imageName) :
-    m_lookup(imageName)
+m_lookup(imageName)
 {
 }
 
@@ -152,120 +152,120 @@ Image::~Image()
 const std::string &
 Image::getImageFile() const
 {
-
+	
 	return (m_lookup.getImageFile());
 }
 
 bool
 Image::isContained(const Location& location, uintptr_t loadOffset)
 {
-    uintptr_t addr;
-
-    addr = location.getAddress() - loadOffset;
-    return m_lookup.isContained(addr);
+	uintptr_t addr;
+	
+	addr = location.getAddress() - loadOffset;
+	return m_lookup.isContained(addr);
 }
 
 void
 Image::mapLocation(Location& location, uintptr_t loadOffset)
 {
-    uintptr_t address = location.getAddress() - loadOffset;
-
-    location.isMapped(m_lookup.LookupLine(address, location.m_filename,
-        location.m_functionname, location.m_linenumber));
+	uintptr_t address = location.getAddress() - loadOffset;
+	
+	location.isMapped(m_lookup.LookupLine(address, location.m_filename,
+					      location.m_functionname, location.m_linenumber));
 }
 
 void
 Image::functionStart(Location& location, uintptr_t loadOffset)
 {
-    uintptr_t address = location.getAddress() - loadOffset;
-
-    location.isMapped(m_lookup.LookupFunc(address, location.m_filename,
-        location.m_functionname, location.m_linenumber));
+	uintptr_t address = location.getAddress() - loadOffset;
+	
+	location.isMapped(m_lookup.LookupFunc(address, location.m_filename,
+					      location.m_functionname, location.m_linenumber));
 }
 
 void
 Image::mapFunctionStart(FunctionLocation& functionLocation)
 {
-    uintptr_t loadOffset;
-
-    Image* image = findImage(functionLocation, loadOffset);
-
-    functionLocation.m_isMapped = false;
-    if (image == NULL || !image->isContained(functionLocation))
-    {
-        return;
-    }
-
-    image->functionStart(functionLocation, loadOffset);
-
-    if (functionLocation.m_isMapped)
-    {
-        if (functionLocation.m_lineLocationList.empty())
-            functionLocation.m_linenumber = -1;
-        else
-            functionLocation.m_linenumber = *functionLocation.m_lineLocationList.begin();
-    }
+	uintptr_t loadOffset;
+	
+	Image* image = findImage(functionLocation, loadOffset);
+	
+	functionLocation.m_isMapped = false;
+	if (image == NULL || !image->isContained(functionLocation))
+	{
+		return;
+	}
+	
+	image->functionStart(functionLocation, loadOffset);
+	
+	if (functionLocation.m_isMapped)
+	{
+		if (functionLocation.m_lineLocationList.empty())
+			functionLocation.m_linenumber = -1;
+		else
+			functionLocation.m_linenumber = *functionLocation.m_lineLocationList.begin();
+	}
 }
 
 bool
 Image::findKldModule(const char * kldName, std::string & kldPath)
 {
-    std::vector<std::string>::const_iterator it = MODULE_PATH.begin();
-
-    for(; it != MODULE_PATH.end(); ++it) {
-        std::string path = *it + '/' + kldName;
-        int fd = open(path.c_str(), O_RDONLY);
-
-        if(fd >= 0) {
-            close(fd);
-            kldPath = path;
-            return true;
-        }
-    }
-
-    return false;
+	std::vector<std::string>::const_iterator it = MODULE_PATH.begin();
+	
+	for(; it != MODULE_PATH.end(); ++it) {
+		std::string path = *it + '/' + kldName;
+		int fd = open(path.c_str(), O_RDONLY);
+		
+		if(fd >= 0) {
+			close(fd);
+			kldPath = path;
+			return true;
+		}
+	}
+	
+	return false;
 }
 
 void 
 Image::loadKldImage(uintptr_t loadAddress, const char * moduleName)
 {
-    std::string kldPath;
-
-    if(findKldModule(moduleName, kldPath))
-    {
-        kernelLoadableImageMap[loadAddress] = kldPath;
-    }
-    else
-    {
-        fprintf(stderr, "%s: unable to find kld module %s\n", 
-            g_quitOnError ? "error" : "warning", moduleName);
-        if (g_quitOnError)
-        {
-            exit(5);
-        }
-    }
+	std::string kldPath;
+	
+	if(findKldModule(moduleName, kldPath))
+	{
+		kernelLoadableImageMap[loadAddress] = kldPath;
+	}
+	else
+	{
+		fprintf(stderr, "%s: unable to find kld module %s\n", 
+			g_quitOnError ? "error" : "warning", moduleName);
+		if (g_quitOnError)
+		{
+			exit(5);
+		}
+	}
 }
 
 std::string
 Image::getLoadableImageName(const Location& location, uintptr_t& loadOffset)
 {
-
-    loadOffset = 0;
-
-    LoadableImageMap::iterator it = kernelLoadableImageMap.lower_bound(location.getAddress());
-   
-    if(it == kernelLoadableImageMap.begin())
-        return "";
-
-    --it;
-    loadOffset = it->first;
-    return it->second;
+	
+	loadOffset = 0;
+	
+	LoadableImageMap::iterator it = kernelLoadableImageMap.lower_bound(location.getAddress());
+	
+	if(it == kernelLoadableImageMap.begin())
+		return "";
+	
+	--it;
+	loadOffset = it->first;
+	return it->second;
 }
 
 Image *
 Image::findImage(const Location &location, uintptr_t &loadOffset)
 {
-
+	
 	loadOffset = 0;
 	if(location.m_isKernel)
 	{
@@ -277,7 +277,7 @@ Image::findImage(const Location &location, uintptr_t &loadOffset)
 		else
 		{
 			const std::string& loadableImageName(Image::getLoadableImageName(location, loadOffset));
-
+			
 			Image* kernelModuleImage = imageMap[loadableImageName];
 			if(kernelModuleImage == NULL)
 			{
@@ -290,19 +290,19 @@ Image::findImage(const Location &location, uintptr_t &loadOffset)
 	else
 	{
 		Process* process = Process::getProcess(location.m_pid);
-
+		
 		if(process == NULL)
 		{
 			return (NULL);
 		}
-
+		
 		const std::string& processName(process->getName());
 		Image* processImage = imageMap[processName];
 		if(processImage == 0)
 		{
 			processImage = imageMap[processName] = new Image(processName);
 		}
-
+		
 		if(processImage->isContained(location))
 		{
 			return (processImage);
@@ -311,13 +311,13 @@ Image::findImage(const Location &location, uintptr_t &loadOffset)
 		{
 			const std::string& loadableImageName(
 				process->getLoadableImageName(location, loadOffset));
-
+			
 			Image* processLoadableImage = imageMap[loadableImageName];
 			if(processLoadableImage == 0)
 			{
 				processLoadableImage = imageMap[loadableImageName] = new Image(loadableImageName);
 			}
-
+			
 			return (processLoadableImage);
 		}
 	}
@@ -326,32 +326,32 @@ Image::findImage(const Location &location, uintptr_t &loadOffset)
 void
 Image::mapAllLocations(LocationList& locationList)
 {
-    uintptr_t loadOffset;
-
-    for (LocationList::iterator it = locationList.begin(); it != locationList.end(); ++it)
-    {
-        std::vector<Location> & stack(*it);
-        for(std::vector<Location>::iterator jt = stack.begin(); jt != stack.end(); ++jt)
-        {
-            Location& location(*jt);
-
-            Image *image = findImage(location, loadOffset);
-
-            if (image == NULL)
-            {
-                continue;
-            }
-
-            if(image->isContained(location, loadOffset))
-            {
-                image->mapLocation(location, loadOffset);
-                if(location.m_isMapped)
-                {
-                    location.m_modulename = image->getImageFile().c_str();
-                }
-            }
-        }
-    }
+	uintptr_t loadOffset;
+	
+	for (LocationList::iterator it = locationList.begin(); it != locationList.end(); ++it)
+	{
+		std::vector<Location> & stack(*it);
+		for(std::vector<Location>::iterator jt = stack.begin(); jt != stack.end(); ++jt)
+		{
+			Location& location(*jt);
+			
+			Image *image = findImage(location, loadOffset);
+			
+			if (image == NULL)
+			{
+				continue;
+			}
+			
+			if(image->isContained(location, loadOffset))
+			{
+				image->mapLocation(location, loadOffset);
+				if(location.m_isMapped)
+				{
+					location.m_modulename = image->getImageFile().c_str();
+				}
+			}
+		}
+	}
 }
 
 char*
@@ -360,19 +360,19 @@ Image::demangle(const std::string &name)
 	char *demangled;
 	size_t len;
 	int status;
-
+	
 	/*
 	 * abi::__cxa_demangle doesn't work on all non-mangled symbol names,
 	 * so do a hacky test for a mangled name before trying to demangle it.
 	 */
 	if (name.substr(0, 2) != "_Z")
 		return (strdup(name.c_str()));
-
+	
 	len = 0;
 	demangled = (abi::__cxa_demangle(name.c_str(), NULL, &len, &status));
-
+	
 	if (demangled == NULL)
 		return (strdup(name.c_str()));
-
+	
 	return (demangled);
 }

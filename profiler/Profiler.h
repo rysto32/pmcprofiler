@@ -39,42 +39,42 @@ class ProfilePrinter;
 class Profiler
 {
 private:
-
-    unsigned m_sampleCount;
-
-    const std::string& m_dataFile;
-    bool m_showlines;
-
+	
+	unsigned m_sampleCount;
+	
+	const std::string& m_dataFile;
+	bool m_showlines;
+	
 public:
-
-    Profiler(const std::string& dataFile, bool showlines) :
-        m_sampleCount(0),
-        m_dataFile(dataFile),
-        m_showlines(showlines)
-    {
-    }
-
-    const std::string& getDataFile() const
-    {
-        return m_dataFile;
-    }
-
-    unsigned getSampleCount() const
-    {
-        return m_sampleCount;
-    }
-
-    bool showLines() const
-    {
-        return m_showlines;
-    }
-
-    void createProfile(ProfilePrinter & printer);
-
-    void processEvent(const ProcessExec& processExec);
-    void processEvent(const ProcessExit& processExit);
-    void processEvent(const Sample& sample);
-    void processMapIn(pid_t pid, uintptr_t map_start, const char * image);
+	
+	Profiler(const std::string& dataFile, bool showlines) :
+	m_sampleCount(0),
+	m_dataFile(dataFile),
+	m_showlines(showlines)
+	{
+	}
+	
+	const std::string& getDataFile() const
+	{
+		return m_dataFile;
+	}
+	
+	unsigned getSampleCount() const
+	{
+		return m_sampleCount;
+	}
+	
+	bool showLines() const
+	{
+		return m_showlines;
+	}
+	
+	void createProfile(ProfilePrinter & printer);
+	
+	void processEvent(const ProcessExec& processExec);
+	void processEvent(const ProcessExit& processExit);
+	void processEvent(const Sample& sample);
+	void processMapIn(pid_t pid, uintptr_t map_start, const char * image);
 };
 
 #endif // #if !defined(PROFILER_H)

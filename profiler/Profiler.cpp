@@ -40,21 +40,21 @@ Profiler::createProfile(ProfilePrinter & printer)
     Process::clearOldSamples();
     EventFactory::createEvents(*this, printer.getMaxDepth());
     Process::ActiveProcessList activeProcessList;
-    Process::collectActiveProcesses( activeProcessList ); 
+    Process::collectActiveProcesses(activeProcessList); 
 
     printer.printProfile(*this, activeProcessList);
 }
 
 void
-Profiler::processEvent( const ProcessExec& processExec )
+Profiler::processEvent(const ProcessExec& processExec)
 {
     Process::getProcess(processExec);
 }
 
 void
-Profiler::processEvent( const Sample& sample )
+Profiler::processEvent(const Sample& sample)
 {
-    Process::getProcess(sample).addSample( sample );
+    Process::getProcess(sample).addSample(sample);
     m_sampleCount++;
 }
 

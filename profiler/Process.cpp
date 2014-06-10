@@ -61,7 +61,7 @@ Process::fillProcessMap()
 void
 Process::freeProcessMap()
 {
-    for( ProcessMap::iterator it = processMap.begin(); it != processMap.end(); ++it )
+    for(ProcessMap::iterator it = processMap.begin(); it != processMap.end(); ++it)
     {
         delete it->second;
     }
@@ -70,7 +70,7 @@ Process::freeProcessMap()
 }
 
 Process::Process(const Sample& sample) :
-    m_pid( sample.getProcessID() ),
+    m_pid(sample.getProcessID()),
     m_sampleCount(0),
     m_numCallchains(0),
     m_samples(1),
@@ -80,8 +80,8 @@ Process::Process(const Sample& sample) :
 }
 
 Process::Process(const ProcessExec& processExec) :
-    m_pid( processExec.getProcessID() ),
-    m_sampleCount( 0 ),
+    m_pid(processExec.getProcessID()),
+    m_sampleCount(0),
     m_numCallchains(0),
     m_name(processExec.getProcessName()),
     m_samples(1),
@@ -92,7 +92,7 @@ Process::Process(const ProcessExec& processExec) :
 
 Process::Process(const char * name, pid_t pid) :
     m_pid(pid),
-    m_sampleCount( 0 ),
+    m_sampleCount(0),
     m_numCallchains(0),
     m_name(name),
     m_samples(1),
@@ -102,7 +102,7 @@ Process::Process(const char * name, pid_t pid) :
 }
 
 std::string
-Process::getLoadableImageName( const Location& location, uintptr_t& loadOffset )
+Process::getLoadableImageName(const Location& location, uintptr_t& loadOffset)
 {
     loadOffset = 0;
  
@@ -121,9 +121,9 @@ Process&
 Process::getProcess(const Sample& sample)
 {
     pid_t pid = sample.getProcessID();
-    Process* process = processMap[ pid ];
+    Process* process = processMap[pid];
 
-    if ( process == 0 )
+    if (process == 0)
     {
         process = processMap[pid] = new Process(sample);
     }
@@ -134,16 +134,16 @@ Process&
 Process::getProcess(const ProcessExec& processExec)
 {
     pid_t pid = processExec.getProcessID();
-    Process* process = processMap[ pid ];
+    Process* process = processMap[pid];
 
-    if ( process == 0 )
+    if (process == 0)
     {
         process = processMap[pid] = new Process(processExec);
     }
 
-    if ( ( *process ).m_name.empty() && !processExec.getProcessName().empty() )
+    if ((*process).m_name.empty() && !processExec.getProcessName().empty())
     {
-        process -> m_name = processExec.getProcessName();
+        process->m_name = processExec.getProcessName();
     }
 
     return *process;
@@ -166,7 +166,7 @@ Process::getProcess(const char * name, pid_t pid)
 }
 
 void
-Process::addSample( const Sample& sample )
+Process::addSample(const Sample& sample)
 {    
     m_samples[sample]++;
     m_sampleCount++;
@@ -175,7 +175,7 @@ Process::addSample( const Sample& sample )
 }
 
 void
-Process::collectLocations( LocationList& locationList )
+Process::collectLocations(LocationList& locationList)
 { 
     for(SampleMap::iterator it = m_samples.begin(); it != m_samples.end(); ++it)
     {
@@ -190,42 +190,42 @@ Process::collectLocations( LocationList& locationList )
 } 
 
 void
-Process::collectActiveProcesses( ActiveProcessList& activeProcessList )
+Process::collectActiveProcesses(ActiveProcessList& activeProcessList)
 {
-    for( ProcessMap::const_iterator it = processMap.begin(); it != processMap.end(); ++it )
+    for(ProcessMap::const_iterator it = processMap.begin(); it != processMap.end(); ++it)
     {
-        Process* process( (*it).second );
+        Process* process((*it).second);
 
-        if ( process -> m_sampleCount > 0 )
+        if (process->m_sampleCount > 0)
         {
-            activeProcessList.push_back( process );
+            activeProcessList.push_back(process);
         }
     }
-    std::sort( activeProcessList.begin(), activeProcessList.end(), ProcessSampleCompare() );
+    std::sort(activeProcessList.begin(), activeProcessList.end(), ProcessSampleCompare());
 }
 
 void
-Process::collectAllLocations( LocationList& locationList )
+Process::collectAllLocations(LocationList& locationList)
 {
-    for( ProcessMap::iterator it = processMap.begin(); it != processMap.end(); ++it )
+    for(ProcessMap::iterator it = processMap.begin(); it != processMap.end(); ++it)
     {
-        (*it).second -> collectLocations( locationList );
+        (*it).second->collectLocations(locationList);
     }
-    std::sort( locationList.begin(), locationList.end() );
+    std::sort(locationList.begin(), locationList.end());
 }
 
 void
-Process::getFunctionList( FunctionList& functionList )
+Process::getFunctionList(FunctionList& functionList)
 {
-    for( FunctionLocationMap::iterator it = m_functionLocationMap.begin();
-        it != m_functionLocationMap.end(); ++it )
+    for(FunctionLocationMap::iterator it = m_functionLocationMap.begin();
+        it != m_functionLocationMap.end(); ++it)
     {
-        FunctionLocation functionLocation( (*it).second );
-        Image::mapFunctionStart( functionLocation );
-        functionList.push_back( functionLocation );
+        FunctionLocation functionLocation((*it).second);
+        Image::mapFunctionStart(functionLocation);
+        functionList.push_back(functionLocation);
     }
     m_functionLocationMap.clear();
-    std::sort( functionList.begin(), functionList.end() );
+    std::sort(functionList.begin(), functionList.end());
 }
 
 unsigned

@@ -78,4 +78,4 @@ DwarfLocation::SetDebug(const std::string &file, u_int line)
 	m_lineno = line;
 	m_needsDebug = false;
 }
-	
+

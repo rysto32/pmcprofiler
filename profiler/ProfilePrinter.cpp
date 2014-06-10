@@ -67,7 +67,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
         else
         {
             Process* process = Process::getProcess(location.getPid());
-            execPath = process == 0 ? "" : (process -> getName()).c_str();
+            execPath = process == 0 ? "" : (process->getName()).c_str();
             base = basename(execPath);
         }
 

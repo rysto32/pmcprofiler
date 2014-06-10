@@ -268,10 +268,10 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printProfile(const Prof
     PrintStrategy strategy;
     strategy.printFileHeader(m_outfile, profiler);
 
-    for ( Process::ActiveProcessList::const_iterator processListIterator = activeProcessList.begin();
-        processListIterator != activeProcessList.end(); ++processListIterator )
+    for (Process::ActiveProcessList::const_iterator processListIterator = activeProcessList.begin();
+        processListIterator != activeProcessList.end(); ++processListIterator)
     {
-        Process& process( **processListIterator );
+        Process& process(**processListIterator);
         
         LocationList locationList;
         process.collectLocations(locationList);
@@ -281,10 +281,10 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printProfile(const Prof
 
         strategy.printProcessHeader(m_outfile, profiler, process);
         FunctionList functionList;
-        process.getFunctionList( functionList );
-        for ( FunctionList::iterator functionListIterator = functionList.begin(); functionListIterator != functionList.end(); ++functionListIterator )
+        process.getFunctionList(functionList);
+        for (FunctionList::iterator functionListIterator = functionList.begin(); functionListIterator != functionList.end(); ++functionListIterator)
         {
-            FunctionLocation& functionLocation( *functionListIterator );
+            FunctionLocation& functionLocation(*functionListIterator);
 
             double percent = (functionLocation.getCount() * 100.0) / process.getSampleCount();
             if(percent >= m_threshold)

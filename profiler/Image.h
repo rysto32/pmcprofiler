@@ -59,16 +59,16 @@ class Location
     unsigned            m_linenumber;
 
 public:
-    Location( bool isAKernel, unsigned pid, uintptr_t address, unsigned count ) :
-    m_address( address ),
-    m_isKernel( isAKernel ),
-    m_isMapped( false ),
-    m_count( count ),
-    m_pid( pid ),
+    Location(bool isAKernel, unsigned pid, uintptr_t address, unsigned count) :
+    m_address(address),
+    m_isKernel(isAKernel),
+    m_isMapped(false),
+    m_count(count),
+    m_pid(pid),
     m_modulename(),
     m_filename(),
     m_functionname(),
-    m_linenumber( -1 )
+    m_linenumber(-1)
     {
     }
 
@@ -87,7 +87,7 @@ public:
         return m_isMapped;
     }
 
-    void isMapped( bool mapped )
+    void isMapped(bool mapped)
     {
         m_isMapped = mapped;
     }
@@ -122,7 +122,7 @@ public:
         return m_linenumber;
     }
 
-    bool operator<( const Location& other ) const
+    bool operator<(const Location& other) const
     {
         return m_count > other.m_count;
     }
@@ -142,14 +142,14 @@ class FunctionLocation : public Location
     LineLocationList m_lineLocationList;
 
 public:
-    FunctionLocation( const Location& location ) :
+    FunctionLocation(const Location& location) :
     Location(location),
-    m_totalCount( location.getCount() )
+    m_totalCount(location.getCount())
     {
         m_lineLocationList.insert(location.getLineNumber());
     }
 
-    FunctionLocation& operator+=( const Location& location )
+    FunctionLocation& operator+=(const Location& location)
     {
         m_totalCount += location.getCount();
         m_lineLocationList.insert(location.getLineNumber());
@@ -165,7 +165,7 @@ public:
         return *this;
     }
 
-    bool operator<( const FunctionLocation& other ) const
+    bool operator<(const FunctionLocation& other) const
     {
         return m_totalCount > other.m_totalCount;
     }
@@ -303,11 +303,11 @@ class Image
 
     static Image& getKernel();
 
-    Image( const std::string& imageName );
+    Image(const std::string& imageName);
     ~Image();
 
     bool isContained(const Location& location, uintptr_t loadOffset = 0);
-    void mapLocation( Location& location, uintptr_t loadOffset = 0 );
+    void mapLocation(Location& location, uintptr_t loadOffset = 0);
     void functionStart(Location& location, uintptr_t loadOffset);
     static Image *findImage(const Location &location, uintptr_t &loadOffset);
 
@@ -317,12 +317,12 @@ class Image
 
 public:
     static char* demangle(const std::string &name);
-    static std::string getLoadableImageName( const Location& location, uintptr_t& loadOffset );
-    static void mapAllLocations( LocationList& locationList );
+    static std::string getLoadableImageName(const Location& location, uintptr_t& loadOffset);
+    static void mapAllLocations(LocationList& locationList);
 
     static void freeImages();
 
-    static void mapFunctionStart( FunctionLocation& functionLocation );
+    static void mapFunctionStart(FunctionLocation& functionLocation);
 
     static void loadKldImage(uintptr_t loadAddress, const char * moduleName);
 

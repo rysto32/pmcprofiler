@@ -76,7 +76,7 @@ std::vector<std::string> Image::getModulePath()
 
 std::string Image::KERNEL_NAME(getbootfile());
 std::vector<std::string> Image::MODULE_PATH(Image::getModulePath());
-const std::string Image::TEXT_SECTION_NAME( ".text" );
+const std::string Image::TEXT_SECTION_NAME(".text");
 
 Image* Image::kernelImage = 0;
 
@@ -101,9 +101,9 @@ Image::setModulePath(char * path)
 Image&
 Image::getKernel()
 {
-    if ( Image::kernelImage == 0 )
+    if (Image::kernelImage == NULL)
     {
-        kernelImage = new Image( KERNEL_NAME );
+        kernelImage = new Image(KERNEL_NAME);
     }
     return *kernelImage;
 }
@@ -140,7 +140,7 @@ Image::freeImages()
     imageMap.clear();
 }
 
-Image::Image( const std::string& imageName ) :
+Image::Image(const std::string& imageName) :
     m_lookup(imageName)
 {
 }
@@ -166,7 +166,7 @@ Image::isContained(const Location& location, uintptr_t loadOffset)
 }
 
 void
-Image::mapLocation( Location& location, uintptr_t loadOffset )
+Image::mapLocation(Location& location, uintptr_t loadOffset)
 {
     uintptr_t address = location.getAddress() - loadOffset;
 
@@ -184,7 +184,7 @@ Image::functionStart(Location& location, uintptr_t loadOffset)
 }
 
 void
-Image::mapFunctionStart( FunctionLocation& functionLocation )
+Image::mapFunctionStart(FunctionLocation& functionLocation)
 {
     uintptr_t loadOffset;
 
@@ -247,7 +247,7 @@ Image::loadKldImage(uintptr_t loadAddress, const char * moduleName)
 }
 
 std::string
-Image::getLoadableImageName( const Location& location, uintptr_t& loadOffset )
+Image::getLoadableImageName(const Location& location, uintptr_t& loadOffset)
 {
 
     loadOffset = 0;
@@ -324,11 +324,11 @@ Image::findImage(const Location &location, uintptr_t &loadOffset)
 }
 
 void
-Image::mapAllLocations( LocationList& locationList )
+Image::mapAllLocations(LocationList& locationList)
 {
     uintptr_t loadOffset;
 
-    for ( LocationList::iterator it = locationList.begin(); it != locationList.end(); ++it )
+    for (LocationList::iterator it = locationList.begin(); it != locationList.end(); ++it)
     {
         std::vector<Location> & stack(*it);
         for(std::vector<Location>::iterator jt = stack.begin(); jt != stack.end(); ++jt)

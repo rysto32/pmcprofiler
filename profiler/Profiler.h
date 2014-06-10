@@ -49,7 +49,7 @@ public:
 
     Profiler(const std::string& dataFile, bool showlines) :
         m_sampleCount(0),
-        m_dataFile( dataFile ),
+        m_dataFile(dataFile),
         m_showlines(showlines)
     {
     }
@@ -71,9 +71,9 @@ public:
 
     void createProfile(ProfilePrinter & printer);
 
-    void processEvent( const ProcessExec& processExec );
-    void processEvent( const ProcessExit& processExit );
-    void processEvent( const Sample& sample );
+    void processEvent(const ProcessExec& processExec);
+    void processEvent(const ProcessExit& processExit);
+    void processEvent(const Sample& sample);
     void processMapIn(pid_t pid, uintptr_t map_start, const char * image);
 };
 

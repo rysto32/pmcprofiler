@@ -59,14 +59,14 @@ private:
     class ProcessSampleCompare
     {
     public:
-        bool operator()( const Process* lhs, const Process* rhs )
+        bool operator()(const Process* lhs, const Process* rhs)
         {
-            return lhs -> m_sampleCount > rhs -> m_sampleCount;
+            return lhs->m_sampleCount > rhs->m_sampleCount;
         }
     };
 
 public:
-    typedef std::vector< Process* > ActiveProcessList;
+    typedef std::vector<Process*> ActiveProcessList;
 
     static void clearOldSamples();
     static void fillProcessMap();
@@ -76,7 +76,7 @@ public:
     static Process& getProcess(const ProcessExec& processExec);
     static Process& getProcess(const char * name, pid_t pid);
 
-    static Process* getProcess( pid_t pid )
+    static Process* getProcess(pid_t pid)
     {
         ProcessMap::iterator it = processMap.find(pid);
         if(it == processMap.end())
@@ -84,14 +84,14 @@ public:
         return it->second;
     }
 
-    static void collectAllLocations( LocationList& locationList );
+    static void collectAllLocations(LocationList& locationList);
 
     template <typename ProcessStrategy>
     static void mapAllFunctions(LocationList& locationList, ProcessStrategy strategy);
 
-    static void collectActiveProcesses( ActiveProcessList& activeProcessList );
+    static void collectActiveProcesses(ActiveProcessList& activeProcessList);
 
-    std::string getLoadableImageName( const Location& location, uintptr_t& loadOffset );
+    std::string getLoadableImageName(const Location& location, uintptr_t& loadOffset);
 
     pid_t getPid() const
     {
@@ -108,9 +108,9 @@ public:
         return m_sampleCount;
     }
 
-    void addSample( const Sample& sample );
-    void collectLocations( LocationList& locationList );
-    void getFunctionList( FunctionList& functionList );
+    void addSample(const Sample& sample);
+    void collectLocations(LocationList& locationList);
+    void getFunctionList(FunctionList& functionList);
     unsigned getCallers(const Callchain & chain, std::vector<FunctionLocation> & functions);
 
     void mapIn(uintptr_t start, const char * imagePath);

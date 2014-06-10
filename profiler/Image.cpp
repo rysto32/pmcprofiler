@@ -357,9 +357,16 @@ Image::mapAllLocations( LocationList& locationList )
 char*
 Image::demangle(const std::string &name)
 {
-	char *demangled, *str;
+	char *demangled;
 	size_t len;
 	int status;
+
+	/*
+	 * abi::__cxa_demangle doesn't work on all non-mangled symbol names,
+	 * so do a hacky test for a mangled name before trying to demangle it.
+	 */
+	if (name.substr(0, 2) != "_Z")
+		return (strdup(name.c_str()));
 
 	len = 0;
 	demangled = (abi::__cxa_demangle(name.c_str(), NULL, &len, &status));

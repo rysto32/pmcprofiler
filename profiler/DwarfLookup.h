@@ -41,7 +41,7 @@ class DwarfLocation;
 class DwarfLookup
 {
 private:
-	/* 
+	/*
 	 * Use the std::greater comparator so that map::lower_bound returns the
 	 * DwarfLocation whose address is <= the address we're searching for.
 	 */
@@ -56,11 +56,11 @@ private:
 	void FindTextRange(Elf *);
 	void FillFunctionsFromSymtab(Elf *, Elf_Scn *, GElf_Shdr *);
 	void AddFunction(GElf_Addr, const std::string &);
-	
+
 	void FillLocationMap(Dwarf_Debug);
 	void FillLocationsFromDie(Dwarf_Debug, Dwarf_Die);
 	void AddLocations(Dwarf_Debug, Dwarf_Die);
-	
+
 	bool Lookup(uintptr_t addr, const LocationMap &map,
 	    std::string &fileStr, std::string &funcStr, u_int &line) const;
 

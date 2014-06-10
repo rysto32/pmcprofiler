@@ -47,13 +47,13 @@ FILE * openOutFile(const char * path)
 		file = stdout;
 	} else {
 		file = fopen(path, "w");
-		
+
 		if(!file) {
 			fprintf(stderr, "Could not open %s for writing\n", path);
 			usage();
 		}
 	}
-	
+
 	return file;
 }
 
@@ -65,13 +65,13 @@ main(int argc, char *argv[])
 	bool printBoring = true;
 	uint32_t maxDepth = PMC_CALLCHAIN_DEPTH_MAX;
 	int threshold = 0;
-	g_quitOnError = false;    
+	g_quitOnError = false;
 	FILE * file;
 	std::vector<ProfilePrinter*> printers;
-	
+
 	if (elf_version(EV_CURRENT) == EV_NONE)
 		err(1, "libelf incompatible");
-	
+
 	while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:t:r:N:m:")) != -1)
 	{
 		switch (ch)
@@ -82,7 +82,7 @@ main(int argc, char *argv[])
 			case 'F':
 				file = openOutFile(optarg);
 				printers.push_back(new FlameGraphProfilerPrinter(file, PMC_CALLCHAIN_DEPTH_MAX, threshold, true));
-				break;            
+				break;
 			case 'l':
 				showlines = true;
 				break;
@@ -108,20 +108,20 @@ main(int argc, char *argv[])
 			{
 				char * temp;
 				threshold = strtol(optarg, &temp, 0);
-				
+
 				if(*temp != '\0' || threshold < 0 || threshold > 100)
 					usage();
-				
+
 				break;
 			}
 			case 'd':
 			{
 				char * temp;
 				maxDepth = strtoul(optarg, &temp, 0);
-				
+
 				if(*temp != '\0')
 					usage();
-				
+
 				break;
 			}
 			case 'N':
@@ -142,18 +142,18 @@ main(int argc, char *argv[])
 	}
 	argc -= optind;
 	argv += optind;
-	
+
 	if(printers.empty()) {
 		printers.push_back(new FlatProfilePrinter(stdout));
 	}
-	
+
 	Profiler profiler(samplefile, showlines);
 	std::vector<ProfilePrinter* >::iterator it = printers.begin();
 	for(; it != printers.end(); ++it) {
 		profiler.createProfile(**it);
 		delete *it;
 	}
-	
+
 	Process::freeProcessMap();
 	Image::freeImages();
 	return 0;
@@ -174,7 +174,7 @@ usage()
 		"    r - file to print root-down callchain profile to(- for stdout)\n"
 		"    d - maximum depth to go to in subsequent leaf-up callchain profiles\n"
 		"    t - print only entries greater than threshold in subsequent profiles\n"
-		"    default samplefile is /tmp/samples.out\n"    
+		"    default samplefile is /tmp/samples.out\n"
 		"    default output is flat profile to standard out\n");
 	exit(1);
 }

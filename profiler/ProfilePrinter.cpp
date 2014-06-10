@@ -26,7 +26,7 @@
 #include <libgen.h>
 #include <cassert>
 
-void 
+void
 ProfilePrinter::printLineNumbers(const Profiler & profiler, const LineLocationList& lineLocationList)
 {
 	if (profiler.showLines())
@@ -40,7 +40,7 @@ ProfilePrinter::printLineNumbers(const Profiler & profiler, const LineLocationLi
 	}
 }
 
-void 
+void
 FlatProfilePrinter::printProfile(const Profiler & profiler,
 				 const Process::ActiveProcessList & activeProcessList)
 {
@@ -48,9 +48,9 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 	Process::collectAllLocations(locationList);
 	Image::mapAllLocations(locationList);
 	Process::mapAllFunctions(locationList, LeafProcessStrategy());
-	
+
 	fprintf(m_outfile, "Events processed: %u\n\n", profiler.getSampleCount());
-	
+
 	unsigned cumulative = 0;
 	for (LocationList::const_iterator it = locationList.begin(); it != locationList.end(); ++it)
 	{
@@ -58,7 +58,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 		const char* base = "";
 		const Location& location(it->front());
 		char * functionName = Image::demangle(location.getFunctionName());
-		
+
 		if (location.isKernelImage())
 		{
 			execPath = getbootfile();
@@ -70,7 +70,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 			execPath = process == 0 ? "" : (process->getName()).c_str();
 			base = basename(execPath);
 		}
-		
+
 		cumulative += location.getCount();
 		fprintf(m_outfile, "%6.2f%% %6.2f%% %s, %6u, %10s, %6u, 0x%08lx, %s, %s, %s:%u %s\n",
 			(location.getCount() * 100.0) / profiler.getSampleCount(),
@@ -87,7 +87,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 			functionName ? functionName : "<unknown>");
 		free(functionName);
 	}
-	
+
 	for (Process::ActiveProcessList::const_iterator processListIterator = activeProcessList.begin();
 	     processListIterator != activeProcessList.end(); ++processListIterator)
 	     {
@@ -115,6 +115,6 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 			     fprintf(m_outfile, "\n");
 			     free(functionName);
 		     }
-	     }   
+	     }
 }
 

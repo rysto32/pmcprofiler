@@ -49,7 +49,7 @@ DwarfLookup::DwarfLookup(const std::string &filename)
 
 	FindTextRange(elf);
 
-	/* 
+	/*
 	 * It is not fatal if this fails: we'll do out best without debug
 	 * symbols.
 	 */
@@ -101,7 +101,7 @@ DwarfLookup::FindTextRange(Elf *elf)
 		if (shdr.sh_type == SHT_SYMTAB)
 			FillFunctionsFromSymtab(elf, section, &shdr);
 	}
-	
+
 }
 
 void
@@ -136,7 +136,7 @@ DwarfLookup::FillLocationMap(Dwarf_Debug dwarf)
 	Dwarf_Die die;
 	Dwarf_Error derr;
 	int error;
-	
+
 	while ((error = dwarf_next_cu_header(dwarf, NULL, NULL, NULL, NULL,
 	    NULL, &derr)) == DW_DLV_OK) {
 		if (dwarf_siblingof(dwarf, NULL, &die, &derr) == DW_DLV_OK)

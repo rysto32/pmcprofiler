@@ -30,22 +30,22 @@
 class ProcessState
 {
 	pid_t m_processID;
-	
+
 	const std::string& m_processName;
-	
+
 protected:
 	ProcessState(pid_t& processID, const std::string& processName) :
 	m_processID(processID),
 	m_processName(processName)
 	{
 	}
-	
+
 public:
 	pid_t getProcessID() const
 	{
 		return m_processID;
 	}
-	
+
 	const std::string& getProcessName() const
 	{
 		return m_processName;

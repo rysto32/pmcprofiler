@@ -27,9 +27,11 @@
 #include <err.h>
 #include <fcntl.h>
 #include <gelf.h>
+#include <libgen.h>
 
 DwarfLookup::DwarfLookup(const std::string &filename)
   : m_image_file(filename),
+    m_symbols_file(),
     m_text_start(0),
     m_text_end(0)
 {
@@ -38,9 +40,14 @@ DwarfLookup::DwarfLookup(const std::string &filename)
 	Elf *elf;
 	int fd;
 
-	fd = open(filename.c_str(), O_RDONLY);
-	if (fd < 0)
+	if (filename.empty())
 		return;
+
+	fd = open(filename.c_str(), O_RDONLY);
+	if (fd < 0) {
+		warnx("unable to open file %s", filename.c_str());
+		return;
+	}
 
 	elf = elf_begin(fd, ELF_C_READ, NULL);
 	if (elf == NULL) {
@@ -49,7 +56,9 @@ DwarfLookup::DwarfLookup(const std::string &filename)
 		return;
 	}
 
-	FindTextRange(elf);
+	ParseElfFile(elf);
+
+	elf = GetSymbolFile(elf);
 
 	/*
 	 * It is not fatal if this fails: we'll do out best without debug
@@ -75,8 +84,56 @@ DwarfLookup::~DwarfLookup()
 		delete it->second;
 }
 
+Elf *
+DwarfLookup::GetSymbolFile(Elf *elf)
+{
+	Elf * debug_elf;
+	int fd;
+
+	if (m_symbols_file.empty())
+		return (elf);
+
+	fd = FindSymbolFile();
+	if (fd < 0)
+		return (elf);
+
+	debug_elf = elf_begin(fd, ELF_C_READ, NULL);
+	if (debug_elf == NULL)
+		return (elf);
+
+	elf_end(elf);
+	return (debug_elf);
+}
+
+int
+DwarfLookup::FindSymbolFile()
+{
+	std::string file;
+	std::string image_dir;
+	int fd;
+
+	image_dir = std::string(dirname(m_image_file.c_str()));
+
+	file = image_dir + "/" + m_symbols_file;
+	fd = open(file.c_str(), O_RDONLY);
+	if (fd >= 0)
+		return (fd);
+
+	file = image_dir + "/.debug/" + m_symbols_file;
+	fd = open(file.c_str(), O_RDONLY);
+	if (fd >= 0)
+		return (fd);
+
+	file = "/usr/lib/debug/" + image_dir + "/" + m_symbols_file;
+	fd = open(file.c_str(), O_RDONLY);
+	if (fd >= 0)
+		return (fd);
+
+	return (-1);
+}
+
 void
-DwarfLookup::FindTextRange(Elf *elf)
+DwarfLookup::ParseElfFile(Elf *elf)
 {
 	Elf_Scn *section;
 	const char *name;
@@ -91,17 +148,31 @@ DwarfLookup::FindTextRange(Elf *elf)
 		if (gelf_getshdr(section, &shdr) == NULL)
 			continue;
 
+		gelf_getshdr(section, &shdr);
 		name = elf_strptr(elf, shdrstrndx, shdr.sh_name);
-		if (name != NULL && (strcmp(name, ".text") == 0)) {
-			m_text_start = shdr.sh_addr;
-			m_text_end = m_text_start + shdr.sh_size;
+		if (name != NULL) {
+			if (strcmp(name, ".text") == 0) {
+				m_text_start = shdr.sh_addr;
+				m_text_end = m_text_start + shdr.sh_size;
+			} else if (strcmp(name, ".gnu_debuglink") == 0)
+				ParseDebuglink(elf, section, &shdr);
 		}
 
-		gelf_getshdr(section, &shdr);
 		if (shdr.sh_type == SHT_SYMTAB)
 			FillFunctionsFromSymtab(elf, section, &shdr);
 	}
 
+}
+
+void
+DwarfLookup::ParseDebuglink(Elf *elf, Elf_Scn *section, GElf_Shdr *header)
+{
+	Elf_Data *data;
+
+	data = elf_rawdata(section, NULL);
+	if (data != NULL && data->d_buf != NULL)
+		m_symbols_file =
+		    std::string(static_cast<const char *>(data->d_buf));
 }
 
 void
@@ -175,10 +246,8 @@ DwarfLookup::AddLocations(Dwarf_Debug dwarf, Dwarf_Die die)
 	Dwarf_Addr addr;
 	Dwarf_Error de;
 
-	if (dwarf_srclines(die, &lbuf, &lcount, &de) != DW_DLV_OK) {
-		warnx("dwarf_srclines: %s", dwarf_errmsg(de));
+	if (dwarf_srclines(die, &lbuf, &lcount, &de) != DW_DLV_OK)
 		return;
-	}
 
 	for (i = 0; i < lcount; i++) {
 		if (dwarf_lineaddr(lbuf[i], &addr, &de)) {

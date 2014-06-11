@@ -49,12 +49,16 @@ private:
 	    LocationMap;
 
 	std::string m_image_file;
+	std::string m_symbols_file;
 	LocationMap m_functions;
 	LocationMap m_locations;
 	uint64_t m_text_start;
 	uint64_t m_text_end;
 
-	void FindTextRange(Elf *);
+	Elf * GetSymbolFile(Elf *);
+	int FindSymbolFile();
+	void ParseElfFile(Elf *);
+	void ParseDebuglink(Elf *, Elf_Scn *, GElf_Shdr *);
 	void FillFunctionsFromSymtab(Elf *, Elf_Scn *, GElf_Shdr *);
 	void AddFunction(GElf_Addr, const std::string &);
 

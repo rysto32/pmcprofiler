@@ -221,19 +221,17 @@ public:
 		size_t val = 0;
 		std::hash<std::string> hasher;
 
+		/*
+		 * The default hasher for strings multiplies the hash
+		 * value by 5 for each iteration, so we follow that hash
+		 * function here.
+		 *
+		 * We essentially act as if we have concatenated all of
+		 * the strings in vec together and hashed that one
+		 * string.
+		 */
 		for (; it != vec.end(); ++it)
-		{
-			/*
-			 * The default hasher for strings multiplies the hash
-			 * value by 5 for each iteration, so we follow that hash
-			 * function here.
-			 *
-			 * We essentially act as if we have concatenated all of
-			 * the strings in vec together and hashed that one
-			 * string.
-			 */
 			val = 5 * val + hasher(*it);
-		}
 
 		hash_value = val;
 		hash_valid = true;
@@ -330,7 +328,6 @@ public:
 
 	static void setBootfile(const char * file);
 	static void setModulePath(char * path);
-	static void setUnknownFile(const std::string & path);
 
 	const std::string & getImageFile() const;
 };

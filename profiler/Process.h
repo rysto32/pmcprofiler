@@ -121,14 +121,12 @@ void
 Process::mapAllFunctions(LocationList& locationList, ProcessStrategy strategy)
 {
 	/* try to avoid hash-table resizes by pre-allocating a large enough hash map */
-	for (ProcessMap::iterator it = processMap.begin(); it != processMap.end(); ++it)
-	{
-		Process * process = it->second;
+	for (ProcessMap::iterator it = processMap.begin(); it != processMap.end(); ++it)  {
+		Process *process = it->second;
 		process->m_callchainMap.rehash(4*process->m_numCallchains/3);
 	}
 
-	for (LocationList::iterator it = locationList.begin(); it != locationList.end(); ++it)
-	{
+	for (LocationList::iterator it = locationList.begin(); it != locationList.end(); ++it) {
 		typename ProcessStrategy::iterator jt = strategy.begin(*it);
 		typename ProcessStrategy::iterator jt_end = strategy.end(*it);
 
@@ -147,20 +145,16 @@ Process::mapAllFunctions(LocationList& locationList, ProcessStrategy strategy)
 		functionLocationMap.insert(FunctionLocationMap::value_type(key, location));
 
 		if (!findPos.second)
-		{
 			findPos.first->second += location;
-		}
 
 		Callchain callchain;
 		callchain.push_back(functionName);
 		++jt;
-		for (; jt != jt_end; ++jt)
-		{
+		for (; jt != jt_end; ++jt) {
 			FunctionLocation funcLoc = *jt;
 
-			if (!funcLoc.isMapped()) {
+			if (!funcLoc.isMapped())
 				funcLoc.setFunctionName("[unmapped_function]");
-			}
 
 			std::pair<CallchainMap::iterator, bool> mapInserted =
 			process.m_callchainMap.insert(CallchainMap::value_type(callchain, FunctionLocationMap(1)));
@@ -168,9 +162,7 @@ Process::mapAllFunctions(LocationList& locationList, ProcessStrategy strategy)
 			mapInserted.first->second.insert(FunctionLocationMap::value_type(funcLoc.getFunctionName(), funcLoc));
 
 			if (!inserted.second)
-			{
 				inserted.first->second += funcLoc;
-			}
 
 			callchain.push_back(jt->getFunctionName());
 		}

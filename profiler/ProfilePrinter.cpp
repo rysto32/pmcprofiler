@@ -29,14 +29,11 @@
 void
 ProfilePrinter::printLineNumbers(const Profiler & profiler, const LineLocationList& lineLocationList)
 {
-	if (profiler.showLines())
-	{
+	if (profiler.showLines()) {
 		fprintf(m_outfile, " lines:");
 		for (LineLocationList::const_iterator it = lineLocationList.begin();
 		     it != lineLocationList.end(); ++it)
-		     {
 			     fprintf(m_outfile, " %u", *it);
-		     }
 	}
 }
 
@@ -52,20 +49,16 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 	fprintf(m_outfile, "Events processed: %u\n\n", profiler.getSampleCount());
 
 	unsigned cumulative = 0;
-	for (LocationList::const_iterator it = locationList.begin(); it != locationList.end(); ++it)
-	{
+	for (LocationList::const_iterator it = locationList.begin(); it != locationList.end(); ++it) {
 		const char* execPath = "";
 		const char* base = "";
 		const Location& location(it->front());
 		char * functionName = Image::demangle(location.getFunctionName());
 
-		if (location.isKernelImage())
-		{
+		if (location.isKernelImage()) {
 			execPath = getbootfile();
 			base = basename(execPath);
-		}
-		else
-		{
+		} else {
 			Process* process = Process::getProcess(location.getPid());
 			execPath = process == 0 ? "" : (process->getName()).c_str();
 			base = basename(execPath);
@@ -82,15 +75,14 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 			location.getAddress(),
 			location.isMapped() ? "mapped  " : "unmapped",
 			execPath,
-	  location.getFileName().empty() ? location.getModuleName().c_str() : location.getFileName().c_str(),
+			location.getFileName().empty() ? location.getModuleName().c_str() : location.getFileName().c_str(),
 			location.getLineNumber(),
 			functionName ? functionName : "<unknown>");
 		free(functionName);
 	}
 
 	for (Process::ActiveProcessList::const_iterator processListIterator = activeProcessList.begin();
-	     processListIterator != activeProcessList.end(); ++processListIterator)
-	     {
+	     processListIterator != activeProcessList.end(); ++processListIterator) {
 		     Process& process(**processListIterator);
 		     fprintf(m_outfile, "\nProcess: %6u, %s, total: %u (%6.2f%%)\n", process.getPid(), process.getName().c_str(),
 			     process.getSampleCount(), (process.getSampleCount() * 100.0) / profiler.getSampleCount());
@@ -98,8 +90,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 		     process.getFunctionList(functionList);
 		     unsigned cumulativeCount = 0;
 		     fprintf(m_outfile, "       time   time-t   samples   env  file / library, line number, function\n");
-		     for (FunctionList::iterator functionListIterator = functionList.begin(); functionListIterator != functionList.end(); ++functionListIterator)
-		     {
+		     for (FunctionList::iterator functionListIterator = functionList.begin(); functionListIterator != functionList.end(); ++functionListIterator) {
 			     FunctionLocation& functionLocation(*functionListIterator);
 			     char * functionName = Image::demangle(functionLocation.getFunctionName());
 			     cumulativeCount += functionLocation.getCount();

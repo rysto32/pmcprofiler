@@ -43,9 +43,9 @@ bool g_quitOnError = false;
 FILE * openOutFile(const char * path)
 {
 	FILE * file;
-	if (strcmp(path, "-") == 0) {
+	if (strcmp(path, "-") == 0)
 		file = stdout;
-	} else {
+	else {
 		file = fopen(path, "w");
 
 		if (!file) {
@@ -67,15 +67,14 @@ main(int argc, char *argv[])
 	int threshold = 0;
 	g_quitOnError = false;
 	FILE * file;
+	char * temp;
 	std::vector<ProfilePrinter*> printers;
 
 	if (elf_version(EV_CURRENT) == EV_NONE)
 		err(1, "libelf incompatible");
 
-	while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:t:r:N:m:")) != -1)
-	{
-		switch (ch)
-		{
+	while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:t:r:N:m:")) != -1) {
+		switch (ch) {
 			case 'f':
 				samplefile = optarg;
 				break;
@@ -105,17 +104,13 @@ main(int argc, char *argv[])
 				printBoring = false;
 				break;
 			case 't':
-			{
-				char * temp;
 				threshold = strtol(optarg, &temp, 0);
 
 				if (*temp != '\0' || threshold < 0 || threshold > 100)
 					usage();
 
 				break;
-			}
 			case 'd':
-			{
 				char * temp;
 				maxDepth = strtoul(optarg, &temp, 0);
 
@@ -123,17 +118,12 @@ main(int argc, char *argv[])
 					usage();
 
 				break;
-			}
 			case 'N':
-			{
 				Image::setBootfile(optarg);
 				break;
-			}
 			case 'm':
-			{
 				Image::setModulePath(optarg);
 				break;
-			}
 			case '?':
 			default:
 				usage();
@@ -143,9 +133,8 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	if (printers.empty()) {
+	if (printers.empty())
 		printers.push_back(new FlatProfilePrinter(stdout));
-	}
 
 	Profiler profiler(samplefile, showlines);
 	std::vector<ProfilePrinter* >::iterator it = printers.begin();

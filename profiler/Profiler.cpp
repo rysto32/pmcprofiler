@@ -65,11 +65,8 @@ Profiler::processMapIn(pid_t pid, uintptr_t map_start, const char * image)
 	 * for the kernel.  Load the images directly to get around this:
 	 */
 	if (pid == -1)
-	{
 		Image::loadKldImage(map_start, image);
-	}
-	else
-	{
+	else {
 		Process & process = Process::getProcess(image, pid);
 		process.mapIn(map_start, image);
 	}

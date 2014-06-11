@@ -67,14 +67,12 @@ DwarfLookup::~DwarfLookup()
 {
 
 	for (LocationMap::iterator it = m_functions.begin();
-	    it != m_functions.end(); ++it) {
+	    it != m_functions.end(); ++it)
 		delete it->second;
-	}
 
 	for (LocationMap::iterator it = m_locations.begin();
-	    it != m_locations.end(); ++it) {
+	    it != m_locations.end(); ++it)
 		delete it->second;
-	}
 }
 
 void

@@ -43,8 +43,7 @@ void
 Process::clearOldSamples()
 {
 	Process::ProcessMap::iterator it = Process::processMap.begin();
-	for (; it != Process::processMap.end(); ++it)
-	{
+	for (; it != Process::processMap.end(); ++it) {
 		it->second->m_samples.clear();
 		it->second->m_functionLocationMap.clear();
 		it->second->m_callchainMap.clear();
@@ -62,9 +61,7 @@ void
 Process::freeProcessMap()
 {
 	for (ProcessMap::iterator it = processMap.begin(); it != processMap.end(); ++it)
-	{
 		delete it->second;
-	}
 
 	processMap.clear();
 }
@@ -107,7 +104,6 @@ Process::getLoadableImageName(const Location& location, uintptr_t& loadOffset)
 	loadOffset = 0;
 
 	LoadableImageMap::iterator it = m_loadableImageMap.lower_bound(location.getAddress());
-
 	if (it == m_loadableImageMap.begin())
 		return "";
 
@@ -124,9 +120,7 @@ Process::getProcess(const Sample& sample)
 	Process* process = processMap[pid];
 
 	if (process == NULL)
-	{
 		process = processMap[pid] = new Process(sample);
-	}
 	return *process;
 }
 
@@ -137,14 +131,10 @@ Process::getProcess(const ProcessExec& processExec)
 	Process* process = processMap[pid];
 
 	if (process == NULL)
-	{
 		process = processMap[pid] = new Process(processExec);
-	}
 
 	if (process->m_name.empty() && !processExec.getProcessName().empty())
-	{
 		process->m_name = processExec.getProcessName();
-	}
 
 	return *process;
 }
@@ -155,12 +145,10 @@ Process::getProcess(const char * name, pid_t pid)
 	Process* process = processMap[pid];
 
 	if (process == NULL)
-	{
 		/* we use the name of the first map-in file as our name, as that
 		 * should be the name of our executable
 		 */
 		process = processMap[pid] = new Process(name, pid);
-	}
 
 	return *process;
 }
@@ -177,13 +165,11 @@ Process::addSample(const Sample& sample)
 void
 Process::collectLocations(LocationList& locationList)
 {
-	for (SampleMap::iterator it = m_samples.begin(); it != m_samples.end(); ++it)
-	{
+	for (SampleMap::iterator it = m_samples.begin(); it != m_samples.end(); ++it) {
 		std::vector<Location> stack;
 		stack.reserve(it->first.getChainDepth());
-		for (int i = 0; i < it->first.getChainDepth(); i++) {
+		for (int i = 0; i < it->first.getChainDepth(); i++)
 			stack.push_back(Location(it->first.isKernel(), m_pid, it->first.getAddress(i), it->second));
-		}
 		locationList.push_back(stack);
 	}
 	m_samples.clear();
@@ -192,14 +178,11 @@ Process::collectLocations(LocationList& locationList)
 void
 Process::collectActiveProcesses(ActiveProcessList& activeProcessList)
 {
-	for (ProcessMap::const_iterator it = processMap.begin(); it != processMap.end(); ++it)
-	{
+	for (ProcessMap::const_iterator it = processMap.begin(); it != processMap.end(); ++it) {
 		Process* process((*it).second);
 
 		if (process->m_sampleCount > 0)
-		{
 			activeProcessList.push_back(process);
-		}
 	}
 	std::sort(activeProcessList.begin(), activeProcessList.end(), ProcessSampleCompare());
 }
@@ -208,9 +191,7 @@ void
 Process::collectAllLocations(LocationList& locationList)
 {
 	for (ProcessMap::iterator it = processMap.begin(); it != processMap.end(); ++it)
-	{
 		(*it).second->collectLocations(locationList);
-	}
 	std::sort(locationList.begin(), locationList.end());
 }
 
@@ -218,12 +199,11 @@ void
 Process::getFunctionList(FunctionList& functionList)
 {
 	for (FunctionLocationMap::iterator it = m_functionLocationMap.begin();
-	    it != m_functionLocationMap.end(); ++it)
-	    {
+	    it != m_functionLocationMap.end(); ++it) {
 		    FunctionLocation functionLocation((*it).second);
 		    Image::mapFunctionStart(functionLocation);
 		    functionList.push_back(functionLocation);
-	    }
+	}
 	    m_functionLocationMap.clear();
 	std::sort(functionList.begin(), functionList.end());
 }
@@ -234,14 +214,12 @@ Process::getCallers(const Callchain & chain, std::vector<FunctionLocation> & fun
 	CallchainMap::const_iterator it = m_callchainMap.find(chain);
 	unsigned total_samples = 0;
 
-	if (it != m_callchainMap.end())
-	{
+	if (it != m_callchainMap.end()) {
 		const FunctionLocationMap & count = it->second;
 		functions.reserve(count.size());
 
 		FunctionLocationMap::const_iterator func = count.begin();
-		for (; func != count.end(); ++func)
-		{
+		for (; func != count.end(); ++func) {
 			functions.push_back(func->second);
 			total_samples += func->second.getCount();
 		}

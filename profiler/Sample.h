@@ -46,9 +46,8 @@ public:
 	{
 		uint32_t i;
 		uint32_t depth = std::min(maxDepth, event.pl_npc);
-		for (i = 0; i < depth; i++) {
+		for (i = 0; i < depth; i++)
 			m_address.push_back(event.pl_pc[i]-1);
-		}
 	}
 
 	Sample(const pmclog_ev_pcsample & event)
@@ -90,9 +89,8 @@ public:
 			return false;
 
 		for (int i = 0; i < getChainDepth(); i++) {
-			if (m_address[i] != other.m_address[i]) {
+			if (m_address[i] != other.m_address[i])
 				return false;
-			}
 		}
 
 		return true;
@@ -104,9 +102,8 @@ public:
 		{
 			int i;
 			size_t val = sample.isKernel();
-			for (i = 0; i < sample.getChainDepth(); i++) {
+			for (i = 0; i < sample.getChainDepth(); i++)
 				val += sample.getAddress(i);
-			}
 
 			return val;
 		}

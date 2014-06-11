@@ -84,6 +84,7 @@ Image::LoadableImageMap Image::kernelLoadableImageMap;
 void
 Image::setBootfile(const char * file)
 {
+
 	KERNEL_NAME = file;
 
 	delete kernelImage;
@@ -93,32 +94,17 @@ Image::setBootfile(const char * file)
 void
 Image::setModulePath(char * path)
 {
+
 	parseModulePath(path, MODULE_PATH);
 }
 
 Image&
 Image::getKernel()
 {
+
 	if (Image::kernelImage == NULL)
-	{
 		kernelImage = new Image(KERNEL_NAME);
-	}
 	return *kernelImage;
-}
-
-void
-Image::setUnknownFile(const std::string & path)
-{
-	Image * newImage = new Image(path);
-
-	std::pair<ImageMap::iterator, bool> inserted =
-	imageMap.insert(ImageMap::value_type("unknown", newImage));
-
-	if (!inserted.second)
-	{
-		delete inserted.first->second;
-		inserted.first->second = newImage;
-	}
 }
 
 void
@@ -131,9 +117,7 @@ Image::freeImages()
 
 	Image::ImageMap::iterator it;
 	for (it = imageMap.begin(); it != imageMap.end(); ++it)
-	{
 		delete it->second;
-	}
 
 	imageMap.clear();
 }
@@ -181,19 +165,16 @@ void
 Image::mapFunctionStart(FunctionLocation& functionLocation)
 {
 	uintptr_t loadOffset;
-
-	Image* image = findImage(functionLocation, loadOffset);
+	Image *image;
 
 	functionLocation.m_isMapped = false;
+
+	image = findImage(functionLocation, loadOffset);
 	if (image == NULL || !image->isContained(functionLocation))
-	{
 		return;
-	}
 
 	image->functionStart(functionLocation, loadOffset);
-
-	if (functionLocation.m_isMapped)
-	{
+	if (functionLocation.m_isMapped) {
 		if (functionLocation.m_lineLocationList.empty())
 			functionLocation.m_linenumber = -1;
 		else
@@ -204,11 +185,12 @@ Image::mapFunctionStart(FunctionLocation& functionLocation)
 bool
 Image::findKldModule(const char * kldName, std::string & kldPath)
 {
-	std::vector<std::string>::const_iterator it = MODULE_PATH.begin();
+	int fd;
 
+	std::vector<std::string>::const_iterator it = MODULE_PATH.begin();
 	for (; it != MODULE_PATH.end(); ++it) {
 		std::string path = *it + '/' + kldName;
-		int fd = open(path.c_str(), O_RDONLY);
+		fd = open(path.c_str(), O_RDONLY);
 
 		if (fd >= 0) {
 			close(fd);
@@ -226,17 +208,12 @@ Image::loadKldImage(uintptr_t loadAddress, const char * moduleName)
 	std::string kldPath;
 
 	if (findKldModule(moduleName, kldPath))
-	{
 		kernelLoadableImageMap[loadAddress] = kldPath;
-	}
-	else
-	{
+	else {
 		fprintf(stderr, "%s: unable to find kld module %s\n",
 			g_quitOnError ? "error" : "warning", moduleName);
 		if (g_quitOnError)
-		{
 			exit(5);
-		}
 	}
 }
 
@@ -261,54 +238,38 @@ Image::findImage(const Location &location, uintptr_t &loadOffset)
 {
 
 	loadOffset = 0;
-	if (location.m_isKernel)
-	{
-		if (getKernel().isContained(location))
-		{
+	if (location.m_isKernel) {
+		if (getKernel().isContained(location)) {
 			loadOffset = 0;
 			return (&getKernel());
-		}
-		else
-		{
+		} else {
 			const std::string& loadableImageName(Image::getLoadableImageName(location, loadOffset));
 
 			Image* kernelModuleImage = imageMap[loadableImageName];
-			if (kernelModuleImage == NULL)
-			{
+			if (kernelModuleImage == NULL) {
 				kernelModuleImage = new Image(loadableImageName);
 				imageMap[loadableImageName] = kernelModuleImage;
 			}
 			return (kernelModuleImage);
 		}
-	}
-	else
-	{
+	} else {
 		Process* process = Process::getProcess(location.m_pid);
-
 		if (process == NULL)
-		{
 			return (NULL);
-		}
 
 		const std::string& processName(process->getName());
 		Image* processImage = imageMap[processName];
-		if (processImage == 0)
-		{
+		if (processImage == NULL)
 			processImage = imageMap[processName] = new Image(processName);
-		}
 
 		if (processImage->isContained(location))
-		{
 			return (processImage);
-		}
-		else
-		{
+		else {
 			const std::string& loadableImageName(
 				process->getLoadableImageName(location, loadOffset));
 
 			Image* processLoadableImage = imageMap[loadableImageName];
-			if (processLoadableImage == 0)
-			{
+			if (processLoadableImage == 0) {
 				processLoadableImage = imageMap[loadableImageName] = new Image(loadableImageName);
 			}
 
@@ -322,27 +283,20 @@ Image::mapAllLocations(LocationList& locationList)
 {
 	uintptr_t loadOffset;
 
-	for (LocationList::iterator it = locationList.begin(); it != locationList.end(); ++it)
-	{
+	for (LocationList::iterator it = locationList.begin(); it != locationList.end(); ++it) {
 		std::vector<Location> & stack(*it);
-		for (std::vector<Location>::iterator jt = stack.begin(); jt != stack.end(); ++jt)
-		{
+		for (std::vector<Location>::iterator jt = stack.begin(); jt != stack.end(); ++jt) {
 			Location& location(*jt);
 
 			Image *image = findImage(location, loadOffset);
 
 			if (image == NULL)
-			{
 				continue;
-			}
 
-			if (image->isContained(location, loadOffset))
-			{
+			if (image->isContained(location, loadOffset)) {
 				image->mapLocation(location, loadOffset);
 				if (location.m_isMapped)
-				{
 					location.m_modulename = image->getImageFile().c_str();
-				}
 			}
 		}
 	}

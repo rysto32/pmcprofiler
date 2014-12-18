@@ -5,6 +5,7 @@ NO_MAN=
 SRCS=	\
 	DwarfLocation.cpp \
 	DwarfLookup.cpp \
+	DwarfRange.cpp \
 	EventFactory.cpp \
 	Image.cpp \
 	main.cpp \

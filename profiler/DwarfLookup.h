@@ -34,25 +34,30 @@
 #include <functional>
 #include <map>
 #include <string>
+#include <vector>
 
 class DwarfLocation;
+class DwarfRange;
 
 class DwarfLookup
 {
 private:
 	/*
 	 * Use the std::greater comparator so that map::lower_bound returns the
-	 * DwarfLocation whose address is <= the address we're searching for.
+	 * DwarfRange whose address is <= the address we're searching for.
 	 */
-	typedef std::map<uintptr_t, DwarfLocation *, std::greater<uintptr_t> >
-	    LocationMap;
+	typedef std::map<uintptr_t, DwarfRange *, std::greater<uintptr_t> >
+	    RangeMap;
+
+	typedef std::vector<DwarfLocation*> LocationList;
 
 	std::string m_image_file;
 	std::string m_symbols_file;
-	LocationMap m_functions;
-	LocationMap m_locations;
+	RangeMap m_functions;
+	RangeMap m_locations;
 	uint64_t m_text_start;
 	uint64_t m_text_end;
+	LocationList m_locationList;
 
 	Elf * GetSymbolFile(Elf *);
 	int FindSymbolFile();
@@ -61,12 +66,28 @@ private:
 	void FillFunctionsFromSymtab(Elf *, Elf_Scn *, GElf_Shdr *);
 	void AddFunction(GElf_Addr, const std::string &);
 
-	void FillLocationMap(Dwarf_Debug);
+	void FillRangeMap(Dwarf_Debug);
 	void FillLocationsFromDie(Dwarf_Debug, Dwarf_Die);
 	void AddLocations(Dwarf_Debug, Dwarf_Die);
 
-	bool Lookup(uintptr_t addr, const LocationMap &map,
+	void FillInlineFunctions(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
+	void AddInlines(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
+	DwarfLocation *UnknownLocation();
+	DwarfLocation *GetInlineLocation(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
+	DwarfLocation * SubprogramLocation(Dwarf_Debug, Dwarf_Die, Dwarf_Die,
+	    Dwarf_Attribute);
+	DwarfLocation * SpecLocation(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
+	void AddInlineRanges(Dwarf_Debug, Dwarf_Die, DwarfLocation *);
+	void AddInlineLoc(DwarfLocation *, uintptr_t, uintptr_t);
+
+	bool Lookup(uintptr_t addr, const RangeMap &map,
 	    std::string &fileStr, std::string &funcStr, u_int &line) const;
+
+	/*
+	 * Some compilers, including clang, put the mangled name of a symbol
+	 * in this non-standard DWARF attribute.
+	 */
+	static const int DW_AT_MIPS_linkage_name = 0x2007;
 
 public:
 	DwarfLookup(const std::string &file);

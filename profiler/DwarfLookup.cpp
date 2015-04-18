@@ -192,7 +192,8 @@ DwarfLookup::FillFunctionsFromSymtab(Elf *elf, Elf_Scn *section,
 
 	for (i = 0; i < count; i++) {
 		gelf_getsym(data, i, &symbol);
-		if (GELF_ST_TYPE(symbol.st_info) == STT_FUNC)
+		if (GELF_ST_TYPE(symbol.st_info) == STT_FUNC &&
+		    symbol.st_shndx != SHN_UNDEF)
 			AddFunction(symbol.st_value,
 			    elf_strptr(elf, header->sh_link, symbol.st_name));
 	}

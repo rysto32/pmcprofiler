@@ -1,2 +1,3 @@
 *.o
 profiler/pmcprofiler
+.depend

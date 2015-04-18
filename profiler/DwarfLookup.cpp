@@ -79,16 +79,12 @@ DwarfLookup::DwarfLookup(const std::string &filename)
 DwarfLookup::~DwarfLookup()
 {
 
-	for (RangeMap::iterator it = m_functions.begin();
-	    it != m_functions.end(); ++it)
-		delete it->second;
-
-	for (RangeMap::iterator it = m_locations.begin();
-	    it != m_locations.end(); ++it)
-		delete it->second;
-
 	for (LocationList::iterator it = m_locationList.begin();
 	    it != m_locationList.end(); ++it)
+		delete *it;
+
+	for (RangeList::iterator it = m_ranges.begin();
+	    it != m_ranges.end(); ++it)
 		delete *it;
 }
 
@@ -205,12 +201,15 @@ DwarfLookup::FillFunctionsFromSymtab(Elf *elf, Elf_Scn *section,
 void
 DwarfLookup::AddFunction(GElf_Addr addr, const std::string &func)
 {
+	DwarfRange *range;
 	DwarfLocation *loc;
 
 	if (m_functions.count(addr) == 0) {
 		loc = new DwarfLocation(m_image_file, func);
 		m_locationList.push_back(loc);
-		m_functions[addr] = new DwarfRange(*loc);
+		range = new DwarfRange(*loc);
+		m_functions[addr] = range;
+		m_ranges.push_back(range);
 	}
 }
 
@@ -252,6 +251,7 @@ void
 DwarfLookup::AddLocations(Dwarf_Debug dwarf, Dwarf_Die die)
 {
 	DwarfLocation *loc;
+	DwarfRange *range;
 	std::string func, fileStr;
 	char *file;
 	Dwarf_Line *lbuf;
@@ -294,30 +294,45 @@ DwarfLookup::AddLocations(Dwarf_Debug dwarf, Dwarf_Die die)
 		if (m_locations.count(addr) == 0) {
 			loc = new DwarfLocation(fileStr, func, line);
 			m_locationList.push_back(loc);
-			m_locations[addr] = new DwarfRange(*loc);
+			range = new DwarfRange(*loc);
+			m_locations[addr] = range;
+			m_ranges.push_back(range);
 		}
 	}
 
-	FillInlineFunctions(dwarf, die, die);
+	FillCUInlines(dwarf, die);
 }
 
 void
-DwarfLookup::FillInlineFunctions(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die die)
+DwarfLookup::FillCUInlines(Dwarf_Debug dwarf, Dwarf_Die cu)
+{
+
+	FillInlineFunctions(dwarf, cu, cu, "");
+}
+
+void
+DwarfLookup::FillInlineFunctions(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die die,
+    const std::string &parentFunc)
 {
 	Dwarf_Die last_die, child;
 	Dwarf_Error derr;
 	Dwarf_Half tag;
-	int error;
+	std::string curFunc;
+	int error, tag_err;
 
 	do {
-		if (dwarf_tag(die, &tag, &derr) == DW_DLV_OK) {
-			if (tag == DW_TAG_inlined_subroutine)
-				AddInlines(dwarf, cu, die);
-		}
+		curFunc = parentFunc;
+		tag_err = dwarf_tag(die, &tag, &derr);
+		if (tag_err == DW_DLV_OK && tag == DW_TAG_subprogram)
+			curFunc = GetSubprogramName(dwarf, die);
 
 		error = dwarf_child(die, &child, &derr);
 		if (error == DW_DLV_OK)
-			FillInlineFunctions(dwarf, cu, child);
+			FillInlineFunctions(dwarf, cu, child, curFunc);
+
+		if (tag_err == DW_DLV_OK && tag == DW_TAG_inlined_subroutine
+		    && !curFunc.empty())
+			AddInlines(dwarf, cu, die, curFunc);
 
 		last_die = die;
 		error = dwarf_siblingof(dwarf, last_die, &die, &derr);
@@ -327,14 +342,15 @@ DwarfLookup::FillInlineFunctions(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die die)
 }
 
 void
-DwarfLookup::AddInlines(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die die)
+DwarfLookup::AddInlines(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die die,
+    const std::string &func)
 {
 	DwarfLocation *loc;
 	Dwarf_Unsigned low_pc, high_pc;
 	Dwarf_Error derr;
 	int error;
 
-	loc = GetInlineLocation(dwarf, cu, die);
+	loc = GetInlineCaller(dwarf, cu, die, func);
 
 	error = dwarf_attrval_unsigned(die, DW_AT_low_pc, &low_pc, &derr);
 	if (error == DW_DLV_OK) {
@@ -401,6 +417,7 @@ DwarfLookup::AddInlineLoc(DwarfLocation *loc, uintptr_t low, uintptr_t high)
 
 	caller = it->second;
 	inline_range = new DwarfRange(*loc, caller);
+	m_ranges.push_back(inline_range);
 
 	if (it->first == low) {
 		it->second = inline_range;
@@ -418,60 +435,29 @@ DwarfLookup::AddInlineLoc(DwarfLocation *loc, uintptr_t low, uintptr_t high)
 DwarfLocation *
 DwarfLookup::UnknownLocation()
 {
+	DwarfLocation *loc;
 
-	return (new DwarfLocation(m_image_file, "<unknown>", 0));
+	loc = new DwarfLocation(m_image_file, "<unknown>", 0);
+	m_locationList.push_back(loc);
+	return (loc);
 }
 
 DwarfLocation *
-DwarfLookup::GetInlineLocation(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die die)
+DwarfLookup::GetInlineCaller(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die die,
+    const std::string &caller_func)
 {
-	Dwarf_Die origin_die;
-	Dwarf_Attribute origin_attr, sub_at;
-	Dwarf_Off ref;
-	Dwarf_Error derr;
-	int error;
-
-	error = dwarf_attr(die, DW_AT_abstract_origin, &origin_attr, &derr);
-	if (error != DW_DLV_OK)
-		return (UnknownLocation());
-
-	error = dwarf_global_formref(origin_attr, &ref, &derr);
-	if (error != DW_DLV_OK)
-		return (UnknownLocation());
-
-	error = dwarf_offdie(dwarf, ref, &origin_die, &derr);
-	if (error != DW_DLV_OK)
-		return (UnknownLocation());
-
-	error = dwarf_attr(origin_die, DW_AT_name, &sub_at, &derr);
-	if (error == DW_DLV_ERROR)
-		return (UnknownLocation());
-	else if (error == DW_DLV_OK)
-		return (SubprogramLocation(dwarf, cu, origin_die, sub_at));
-	else
-		return (SpecLocation(dwarf, cu, origin_die));
-}
-
-DwarfLocation *
-DwarfLookup::SubprogramLocation(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die die,
-    Dwarf_Attribute sub_at)
-{
-	Dwarf_Error derr;
-	Dwarf_Unsigned fileno, lineno;
+	DwarfLocation *loc;
+	Dwarf_Unsigned  fileno, fileindex, lineno;
 	Dwarf_Signed numfiles;
+	Dwarf_Error derr;
 	char **filenames;
-	char *func;
 	int error;
 
-	error = dwarf_formstring(sub_at, &func, &derr);
+	error = dwarf_attrval_unsigned(die, DW_AT_call_file, &fileno, &derr);
 	if (error != DW_DLV_OK)
 		return (UnknownLocation());
 
-	error = dwarf_attrval_unsigned(die, DW_AT_decl_file, &fileno, &derr);
-	if (error != DW_DLV_OK)
-		return (UnknownLocation());
-
-	error = dwarf_attrval_unsigned(die, DW_AT_decl_line, &lineno, &derr);
+	error = dwarf_attrval_unsigned(die, DW_AT_call_line, &lineno, &derr);
 	if (error != DW_DLV_OK)
 		return (UnknownLocation());
 
@@ -479,85 +465,120 @@ DwarfLookup::SubprogramLocation(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die die,
 	if (error != DW_DLV_OK)
 		return (UnknownLocation());
 
-	/* filenames is index from 0 but fileno starts at 1, so subtract. */
-	return (new DwarfLocation(filenames[fileno - 1], func, lineno));
+	/* filenames is indexed from 0 but fileno starts at 1, so subtract 1. */
+	fileindex = fileno - 1;
+	if (fileindex >= (Dwarf_Unsigned)numfiles)
+		return (UnknownLocation());
+	std::string filename(filenames[fileindex]);
+	loc = new DwarfLocation(filename, caller_func, lineno);
+	m_locationList.push_back(loc);
+	return (loc);
 }
 
-DwarfLocation *
-DwarfLookup::SpecLocation(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die func_die)
+std::string
+DwarfLookup::GetSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func)
 {
-	DwarfLocation *loc;
+	Dwarf_Die origin_die;
+	Dwarf_Attribute origin_attr;
+	Dwarf_Off ref;
+	Dwarf_Error derr;
+	std::string name;
+	const char *attr_name;
+	int error;
+
+	/* Fallback name to use if all else fails. */
+	attr_name = GetNameAttr(dwarf, func);
+
+	error = dwarf_attr(func, DW_AT_abstract_origin, &origin_attr, &derr);
+	if (error != DW_DLV_OK)
+		return (name);
+
+	error = dwarf_global_formref(origin_attr, &ref, &derr);
+	if (error != DW_DLV_OK)
+		return (name);
+
+	error = dwarf_offdie(dwarf, ref, &origin_die, &derr);
+	if (error != DW_DLV_OK)
+		return (name);
+
+	name = SpecSubprogramName(dwarf, origin_die);
+
+	dwarf_dealloc(dwarf, origin_die, DW_DLA_DIE);
+
+	if (name.empty())
+		return (attr_name);
+	else
+		return (name);
+}
+
+const char *
+DwarfLookup::GetNameAttr(Dwarf_Debug dwarf, Dwarf_Die func)
+{
+	Dwarf_Attribute name_attr;
+	Dwarf_Error derr;
+	char *name;
+	int error;
+
+	error = dwarf_attr(func, DW_AT_name, &name_attr, &derr);
+	if (error != DW_DLV_OK)
+		return ("<unknown>");
+
+	error = dwarf_formstring(name_attr, &name, &derr);
+	if (error != DW_DLV_OK)
+		return ("<unknown>");
+
+	return (name);
+}
+
+std::string
+DwarfLookup::SpecSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func_die)
+{
 	Dwarf_Die die;
 	Dwarf_Attribute spec_at;
 	Dwarf_Error derr;
 	Dwarf_Off ref;
-	Dwarf_Unsigned fileno, lineno;
-	Dwarf_Signed numfiles;
-	char **filenames;
 	const char *func;
-	const char *file;
+	std::string funcStr;
 	int error;
-	
 
 	error = dwarf_attr(func_die, DW_AT_specification, &spec_at, &derr);
 	if (error != DW_DLV_OK)
-		return (UnknownLocation());
+		return ("");
 
 	error = dwarf_global_formref(spec_at, &ref, &derr);
 	if (error != DW_DLV_OK)
-		return (UnknownLocation());
+		return ("");
 
 	error = dwarf_offdie(dwarf, ref, &die, &derr);
 	if (error != DW_DLV_OK)
-		return (UnknownLocation());
+		return ("");
 
 	error = dwarf_attrval_string(die, DW_AT_MIPS_linkage_name, &func,
 	    &derr);
 	if (error != DW_DLV_OK) {
 		error = dwarf_attrval_string(die, DW_AT_name, &func, &derr);
 		if (error != DW_DLV_OK)
-			return (UnknownLocation());
+			func = "";
 	}
 
-	error = dwarf_attrval_unsigned(die, DW_AT_decl_line, &lineno, &derr);
-	if (error != DW_DLV_OK) {
-		lineno = 0;
-		file = m_image_file.c_str();
-		goto out;
-	}
-
-	error = dwarf_attrval_unsigned(die, DW_AT_decl_file, &fileno, &derr);
-	if (error != DW_DLV_OK) {
-		lineno = 0;
-		file = m_image_file.c_str();
-		goto out;
-	}
-
-	error = dwarf_srcfiles(cu, &filenames, &numfiles, &derr);
-	if (error != DW_DLV_OK) {
-		lineno = 0;
-		file = m_image_file.c_str();
-		goto out;
-	}
-
-	file = filenames[fileno - 1];
-
-out:
-	loc = new DwarfLocation(file, func, lineno);
+	funcStr = func;
 	dwarf_dealloc(dwarf, die, DW_DLA_DIE);
-
-	return (loc);
+	return (funcStr);
 }
 
 bool
 DwarfLookup::Lookup(uintptr_t addr, const RangeMap &map,
     std::string &fileStr, std::string &funcStr, u_int &line) const
 {
-
+	const DwarfRange *range;
 	RangeMap::const_iterator it = map.lower_bound(addr);
 
 	if (it != map.end()) {
-		DwarfLocation &location = it->second->GetLocation();
+		range = it->second;
+		while (range->GetCaller() != NULL)
+			range = range->GetCaller();
+
+		DwarfLocation &location = range->GetLocation();
 		fileStr = location.GetFile();
 		funcStr = location.GetFunc();
 		line = location.GetLineNumber();

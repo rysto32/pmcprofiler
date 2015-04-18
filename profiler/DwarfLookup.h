@@ -49,12 +49,15 @@ private:
 	typedef std::map<uintptr_t, DwarfRange *, std::greater<uintptr_t> >
 	    RangeMap;
 
+	typedef std::vector <DwarfRange *> RangeList;
+
 	typedef std::vector<DwarfLocation*> LocationList;
 
 	std::string m_image_file;
 	std::string m_symbols_file;
 	RangeMap m_functions;
 	RangeMap m_locations;
+	RangeList m_ranges;
 	uint64_t m_text_start;
 	uint64_t m_text_end;
 	LocationList m_locationList;
@@ -70,13 +73,14 @@ private:
 	void FillLocationsFromDie(Dwarf_Debug, Dwarf_Die);
 	void AddLocations(Dwarf_Debug, Dwarf_Die);
 
-	void FillInlineFunctions(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
-	void AddInlines(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
+	void FillCUInlines(Dwarf_Debug dwarf, Dwarf_Die cu);
+	void FillInlineFunctions(Dwarf_Debug, Dwarf_Die, Dwarf_Die, const std::string &);
+	void AddInlines(Dwarf_Debug, Dwarf_Die, Dwarf_Die, const std::string &);
 	DwarfLocation *UnknownLocation();
-	DwarfLocation *GetInlineLocation(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
-	DwarfLocation * SubprogramLocation(Dwarf_Debug, Dwarf_Die, Dwarf_Die,
-	    Dwarf_Attribute);
-	DwarfLocation * SpecLocation(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
+	DwarfLocation *GetInlineCaller(Dwarf_Debug, Dwarf_Die, Dwarf_Die, const std::string &);
+	std::string GetSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func);
+	const char * GetNameAttr(Dwarf_Debug dwarf, Dwarf_Die func);
+	std::string SpecSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func_die);
 	void AddInlineRanges(Dwarf_Debug, Dwarf_Die, DwarfLocation *);
 	void AddInlineLoc(DwarfLocation *, uintptr_t, uintptr_t);
 

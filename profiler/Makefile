@@ -14,5 +14,6 @@ SRCS=	\
 	ProfilePrinter.cpp \
 
 LDADD=	-lpmc -ldwarf -lelf
+CFLAGS += -I/usr/local/include
 
 .include <bsd.prog.mk>

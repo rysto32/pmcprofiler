@@ -628,8 +628,7 @@ DwarfLookup::LookupLine(uintptr_t addr, std::string &file, std::string &func,
 	 * won't get the source line or file, but the function name is better
 	 * than nothing.
 	 */
-	//return (LookupFunc(addr, file, func, line));
-	return false;
+	return (LookupFunc(addr, file, func, line));
 }
 
 bool

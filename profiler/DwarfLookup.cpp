@@ -600,7 +600,6 @@ DwarfLookup::Lookup(uintptr_t addr, const RangeMap &map,
 	if (it != map.end()) {
 		range = it->second;
 		while (range->GetCaller() != NULL) {
-			range->GetLocation().GetDie());
 			range = range->GetCaller();
 		}
 

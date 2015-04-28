@@ -34,6 +34,7 @@ __FBSDID("$FreeBSD$");
 #include <libgen.h>
 
 #include <stdlib.h>
+#include <string.h>
 
 DwarfLookup::DwarfLookup(const std::string &filename)
   : m_image_file(filename),
@@ -410,22 +411,13 @@ DwarfLookup::AddInlineRanges(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die die,
 		case DW_RANGES_ENTRY:
 			low_pc = base_addr + ranges[i].dwr_addr1;
 			high_pc = base_addr + ranges[i].dwr_addr2;
-			if (loc->GetDie() == 0x0558bafc)
-				fprintf(stderr, "Range %lx-%lx\n", ranges[i].dwr_addr1, ranges[i].dwr_addr2);
 			AddInlineLoc(loc, low_pc, high_pc);
 			break;
 		case DW_RANGES_ADDRESS_SELECTION:
 			base_addr = ranges[i].dwr_addr2;
-			if (loc->GetDie() == 0x0558bafc)
-				fprintf(stderr, "Address selection %lx\n", ranges[i].dwr_addr2);
 			break;
 		case DW_RANGES_END:
-			if (loc->GetDie() == 0x0558bafc)
-				fprintf(stderr, "end range\n");
 			goto break_loop;
-		default:
-			if (loc->GetDie() == 0x0558bafc)
-				fprintf(stderr, "Unexpected dwr_type %d\n", ranges[i].dwr_type);
 		}
 	}
 
@@ -442,11 +434,6 @@ DwarfLookup::AddInlineLoc(DwarfLocation *loc, uintptr_t low, uintptr_t high)
 	RangeMap::iterator it = m_locations.lower_bound(low);
 	if (it == m_locations.end())
 		return;
-
-	if (loc->GetDie() == 0x0558bafc) {
-		fprintf(stderr, "%s (%s:%d) @ %lx-%lx\n", loc->GetFunc().c_str(),
-		    loc->GetFile().c_str(), loc->GetLineNumber(), low, high);
-	}
 
 	caller = it->second;
 	inline_range = new DwarfRange(*loc, caller);
@@ -612,12 +599,7 @@ DwarfLookup::Lookup(uintptr_t addr, const RangeMap &map,
 
 	if (it != map.end()) {
 		range = it->second;
-			fprintf(stderr, "Lookup %lx -> %s %s:%d (%lx)\n", it->first, range->GetLocation().GetFunc().c_str(),
-			range->GetLocation().GetFile().c_str(),
-			range->GetLocation().GetLineNumber(),
-			range->GetLocation().GetDie());
 		while (range->GetCaller() != NULL) {
-			fprintf(stderr, "Lookup %lx -> %s (%lx)\n", addr, range->GetLocation().GetFunc().c_str(),
 			range->GetLocation().GetDie());
 			range = range->GetCaller();
 		}

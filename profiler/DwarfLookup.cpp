@@ -33,6 +33,8 @@ __FBSDID("$FreeBSD$");
 #include <gelf.h>
 #include <libgen.h>
 
+#include <stdlib.h>
+
 DwarfLookup::DwarfLookup(const std::string &filename)
   : m_image_file(filename),
     m_symbols_file(),
@@ -293,9 +295,11 @@ DwarfLookup::AddLocations(Dwarf_Debug dwarf, Dwarf_Die die)
 			func = "";
 
 		if (m_locations.count(addr) == 0) {
-			loc = new DwarfLocation(fileStr, func, line);
+			loc = new DwarfLocation(fileStr, func, line, 0);
 			m_locationList.push_back(loc);
 			range = new DwarfRange(*loc);
+			if (addr == 0x0c)
+				abort();
 			m_locations[addr] = range;
 			m_ranges.push_back(range);
 		}
@@ -362,11 +366,25 @@ DwarfLookup::AddInlines(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die die,
 		
 		AddInlineLoc(loc, low_pc, high_pc);
 	} else
-		AddInlineRanges(dwarf, die, loc);
+		AddInlineRanges(dwarf, cu, die, loc);
+}
+
+Dwarf_Unsigned
+DwarfLookup::GetCUBaseAddr(Dwarf_Debug dwarf, Dwarf_Die cu)
+{
+	Dwarf_Error derr;
+	Dwarf_Unsigned low_pc;
+	int error;
+
+	error = dwarf_attrval_unsigned(cu, DW_AT_low_pc, &low_pc, &derr);
+	if (error != 0)
+		abort();
+
+	return (low_pc);
 }
 
 void
-DwarfLookup::AddInlineRanges(Dwarf_Debug dwarf, Dwarf_Die die,
+DwarfLookup::AddInlineRanges(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die die,
     DwarfLocation *loc)
 {
 	Dwarf_Error derr;
@@ -386,19 +404,28 @@ DwarfLookup::AddInlineRanges(Dwarf_Debug dwarf, Dwarf_Die die,
 	if (error != DW_DLV_OK)
 		return;
 
-	base_addr = 0;
+	base_addr = GetCUBaseAddr(dwarf, cu);
 	for (i = 0; i < count; i++) {
 		switch (ranges[i].dwr_type) {
 		case DW_RANGES_ENTRY:
 			low_pc = base_addr + ranges[i].dwr_addr1;
 			high_pc = base_addr + ranges[i].dwr_addr2;
+			if (loc->GetDie() == 0x0558bafc)
+				fprintf(stderr, "Range %lx-%lx\n", ranges[i].dwr_addr1, ranges[i].dwr_addr2);
 			AddInlineLoc(loc, low_pc, high_pc);
 			break;
 		case DW_RANGES_ADDRESS_SELECTION:
 			base_addr = ranges[i].dwr_addr2;
+			if (loc->GetDie() == 0x0558bafc)
+				fprintf(stderr, "Address selection %lx\n", ranges[i].dwr_addr2);
 			break;
 		case DW_RANGES_END:
+			if (loc->GetDie() == 0x0558bafc)
+				fprintf(stderr, "end range\n");
 			goto break_loop;
+		default:
+			if (loc->GetDie() == 0x0558bafc)
+				fprintf(stderr, "Unexpected dwr_type %d\n", ranges[i].dwr_type);
 		}
 	}
 
@@ -415,6 +442,11 @@ DwarfLookup::AddInlineLoc(DwarfLocation *loc, uintptr_t low, uintptr_t high)
 	RangeMap::iterator it = m_locations.lower_bound(low);
 	if (it == m_locations.end())
 		return;
+
+	if (loc->GetDie() == 0x0558bafc) {
+		fprintf(stderr, "%s (%s:%d) @ %lx-%lx\n", loc->GetFunc().c_str(),
+		    loc->GetFile().c_str(), loc->GetLineNumber(), low, high);
+	}
 
 	caller = it->second;
 	inline_range = new DwarfRange(*loc, caller);
@@ -438,7 +470,7 @@ DwarfLookup::UnknownLocation()
 {
 	DwarfLocation *loc;
 
-	loc = new DwarfLocation(m_image_file, "<unknown>", 0);
+	loc = new DwarfLocation(m_image_file, "<unknown>", 0, 0);
 	m_locationList.push_back(loc);
 	return (loc);
 }
@@ -470,8 +502,12 @@ DwarfLookup::GetInlineCaller(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die die,
 	fileindex = fileno - 1;
 	if (fileindex >= (Dwarf_Unsigned)numfiles)
 		return (UnknownLocation());
+
+	Dwarf_Off offset;
+	dwarf_dieoffset(die, &offset, &derr);
+
 	std::string filename(filenames[fileindex]);
-	loc = new DwarfLocation(filename, caller_func, lineno);
+	loc = new DwarfLocation(filename, caller_func, lineno, offset);
 	m_locationList.push_back(loc);
 	return (loc);
 }
@@ -576,8 +612,15 @@ DwarfLookup::Lookup(uintptr_t addr, const RangeMap &map,
 
 	if (it != map.end()) {
 		range = it->second;
-		while (range->GetCaller() != NULL)
+			fprintf(stderr, "Lookup %lx -> %s %s:%d (%lx)\n", it->first, range->GetLocation().GetFunc().c_str(),
+			range->GetLocation().GetFile().c_str(),
+			range->GetLocation().GetLineNumber(),
+			range->GetLocation().GetDie());
+		while (range->GetCaller() != NULL) {
+			fprintf(stderr, "Lookup %lx -> %s (%lx)\n", addr, range->GetLocation().GetFunc().c_str(),
+			range->GetLocation().GetDie());
 			range = range->GetCaller();
+		}
 
 		DwarfLocation &location = range->GetLocation();
 		fileStr = location.GetFile();
@@ -604,7 +647,8 @@ DwarfLookup::LookupLine(uintptr_t addr, std::string &file, std::string &func,
 	 * won't get the source line or file, but the function name is better
 	 * than nothing.
 	 */
-	return (LookupFunc(addr, file, func, line));
+	//return (LookupFunc(addr, file, func, line));
+	return false;
 }
 
 bool

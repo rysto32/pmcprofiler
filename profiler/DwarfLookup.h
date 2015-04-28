@@ -81,8 +81,10 @@ private:
 	std::string GetSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func);
 	const char * GetNameAttr(Dwarf_Debug dwarf, Dwarf_Die func);
 	std::string SpecSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func_die);
-	void AddInlineRanges(Dwarf_Debug, Dwarf_Die, DwarfLocation *);
+	void AddInlineRanges(Dwarf_Debug, Dwarf_Die , Dwarf_Die, DwarfLocation *);
 	void AddInlineLoc(DwarfLocation *, uintptr_t, uintptr_t);
+
+	Dwarf_Unsigned GetCUBaseAddr(Dwarf_Debug dwarf, Dwarf_Die cu);
 
 	bool Lookup(uintptr_t addr, const RangeMap &map,
 	    std::string &fileStr, std::string &funcStr, u_int &line) const;

@@ -29,11 +29,12 @@ __FBSDID("$FreeBSD$");
 #include <err.h>
 
 DwarfLocation::DwarfLocation(const std::string &file, const std::string &func,
-    u_int line)
+    u_int line, uint64_t die)
   : m_file(file),
     m_func(func),
     m_lineno(line),
-    m_needsDebug(false)
+    m_needsDebug(false),
+    m_die(die)
 {
 }
 
@@ -41,7 +42,8 @@ DwarfLocation::DwarfLocation(const std::string &file, const std::string &func)
   : m_file(file),
     m_func(func),
     m_lineno(0),
-    m_needsDebug(true)
+    m_needsDebug(true),
+    m_die(0)
 {
 }
 

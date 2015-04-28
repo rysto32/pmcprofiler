@@ -1,0 +1,10 @@
+#!/bin/sh
+
+addr=0x1c94
+echo "Address is $addr"
+/usr/local/bin/addr2line -e DwarfLookup.o.test -i $addr
+echo 
+echo '***'
+echo
+./profiler DwarfLookup.o.test $addr
+

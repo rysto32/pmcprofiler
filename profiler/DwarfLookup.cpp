@@ -597,7 +597,7 @@ DwarfLookup::SetInlineCaller(Dwarf_Debug dwarf, Dwarf_Die die)
 		high_pc = low_pc + 1;
 
 	RangeMap::iterator it = m_locations.lower_bound(low_pc);
-	for (; it != m_locations.end() && it->first < high_pc; --it) {
+	for (; it != m_locations.end() && it->first <= high_pc; --it) {
 		SetLocationFunc(it->second->GetOutermostCaller()->GetLocation(), func);
 	}
 }

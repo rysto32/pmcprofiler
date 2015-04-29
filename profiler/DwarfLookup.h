@@ -87,6 +87,7 @@ private:
 
 	void SetInlineCaller(Dwarf_Debug dwarf, Dwarf_Die die);
 	void SetLocationFunc(DwarfLocation &loc, const std::string func);
+	void SetAssemblyFuncs();
 
 	Dwarf_Unsigned GetCUBaseAddr(Dwarf_Die cu);
 

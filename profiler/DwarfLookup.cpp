@@ -310,6 +310,26 @@ DwarfLookup::FillCUInlines(Dwarf_Debug dwarf, Dwarf_Die cu)
 {
 
 	FillInlineFunctions(dwarf, cu, cu);
+	SetAssemblyFuncs();
+}
+
+/*
+ * There is no DWARF information mapping addresses to functions.  As a final pass,
+ * look for all locations that don't have a function mapped and use the ELF data
+ * to find its function name.
+ */
+void
+DwarfLookup::SetAssemblyFuncs()
+{
+	RangeMap::iterator it = m_locations.begin();
+	for (; it != m_locations.end(); ++it) {
+		DwarfLocation &loc = it->second->GetOutermostCaller()->GetLocation();
+		if (loc.NeedsFunc()) {
+			RangeMap::iterator func = m_functions.lower_bound(it->first);
+			if (func != m_functions.end())
+				loc.SetFunc(func->second->GetLocation().GetFunc());
+		}
+	}
 }
 
 void

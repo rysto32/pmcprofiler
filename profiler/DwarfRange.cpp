@@ -26,19 +26,13 @@ __FBSDID("$FreeBSD$");
 
 #include "DwarfRange.h"
 
+#include <assert.h>
 #include <stdlib.h>
-
-DwarfRange::DwarfRange(DwarfLocation &loc, const DwarfRange *caller)
-  : m_location(loc),
-    m_caller(caller),
-    m_inline_depth(caller->GetInlineDepth() + 1)
-{
-}
 
 DwarfRange::DwarfRange(DwarfLocation &loc)
   : m_location(loc),
     m_caller(NULL),
-    m_inline_depth(0)
+    m_inline_depth(1)
 {
 }
 
@@ -56,17 +50,17 @@ DwarfRange::GetLocation() const
 	return (m_location);
 }
 
-const DwarfRange *
+DwarfRange *
 DwarfRange::GetCaller() const
 {
 
 	return (m_caller);
 }
 
-const DwarfRange *
-DwarfRange::GetOutermostCaller() const
+DwarfRange *
+DwarfRange::GetOutermostCaller()
 {
-	const DwarfRange *range, *next;
+	DwarfRange *range, *next;
 
 	range = this;
 	while(1) {
@@ -76,3 +70,22 @@ DwarfRange::GetOutermostCaller() const
 		range = next;
 	}
 }
+
+void
+DwarfRange::SetCaller(DwarfRange *caller)
+{
+
+	/*
+	 * A previous call may have already set caller as the caller for
+	 * this range.  If so, skip setting it a second time to avoid
+	 * introducing a cycle in the call graph here.
+	 */
+	if (caller == this)
+		return;
+	else if (m_caller == NULL)
+		m_caller = caller;
+	else
+		m_caller->SetCaller(caller);
+	m_inline_depth = m_caller->GetInlineDepth() + 1;
+}
+

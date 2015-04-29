@@ -65,7 +65,7 @@ private:
 	Elf * GetSymbolFile(Elf *);
 	int FindSymbolFile();
 	void ParseElfFile(Elf *);
-	void ParseDebuglink(Elf *, Elf_Scn *, GElf_Shdr *);
+	void ParseDebuglink(Elf_Scn *);
 	void FillFunctionsFromSymtab(Elf *, Elf_Scn *, GElf_Shdr *);
 	void AddFunction(GElf_Addr, const std::string &);
 
@@ -74,19 +74,23 @@ private:
 	void AddLocations(Dwarf_Debug, Dwarf_Die);
 
 	void FillCUInlines(Dwarf_Debug dwarf, Dwarf_Die cu);
-	void FillInlineFunctions(Dwarf_Debug, Dwarf_Die, Dwarf_Die, const std::string &);
-	void AddInlines(Dwarf_Debug, Dwarf_Die, Dwarf_Die, const std::string &);
+	void FillInlineFunctions(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
+	void AddInlines(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
 	DwarfLocation *UnknownLocation();
-	DwarfLocation *GetInlineCaller(Dwarf_Debug, Dwarf_Die, Dwarf_Die, const std::string &);
+	DwarfLocation *GetInlineCaller(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
 	std::string GetSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func);
-	const char * GetNameAttr(Dwarf_Debug dwarf, Dwarf_Die func);
+	std::string GetNameAttr(Dwarf_Debug dwarf, Dwarf_Die func);
 	std::string SpecSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func_die);
 	void AddInlineRanges(Dwarf_Debug, Dwarf_Die , Dwarf_Die, DwarfLocation *);
-	void AddInlineLoc(DwarfLocation *, uintptr_t, uintptr_t);
+	void AddInlineLoc(DwarfLocation *, Dwarf_Debug, Dwarf_Die, uintptr_t,
+	    uintptr_t);
 
-	Dwarf_Unsigned GetCUBaseAddr(Dwarf_Debug dwarf, Dwarf_Die cu);
+	void SetInlineCaller(Dwarf_Debug dwarf, Dwarf_Die die);
+	void SetLocationFunc(DwarfLocation &loc, const std::string func);
 
-	bool Lookup(uintptr_t addr, const RangeMap &map,
+	Dwarf_Unsigned GetCUBaseAddr(Dwarf_Die cu);
+
+	bool Lookup(uintptr_t addr, const RangeMap &map, size_t inelineDepth,
 	    std::string &fileStr, std::string &funcStr, u_int &line) const;
 
 	/*
@@ -99,10 +103,11 @@ public:
 	DwarfLookup(const std::string &file);
 	~DwarfLookup();
 
-	bool LookupLine(uintptr_t addr, std::string &file, std::string &func,
-            u_int &line) const;
+	bool LookupLine(uintptr_t addr, size_t inelineDepth, std::string &file,
+		std::string &func, u_int &line) const;
 	bool LookupFunc(uintptr_t addr, std::string &file, std::string &func,
-            u_int &line) const;
+		u_int &line) const;
+	size_t GetInlineDepth(uintptr_t addr) const;
 
 	const std::string & getImageFile() const;
 	bool isContained(uintptr_t addr) const;

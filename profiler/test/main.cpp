@@ -27,11 +27,17 @@ main(int argc, char **argv)
 	
 	DwarfLookup lookup(argv[1]);
 
-	file = "";
-	func = "";
-	line = -1;
-	success = lookup.LookupLine(addr, file, func, line);
-	std::cout << "Line: " << func << " @ " << file << ":" << line << std::endl;
+	size_t i, depth;
+	depth = lookup.GetInlineDepth(addr);
+	std::cout << "Depth=" << depth << std::endl;
+	for (i = 0; i < depth; i++) {
+		file = "";
+		func = "";
+		line = -1;
+		success = lookup.LookupLine(addr, i, file, func, line);
+		std::cout << func << std::endl;
+		std::cout << file << ":" << line << std::endl;
+	}
 
 	file = "";
 	func = "";

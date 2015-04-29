@@ -34,17 +34,18 @@ class DwarfRange
 {
 private:
 	DwarfLocation &m_location;
-	const DwarfRange *m_caller;
+	DwarfRange *m_caller;
 	int m_inline_depth;
 
 public:
-	DwarfRange(DwarfLocation &, const DwarfRange *);
 	DwarfRange(DwarfLocation &);
 	
 	int GetInlineDepth() const;
 	DwarfLocation &GetLocation() const;
-	const DwarfRange *GetCaller() const;
-	const DwarfRange *GetOutermostCaller() const;
+	DwarfRange *GetCaller() const;
+	DwarfRange *GetOutermostCaller();
+
+	void SetCaller(DwarfRange *caller);
 };
 
 #endif

@@ -39,6 +39,8 @@ private:
 	bool m_needsDebug;
 	uint64_t m_die;
 
+	static std::string UNKNOWN_FUNC;
+
 public:
 	DwarfLocation(const std::string &, const std::string &, u_int, uint64_t);
 	DwarfLocation(const std::string &, const std::string &);
@@ -46,8 +48,12 @@ public:
 	const std::string & GetFile() const;
 	const std::string & GetFunc() const;
 	u_int GetLineNumber() const;
+
 	bool NeedsDebug() const;
 	void SetDebug(const std::string &, u_int);
+
+	bool NeedsFunc() const;
+	void SetFunc(const std::string &);
 
 	uint64_t GetDie() const
 	{

@@ -28,6 +28,8 @@ __FBSDID("$FreeBSD$");
 
 #include <err.h>
 
+std::string DwarfLocation::UNKNOWN_FUNC("<unknown>");
+
 DwarfLocation::DwarfLocation(const std::string &file, const std::string &func,
     u_int line, uint64_t die)
   : m_file(file),
@@ -58,6 +60,8 @@ const std::string &
 DwarfLocation::GetFunc() const
 {
 
+	if (NeedsFunc())
+		return (UNKNOWN_FUNC);
 	return (m_func);
 }
 
@@ -75,6 +79,13 @@ DwarfLocation::NeedsDebug() const
 	return (m_needsDebug);
 }
 
+bool
+DwarfLocation::NeedsFunc() const
+{
+
+	return (m_func.empty());
+}
+
 void
 DwarfLocation::SetDebug(const std::string &file, u_int line)
 {
@@ -82,5 +93,12 @@ DwarfLocation::SetDebug(const std::string &file, u_int line)
 	m_file = file;
 	m_lineno = line;
 	m_needsDebug = false;
+}
+
+void
+DwarfLocation::SetFunc(const std::string &func)
+{
+
+	m_func = func;
 }
 

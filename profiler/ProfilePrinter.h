@@ -177,7 +177,7 @@ struct RootProcessStrategy
 	{
 		iterator it = vec.rbegin();
 
-		while (!it->isMapped() && it != end(vec)) {
+		while (it != end(vec) && !it->isMapped()) {
 			++it;
 		}
 

@@ -147,12 +147,19 @@ Image::isContained(const Location& location, uintptr_t loadOffset)
 }
 
 void
-Image::mapLocation(Location& location, uintptr_t loadOffset)
+Image::mapLocation(const Location& location, std::vector<Location> & stack, uintptr_t loadOffset)
 {
 	uintptr_t address = location.getAddress() - loadOffset;
+	size_t inlineDepth = m_lookup.GetInlineDepth(address);
 
-	location.isMapped(m_lookup.LookupLine(address, location.m_filename,
-					      location.m_functionname, location.m_linenumber));
+	for (size_t i = 0; i < inlineDepth; i++) {
+		Location temp(location);
+		temp.isMapped(m_lookup.LookupLine(address, i, temp.m_filename,
+		    temp.m_functionname, temp.m_linenumber));
+		if (temp.isMapped())
+			temp.m_modulename = this->getImageFile().c_str();
+		stack.push_back(temp);
+	}
 }
 
 void
@@ -288,20 +295,20 @@ Image::mapAllLocations(LocationList& locationList)
 
 	for (LocationList::iterator it = locationList.begin(); it != locationList.end(); ++it) {
 		std::vector<Location> & stack(*it);
-		for (std::vector<Location>::iterator jt = stack.begin(); jt != stack.end(); ++jt) {
+		std::vector<Location> origStack;
+		std::swap(stack, origStack);
+		for (std::vector<Location>::iterator jt = origStack.begin(); jt != origStack.end(); ++jt) {
 			Location& location(*jt);
 
 			Image *image = findImage(location, loadOffset);
 
-			if (image == NULL)
+			if (image == NULL || !image->isContained(location, loadOffset)) {
+				stack.push_back(location);
 				continue;
-
-			if (image->isContained(location, loadOffset)) {
-				image->mapLocation(location, loadOffset);
-				if (location.m_isMapped)
-					location.m_modulename = image->getImageFile().c_str();
 			}
-		}
+
+			image->mapLocation(location, stack, loadOffset);
+		}	
 	}
 }
 

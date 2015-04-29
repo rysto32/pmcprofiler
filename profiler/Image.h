@@ -307,7 +307,7 @@ class Image
 	Image(const std::string& imageName);
 
 	bool isContained(const Location& location, uintptr_t loadOffset = 0);
-	void mapLocation(Location& location, uintptr_t loadOffset = 0);
+	void mapLocation(const Location& location, std::vector<Location> & stack, uintptr_t loadOffset = 0);
 	void functionStart(Location& location, uintptr_t loadOffset);
 	static Image *findImage(const Location &location, uintptr_t &loadOffset);
 

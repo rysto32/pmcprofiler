@@ -76,6 +76,9 @@ main(int argc, char *argv[])
 	if (elf_version(EV_CURRENT) == EV_NONE)
 		err(1, "libelf incompatible");
 
+	/* Workaround for libdwarf crash when processing some KLD modules. */
+	dwarf_set_reloc_application(0);
+
 	while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:t:r:N:m:")) != -1) {
 		switch (ch) {
 			case 'f':

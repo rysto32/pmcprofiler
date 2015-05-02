@@ -38,17 +38,19 @@
 #include <sys/stat.h>
 
 Process::ProcessMap Process::processMap;
+Process::ProcessList Process::processList;
 
 void
 Process::clearOldSamples()
 {
-	Process::ProcessMap::iterator it = Process::processMap.begin();
-	for (; it != Process::processMap.end(); ++it) {
-		it->second->m_samples.clear();
-		it->second->m_functionLocationMap.clear();
-		it->second->m_callchainMap.clear();
-		it->second->m_sampleCount = 0;
-		it->second->m_numCallchains = 0;
+	Process::ProcessList::iterator it = Process::processList.begin();
+	for (; it != Process::processList.end(); ++it) {
+		Process *p = *it;
+		p->m_samples.clear();
+		p->m_functionLocationMap.clear();
+		p->m_callchainMap.clear();
+		p->m_sampleCount = 0;
+		p->m_numCallchains = 0;
 	}
 }
 
@@ -60,9 +62,10 @@ Process::fillProcessMap()
 void
 Process::freeProcessMap()
 {
-	for (ProcessMap::iterator it = processMap.begin(); it != processMap.end(); ++it)
-		delete it->second;
+	for (ProcessList::iterator it = processList.begin(); it != processList.end(); ++it)
+		delete *it;
 
+	processList.clear();
 	processMap.clear();
 }
 
@@ -119,22 +122,21 @@ Process::getProcess(const Sample& sample)
 	pid_t pid = sample.getProcessID();
 	Process* process = processMap[pid];
 
-	if (process == NULL)
+	if (process == NULL) {
 		process = processMap[pid] = new Process(sample);
+		processList.push_back(process);
+	}
 	return *process;
 }
 
 Process&
-Process::getProcess(const ProcessExec& processExec)
+Process::processExecs(const ProcessExec& processExec)
 {
 	pid_t pid = processExec.getProcessID();
-	Process* process = processMap[pid];
 
-	if (process == NULL)
-		process = processMap[pid] = new Process(processExec);
-
-	if (process->m_name.empty() && !processExec.getProcessName().empty())
-		process->m_name = processExec.getProcessName();
+	Process *process = new Process(processExec);
+	processMap[pid] = process;
+	processList.push_back(process);
 
 	return *process;
 }
@@ -144,11 +146,13 @@ Process::getProcess(const char * name, pid_t pid)
 {
 	Process* process = processMap[pid];
 
-	if (process == NULL)
+	if (process == NULL) {
 		/* we use the name of the first map-in file as our name, as that
 		 * should be the name of our executable
 		 */
 		process = processMap[pid] = new Process(name, pid);
+		processList.push_back(process);
+	}
 
 	return *process;
 }
@@ -169,7 +173,8 @@ Process::collectLocations(LocationList& locationList)
 		std::vector<Location> stack;
 		stack.reserve(it->first.getChainDepth());
 		for (int i = 0; i < it->first.getChainDepth(); i++)
-			stack.push_back(Location(it->first.isKernel(), m_pid, it->first.getAddress(i), it->second));
+			stack.push_back(Location(it->first.isKernel(), 
+			    it->first.getAddress(i), it->second, this));
 		locationList.push_back(stack);
 	}
 	m_samples.clear();
@@ -178,8 +183,8 @@ Process::collectLocations(LocationList& locationList)
 void
 Process::collectActiveProcesses(ActiveProcessList& activeProcessList)
 {
-	for (ProcessMap::const_iterator it = processMap.begin(); it != processMap.end(); ++it) {
-		Process* process((*it).second);
+	for (ProcessList::const_iterator it = processList.begin(); it != processList.end(); ++it) {
+		Process* process(*it);
 
 		if (process->m_sampleCount > 0)
 			activeProcessList.push_back(process);
@@ -190,8 +195,8 @@ Process::collectActiveProcesses(ActiveProcessList& activeProcessList)
 void
 Process::collectAllLocations(LocationList& locationList)
 {
-	for (ProcessMap::iterator it = processMap.begin(); it != processMap.end(); ++it)
-		(*it).second->collectLocations(locationList);
+	for (ProcessList::iterator it = processList.begin(); it != processList.end(); ++it)
+		(*it)->collectLocations(locationList);
 	std::sort(locationList.begin(), locationList.end());
 }
 

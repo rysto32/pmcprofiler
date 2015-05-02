@@ -58,11 +58,11 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 		const Location& location(it->front());
 		char * functionName = Image::demangle(location.getFunctionName());
 
+		Process* process = location.getProcess();
 		if (location.isKernelImage()) {
 			execPath = getbootfile();
 			base = basename(execPath);
 		} else {
-			Process* process = Process::getProcess(location.getPid());
 			execPath = process == 0 ? "" : (process->getName()).c_str();
 			base = basename(execPath);
 		}
@@ -72,7 +72,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 			(location.getCount() * 100.0) / profiler.getSampleCount(),
 			(cumulative * 100.0) / profiler.getSampleCount(),
 			location.isKernelImage() ? "kern" : "user",
-			location.getPid(),
+			process->getPid(),
 			((base == 0) || (*base == '\0')) ? execPath : basename(execPath),
 			location.getCount(),
 			location.getAddress(),

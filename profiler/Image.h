@@ -43,6 +43,7 @@
 extern bool g_quitOnError;
 
 class Image;
+class Process;
 
 class Location
 {
@@ -52,23 +53,25 @@ class Location
 	bool                m_isKernel;
 	bool                m_isMapped;
 	unsigned            m_count;
-	pid_t               m_pid;
 	std::string         m_modulename;
 	std::string         m_filename;
 	std::string         m_functionname;
 	unsigned            m_linenumber;
+	
+	Process *           m_process;
 
 public:
-	Location(bool isAKernel, unsigned pid, uintptr_t address, unsigned count) :
+	Location(bool isAKernel, uintptr_t address, unsigned count, 
+	    Process *process) :
 	m_address(address),
 	m_isKernel(isAKernel),
 	m_isMapped(false),
 	m_count(count),
-	m_pid(pid),
 	m_modulename(),
 	m_filename(),
 	m_functionname(),
-	m_linenumber(-1)
+	m_linenumber(-1),
+	m_process(process)
 	{
 	}
 
@@ -97,9 +100,9 @@ public:
 		return m_count;
 	}
 
-	pid_t getPid() const
+	Process * getProcess() const
 	{
-		return m_pid;
+		return m_process;
 	}
 
 	const std::string &getModuleName() const

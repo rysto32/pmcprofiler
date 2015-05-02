@@ -263,7 +263,7 @@ Image::findImage(const Location &location, uintptr_t &loadOffset)
 			return (kernelModuleImage);
 		}
 	} else {
-		Process* process = Process::getProcess(location.m_pid);
+		Process* process = location.getProcess();
 		if (process == NULL)
 			return (NULL);
 

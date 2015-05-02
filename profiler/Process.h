@@ -37,9 +37,11 @@ public:
 	typedef std::unordered_map<pid_t, Process*> ProcessMap;
 	typedef std::unordered_map<Sample, unsigned, Sample::hash> SampleMap;
 	typedef std::map<uintptr_t, std::string> LoadableImageMap;
+	typedef std::vector<Process*> ProcessList;
 
 private:
 	static ProcessMap processMap;
+	static ProcessList processList;
 
 	pid_t m_pid;
 	unsigned m_sampleCount;
@@ -73,7 +75,7 @@ public:
 	static void freeProcessMap();
 
 	static Process& getProcess(const Sample& sample);
-	static Process& getProcess(const ProcessExec& processExec);
+	static Process& processExecs(const ProcessExec& processExec);
 	static Process& getProcess(const char * name, pid_t pid);
 
 	static Process* getProcess(pid_t pid)
@@ -138,7 +140,7 @@ Process::mapAllFunctions(LocationList& locationList, ProcessStrategy strategy)
 		std::string fileName = location.getFileName();
 		std::string key(fileName);
 		key += functionName;
-		Process & process = *getProcess(location.getPid());
+		Process & process = *location.getProcess();
 		FunctionLocationMap& functionLocationMap(process.m_functionLocationMap);
 
 		std::pair<FunctionLocationMap::iterator, bool> findPos =

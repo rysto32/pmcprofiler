@@ -51,7 +51,7 @@ Profiler::createProfile(ProfilePrinter & printer)
 void
 Profiler::processEvent(const ProcessExec& processExec)
 {
-	Process::getProcess(processExec);
+	Process::processExecs(processExec);
 }
 
 void

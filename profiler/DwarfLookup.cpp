@@ -40,7 +40,9 @@ __FBSDID("$FreeBSD$");
 #include <string.h>
 
 DwarfLookup::DwarfLookup(const std::string &filename)
-  : m_image_file(filename),
+  : m_elf(NULL),
+    m_dwarf(DW_DLV_BADADDR),
+    m_image_file(filename),
     m_symbols_file(),
     m_text_start(0),
     m_text_end(0)
@@ -94,8 +96,11 @@ DwarfLookup::~DwarfLookup()
 	    it != m_ranges.end(); ++it)
 		delete *it;
 
-	dwarf_finish(m_dwarf, &derr);
-	elf_end(m_elf);
+	if (m_dwarf != DW_DLV_BADADDR)
+		dwarf_finish(m_dwarf, &derr);
+
+	if (m_elf != NULL)
+		elf_end(m_elf);
 }
 
 Elf *

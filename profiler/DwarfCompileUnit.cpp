@@ -56,7 +56,7 @@ DwarfCompileUnit::DwarfCompileUnit(Dwarf_Debug dwarf, Dwarf_Die die,
 DwarfCompileUnit::~DwarfCompileUnit()
 {
 
-	for (LocationList::iterator it = m_locationList.begin();
+	for (DwarfLocationList::iterator it = m_locationList.begin();
 	    it != m_locationList.end(); ++it)
 		delete *it;
 

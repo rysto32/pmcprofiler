@@ -49,7 +49,7 @@ private:
 
 	RangeMap m_locations;
 	RangeList m_ranges;
-	LocationList m_locationList;
+	DwarfLocationList m_locationList;
 	
 	const std::string & m_image_file;
 	const RangeMap & m_functions;

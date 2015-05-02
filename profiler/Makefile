@@ -3,6 +3,7 @@ WARNS=3
 NO_MAN=
 
 SRCS=	\
+	DwarfCompileUnit.cpp \
 	DwarfLocation.cpp \
 	DwarfLookup.cpp \
 	DwarfRange.cpp \

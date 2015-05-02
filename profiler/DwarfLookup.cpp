@@ -86,7 +86,7 @@ DwarfLookup::~DwarfLookup()
 	    it != m_cu_list.end(); ++it)
 		delete *it;	
 	
-	for (LocationList::iterator it = m_locationList.begin();
+	for (DwarfLocationList::iterator it = m_locationList.begin();
 	    it != m_locationList.end(); ++it)
 		delete *it;
 

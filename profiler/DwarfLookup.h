@@ -55,7 +55,7 @@ private:
 
 	CompileUnitList m_cu_list;
 	RangeList m_ranges;
-	LocationList m_locationList;
+	DwarfLocationList m_locationList;
 	
 	std::string m_image_file;
 	std::string m_symbols_file;

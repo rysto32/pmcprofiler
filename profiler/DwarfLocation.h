@@ -62,6 +62,6 @@ public:
 	}
 };
 
-typedef std::vector<DwarfLocation*> LocationList;
+typedef std::vector<DwarfLocation*> DwarfLocationList;
 
 #endif

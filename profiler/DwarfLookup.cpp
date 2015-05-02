@@ -285,7 +285,7 @@ DwarfLookup::AddLocations(Dwarf_Debug dwarf, Dwarf_Die die)
 		} else
 			fileStr = file;
 
-		RangeMap::const_iterator it = m_functions.lower_bound(addr);
+		RangeMap::const_iterator it = LastSmallerThan(m_functions, addr);
 		if (it != m_functions.end()) {
 			DwarfLocation &funcLoc = it->second->
 			    GetOutermostCaller()->GetLocation();
@@ -325,7 +325,7 @@ DwarfLookup::SetAssemblyFuncs()
 	for (; it != m_locations.end(); ++it) {
 		DwarfLocation &loc = it->second->GetOutermostCaller()->GetLocation();
 		if (loc.NeedsFunc()) {
-			RangeMap::iterator func = m_functions.lower_bound(it->first);
+			RangeMap::iterator func = LastSmallerThan(m_functions, it->first);
 			if (func != m_functions.end())
 				loc.SetFunc(func->second->GetLocation().GetFunc());
 		}
@@ -445,14 +445,14 @@ DwarfLookup::AddInlineLoc(DwarfLocation *loc, Dwarf_Debug dwarf, Dwarf_Die die,
 	RangeMap::iterator insert_hint;
 	DwarfRange *inline_range, *outer;
 
-	RangeMap::iterator it = m_locations.lower_bound(low);
+	RangeMap::iterator it = LastSmallerThan(m_locations, low);
 	if (it == m_locations.end())
 		return;
 
 	inline_range = new DwarfRange(*loc);
 	m_ranges.push_back(inline_range);
 	std::string inlineFunc(GetSubprogramName(dwarf, die));
-	for (; it != m_locations.end() && it->first < high; --it) {
+	for (; it != m_locations.end() && it->first < high; ++it) {
 		outer = it->second->GetOutermostCaller();
 		DwarfLocation &loc = outer->GetLocation();
 		if (outer != inline_range)
@@ -616,8 +616,8 @@ DwarfLookup::SetInlineCaller(Dwarf_Debug dwarf, Dwarf_Die die)
 	if (error != DW_DLV_OK)
 		high_pc = low_pc + 1;
 
-	RangeMap::iterator it = m_locations.lower_bound(low_pc);
-	for (; it != m_locations.end() && it->first <= high_pc; --it) {
+	RangeMap::iterator it = LastSmallerThan(m_locations, low_pc);
+	for (; it != m_locations.end() && it->first <= high_pc; ++it) {
 		SetLocationFunc(it->second->GetOutermostCaller()->GetLocation(), func);
 	}
 }
@@ -630,12 +630,34 @@ DwarfLookup::SetLocationFunc(DwarfLocation &loc, const std::string func)
 		loc.SetFunc(func);
 }
 
+DwarfLookup::RangeMap::iterator
+DwarfLookup::LastSmallerThan(RangeMap &map, uintptr_t addr)
+{
+	RangeMap::iterator it = map.upper_bound(addr);
+
+	if (it == map.begin())
+		return (map.end());
+	--it;
+	return (it);
+}
+
+DwarfLookup::RangeMap::const_iterator
+DwarfLookup::LastSmallerThan(const RangeMap &map, uintptr_t addr) const
+{
+	RangeMap::const_iterator it = map.upper_bound(addr);
+
+	if (it == map.begin())
+		return (map.end());
+	--it;
+	return (it);
+}
+
 bool
 DwarfLookup::Lookup(uintptr_t addr, const RangeMap &map, size_t inlineDepth,
     std::string &fileStr, std::string &funcStr, u_int &line) const
 {
 	const DwarfRange *range;
-	RangeMap::const_iterator it = map.lower_bound(addr);
+	RangeMap::const_iterator it = LastSmallerThan(map, addr);
 	size_t i;
 
 	if (it != map.end()) {
@@ -696,7 +718,7 @@ DwarfLookup::isContained(uintptr_t addr) const
 size_t
 DwarfLookup::GetInlineDepth(uintptr_t addr) const
 {
-	RangeMap::const_iterator it = m_locations.lower_bound(addr);
+	RangeMap::const_iterator it = LastSmallerThan(m_locations, addr);
 
 	if (it != m_locations.end())
 		return (it->second->GetInlineDepth());

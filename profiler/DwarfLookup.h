@@ -42,12 +42,7 @@ class DwarfRange;
 class DwarfLookup
 {
 private:
-	/*
-	 * Use the std::greater comparator so that map::lower_bound returns the
-	 * DwarfRange whose address is <= the address we're searching for.
-	 */
-	typedef std::map<uintptr_t, DwarfRange *, std::greater<uintptr_t> >
-	    RangeMap;
+	typedef std::map<uintptr_t, DwarfRange *> RangeMap;
 
 	typedef std::vector <DwarfRange *> RangeList;
 
@@ -93,6 +88,9 @@ private:
 
 	bool Lookup(uintptr_t addr, const RangeMap &map, size_t inelineDepth,
 	    std::string &fileStr, std::string &funcStr, u_int &line) const;
+
+	RangeMap::iterator LastSmallerThan(RangeMap &map, uintptr_t addr);
+	RangeMap::const_iterator LastSmallerThan(const RangeMap &map, uintptr_t addr) const;
 
 	/*
 	 * Some compilers, including clang, put the mangled name of a symbol

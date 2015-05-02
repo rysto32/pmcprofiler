@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2014-2015 Sandvine Incorporated.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -28,6 +28,9 @@
 
 #include <stdint.h>
 
+#include <map>
+#include <vector>
+
 class DwarfLocation;
 
 class DwarfRange
@@ -47,5 +50,8 @@ public:
 
 	void SetCaller(DwarfRange *caller);
 };
+
+typedef std::map<uintptr_t, DwarfRange *> RangeMap;
+typedef std::vector <DwarfRange *> RangeList;
 
 #endif

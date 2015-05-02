@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2014-2015 Sandvine Incorporated.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -36,26 +36,31 @@
 #include <string>
 #include <vector>
 
-class DwarfLocation;
-class DwarfRange;
+#include "DwarfLocation.h"
+#include "DwarfRange.h"
+
+class DwarfCompileUnit;
 
 class DwarfLookup
 {
 private:
-	typedef std::map<uintptr_t, DwarfRange *> RangeMap;
+	typedef std::map<uintptr_t, DwarfCompileUnit*> CompileUnitMap;
+	typedef std::vector<DwarfCompileUnit*> CompileUnitList;
 
-	typedef std::vector <DwarfRange *> RangeList;
+	Elf *m_elf;
+	Dwarf_Debug m_dwarf;
 
-	typedef std::vector<DwarfLocation*> LocationList;
+	CompileUnitMap m_compile_units;
+	RangeMap m_functions;
 
+	CompileUnitList m_cu_list;
+	RangeList m_ranges;
+	LocationList m_locationList;
+	
 	std::string m_image_file;
 	std::string m_symbols_file;
-	RangeMap m_functions;
-	RangeMap m_locations;
-	RangeList m_ranges;
 	uint64_t m_text_start;
 	uint64_t m_text_end;
-	LocationList m_locationList;
 
 	Elf * GetSymbolFile(Elf *);
 	int FindSymbolFile();
@@ -63,40 +68,13 @@ private:
 	void ParseDebuglink(Elf_Scn *);
 	void FillFunctionsFromSymtab(Elf *, Elf_Scn *, GElf_Shdr *);
 	void AddFunction(GElf_Addr, const std::string &);
-
-	void FillRangeMap(Dwarf_Debug);
-	void FillLocationsFromDie(Dwarf_Debug, Dwarf_Die);
-	void AddLocations(Dwarf_Debug, Dwarf_Die);
-
-	void FillCUInlines(Dwarf_Debug dwarf, Dwarf_Die cu);
-	void FillInlineFunctions(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
-	void AddInlines(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
-	DwarfLocation *UnknownLocation();
-	DwarfLocation *GetInlineCaller(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
-	std::string GetSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func);
-	std::string GetNameAttr(Dwarf_Debug dwarf, Dwarf_Die func);
-	std::string SpecSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func_die);
-	void AddInlineRanges(Dwarf_Debug, Dwarf_Die , Dwarf_Die, DwarfLocation *);
-	void AddInlineLoc(DwarfLocation *, Dwarf_Debug, Dwarf_Die, uintptr_t,
-	    uintptr_t);
-
-	void SetInlineCaller(Dwarf_Debug dwarf, Dwarf_Die die);
-	void SetLocationFunc(DwarfLocation &loc, const std::string func);
-	void SetAssemblyFuncs();
-
-	Dwarf_Unsigned GetCUBaseAddr(Dwarf_Die cu);
-
-	bool Lookup(uintptr_t addr, const RangeMap &map, size_t inelineDepth,
-	    std::string &fileStr, std::string &funcStr, u_int &line) const;
-
-	RangeMap::iterator LastSmallerThan(RangeMap &map, uintptr_t addr);
-	RangeMap::const_iterator LastSmallerThan(const RangeMap &map, uintptr_t addr) const;
-
-	/*
-	 * Some compilers, including clang, put the mangled name of a symbol
-	 * in this non-standard DWARF attribute.
-	 */
-	static const int DW_AT_MIPS_linkage_name = 0x2007;
+	
+	void EnumerateCompileUnits(Dwarf_Debug dwarf);
+	void ProcessCompileUnit(Dwarf_Debug dwarf, Dwarf_Die die);
+	void AddCompileUnit(Dwarf_Debug dwarf, Dwarf_Die die);
+	void AddCU_PC(Dwarf_Debug dwarf, Dwarf_Die die, DwarfCompileUnit *cu);
+	void AddCU_Ranges(Dwarf_Debug dwarf, Dwarf_Die die,
+	    DwarfCompileUnit *cu, Dwarf_Unsigned off);
 
 public:
 	DwarfLookup(const std::string &file);

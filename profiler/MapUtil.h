@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2015 Sandvine Incorporated.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -23,45 +23,39 @@
 //
 // $FreeBSD$
 
-#ifndef DWARF_LOCATION_H
-#define DWARF_LOCATION_H
+#ifndef MAP_UTIL_H
+#define MAP_UTIL_H
 
-#include <sys/types.h>
+#include <map>
 
-#include <string>
-#include <vector>
-
-class DwarfLocation
+template <typename K, typename Map, typename Iterator>
+Iterator
+LastSmallerThanImpl(Map &map, K addr)
 {
-private:
-	std::string m_file;
-	std::string m_func;
-	u_int m_lineno;
-	bool m_needsDebug;
-	uint64_t m_die;
+	Iterator it = map.upper_bound(addr);
 
-	static std::string UNKNOWN_FUNC;
+	if (it == map.begin())
+		return (map.end());
+	--it;
+	return (it);
+}
 
-public:
-	DwarfLocation(const std::string &, const std::string &, u_int, uint64_t);
-	DwarfLocation(const std::string &, const std::string &);
+template <typename K, typename V>
+typename std::map<K, V>::iterator
+LastSmallerThan(std::map<K, V> &map, K addr)
+{
 
-	const std::string & GetFile() const;
-	const std::string & GetFunc() const;
-	u_int GetLineNumber() const;
+	return (LastSmallerThanImpl<K, std::map<K, V>,
+	    typename std::map<K, V>::iterator>(map, addr));
+}
 
-	bool NeedsDebug() const;
-	void SetDebug(const std::string &, u_int);
+template <typename K, typename V>
+typename std::map<K, V>::const_iterator
+LastSmallerThan(const std::map<K, V> &map, K addr)
+{
 
-	bool NeedsFunc() const;
-	void SetFunc(const std::string &);
-
-	uint64_t GetDie() const
-	{
-		return m_die;
-	}
-};
-
-typedef std::vector<DwarfLocation*> LocationList;
+	return (LastSmallerThanImpl<K, const std::map<K, V>,
+	    typename std::map<K, V>::const_iterator>(map, addr));
+}
 
 #endif

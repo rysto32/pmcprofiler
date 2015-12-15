@@ -342,6 +342,10 @@ DwarfLookup::AddCU_SrcLines(Dwarf_Debug dwarf, Dwarf_Die die,
 	Dwarf_Error derr;
 	Dwarf_Signed lcount;
 
+	/*
+	 * If no srclines data is available, this compile unit contains no
+	 * code at all and we should ignore it.
+	 */
 	if (dwarf_srclines(die, &lbuf, &lcount, &derr) != DW_DLV_OK)
 		return;
 

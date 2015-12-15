@@ -72,9 +72,12 @@ private:
 	void EnumerateCompileUnits(Dwarf_Debug dwarf);
 	void ProcessCompileUnit(Dwarf_Debug dwarf, Dwarf_Die die);
 	void AddCompileUnit(Dwarf_Debug dwarf, Dwarf_Die die);
-	void AddCU_PC(Dwarf_Debug dwarf, Dwarf_Die die, DwarfCompileUnit *cu);
+	void AddCU_PC(Dwarf_Debug dwarf, Dwarf_Die die, DwarfCompileUnit *cu,
+	    Dwarf_Unsigned low_pc);
 	void AddCU_Ranges(Dwarf_Debug dwarf, Dwarf_Die die,
 	    DwarfCompileUnit *cu, Dwarf_Unsigned off);
+	void AddCU_SrcLines(Dwarf_Debug dwarf, Dwarf_Die die,
+	    DwarfCompileUnit *cu);
 
 public:
 	DwarfLookup(const std::string &file);

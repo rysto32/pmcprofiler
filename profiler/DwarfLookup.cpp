@@ -270,29 +270,34 @@ DwarfLookup::AddCompileUnit(Dwarf_Debug dwarf, Dwarf_Die die)
 {
 	DwarfCompileUnit *cu;
 	Dwarf_Error derr;
-	Dwarf_Unsigned off;
-	int error;
-	
+	Dwarf_Unsigned off, low_pc, high_pc;
+	int error, err_lo, err_hi;
+
 	cu = new DwarfCompileUnit(dwarf, die, m_image_file, m_functions);
 	m_cu_list.push_back(cu);
 
 	error = dwarf_attrval_unsigned(die, DW_AT_ranges, &off, &derr);
-	if (error != DW_DLV_OK)
-		AddCU_PC(dwarf, die, cu);
-	else
+	if (error == DW_DLV_OK) {
 		AddCU_Ranges(dwarf, die, cu, off);
+		return;
+	}
+
+	err_lo = dwarf_attrval_unsigned(die, DW_AT_low_pc, &low_pc, &derr);
+	err_hi = dwarf_attrval_unsigned(die, DW_AT_high_pc, &high_pc, &derr);
+	if (err_lo == DW_DLV_OK && err_hi == DW_DLV_OK) {
+		AddCU_PC(dwarf, die, cu, low_pc);
+		return;
+	}
+
+	AddCU_SrcLines(dwarf, die, cu);
 }
 
 void
-DwarfLookup::AddCU_PC(Dwarf_Debug dwarf, Dwarf_Die die, DwarfCompileUnit *cu)
+DwarfLookup::AddCU_PC(Dwarf_Debug dwarf, Dwarf_Die die, DwarfCompileUnit *cu,
+    Dwarf_Unsigned low_pc)
 {
-	Dwarf_Unsigned low_pc;
-	Dwarf_Error derr;
-	int error;
 
-	error = dwarf_attrval_unsigned(die, DW_AT_low_pc, &low_pc, &derr);
-	if (error == DW_DLV_OK)
-		m_compile_units[low_pc] = cu;
+	m_compile_units[low_pc] = cu;
 }
 
 void
@@ -326,6 +331,29 @@ DwarfLookup::AddCU_Ranges(Dwarf_Debug dwarf, Dwarf_Die die,
 
 break_loop:
 	dwarf_ranges_dealloc(dwarf, ranges, count);
+}
+
+void
+DwarfLookup::AddCU_SrcLines(Dwarf_Debug dwarf, Dwarf_Die die,
+    DwarfCompileUnit *cu)
+{
+	Dwarf_Line *lbuf;
+	Dwarf_Addr addr;
+	Dwarf_Error derr;
+	Dwarf_Signed lcount;
+
+	if (dwarf_srclines(die, &lbuf, &lcount, &derr) != DW_DLV_OK)
+		return;
+
+	if (lcount < 1)
+		errx(1, "Could not get offset for die %#lx", DwarfCompileUnit::GetDieOffset(die));
+
+	if (dwarf_lineaddr(lbuf[0], &addr, &derr))
+		errx(1, "Could not get address from die %#lx", DwarfCompileUnit::GetDieOffset(die));
+
+	m_compile_units[addr] = cu;
+
+	dwarf_srclines_dealloc(dwarf, lbuf, lcount);
 }
 
 bool

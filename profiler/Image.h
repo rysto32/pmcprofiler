@@ -42,6 +42,7 @@
 #include <fcntl.h>
 
 extern bool g_quitOnError;
+extern bool g_includeTemplates;
 
 class Image;
 class Process;

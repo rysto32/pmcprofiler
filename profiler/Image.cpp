@@ -316,6 +316,8 @@ char*
 Image::demangle(const std::string &name)
 {
 	char *demangled;
+	char *dst, *src;
+	int angle_count;
 	size_t len;
 	int status;
 
@@ -331,6 +333,28 @@ Image::demangle(const std::string &name)
 
 	if (demangled == NULL)
 		return (strdup(name.c_str()));
+
+	// If template arguments are included in the output, it tends to be
+	// so long that functions are unreadable.  By default, filter out
+	// the template arguments.
+	if (!g_includeTemplates) {
+		dst = demangled;
+		src = demangled;
+		angle_count = 0;
+		while (*src != '\0') {
+			if (*src == '<')
+				angle_count++;
+			else if (*src == '>')
+				angle_count--;
+			else if (angle_count == 0) {
+				if (dst != src)
+					*dst = *src;
+				dst++;
+			}
+			src++;
+		}
+		*dst = '\0';
+	}
 
 	return (demangled);
 }

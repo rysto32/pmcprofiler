@@ -47,6 +47,8 @@ std::shared_ptr<std::string> SharedString::NULL_STR(new std::string(""));
 // mapped
 bool g_quitOnError = false;
 
+bool g_includeTemplates = false;
+
 FILE * openOutFile(const char * path)
 {
 	FILE * file;
@@ -83,7 +85,7 @@ main(int argc, char *argv[])
 	/* Workaround for libdwarf crash when processing some KLD modules. */
 	dwarf_set_reloc_application(0);
 
-	while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:t:r:N:m:")) != -1) {
+	while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:t:r:N:m:T")) != -1) {
 		switch (ch) {
 			case 'f':
 				samplefile = optarg;
@@ -133,6 +135,9 @@ main(int argc, char *argv[])
 				break;
 			case 'm':
 				Image::setModulePath(optarg);
+				break;
+			case 'T':
+				g_includeTemplates = true;
 				break;
 			case '?':
 			default:

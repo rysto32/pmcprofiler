@@ -25,6 +25,7 @@
 #define IMAGE_H
 
 #include "DwarfLookup.h"
+#include "SharedString.h"
 
 #include <string>
 #include <algorithm>
@@ -53,9 +54,9 @@ class Location
 	bool                m_isKernel;
 	bool                m_isMapped;
 	unsigned            m_count;
-	std::string         m_modulename;
-	std::string         m_filename;
-	std::string         m_functionname;
+	SharedString m_modulename;
+	SharedString m_filename;
+	SharedString m_functionname;
 	unsigned            m_linenumber;
 	
 	Process *           m_process;
@@ -105,17 +106,17 @@ public:
 		return m_process;
 	}
 
-	const std::string &getModuleName() const
+	const SharedString &getModuleName() const
 	{
 		return (m_modulename);
 	}
 
-	const std::string &getFileName() const
+	const SharedString &getFileName() const
 	{
 		return (m_filename);
 	}
 
-	const std::string &getFunctionName() const
+	const SharedString &getFunctionName() const
 	{
 		return (m_functionname);
 	}
@@ -130,7 +131,7 @@ public:
 		return m_count > other.m_count;
 	}
 
-	void setFunctionName(const char * name)
+	void setFunctionName(SharedString name)
 	{
 		m_functionname = name;
 	}
@@ -188,7 +189,7 @@ public:
 	{
 		size_t operator()(const FunctionLocation & loc) const
 		{
-			return std::hash<std::string>()(loc.getFunctionName());
+			return std::hash<std::string>()(*loc.getFunctionName());
 		}
 	};
 
@@ -204,11 +205,14 @@ class Location;
 
 class Callchain
 {
-	std::vector<std::string> vec;
+	typedef std::vector<SharedString> CallchainVector;
+
+	CallchainVector vec;
 	mutable size_t hash_value;
 	mutable bool hash_valid;
 
 public:
+	typedef CallchainVector::iterator iterator;
 
 	Callchain()
 	  : hash_valid(false)
@@ -220,7 +224,7 @@ public:
 		if (hash_valid)
 			return hash_value;
 
-		std::vector<std::string>::const_iterator it = vec.begin();
+		CallchainVector::const_iterator it = vec.begin();
 		size_t val = 0;
 		std::hash<std::string> hasher;
 
@@ -234,7 +238,7 @@ public:
 		 * string.
 		 */
 		for (; it != vec.end(); ++it)
-			val = 5 * val + hasher(*it);
+			val = 5 * val + hasher(**it);
 
 		hash_value = val;
 		hash_valid = true;
@@ -242,7 +246,7 @@ public:
 		return val;
 	}
 
-	void push_back(const std::string& t)
+	void push_back(const SharedString& t)
 	{
 		vec.push_back(t);
 		hash_valid = false;
@@ -254,7 +258,7 @@ public:
 		hash_valid = false;
 	}
 
-	const std::string & back()
+	const SharedString& back()
 	{
 		return vec.back();
 	}
@@ -271,8 +275,6 @@ public:
 			return v.hash();
 		}
 	};
-
-	typedef std::vector<std::string>::iterator iterator;
 
 	iterator begin()
 	{
@@ -332,7 +334,7 @@ public:
 	static void setBootfile(const char * file);
 	static void setModulePath(char * path);
 
-	const std::string & getImageFile() const;
+	const SharedString & getImageFile() const;
 };
 
 #endif // #if !defined(IMAGE_H)

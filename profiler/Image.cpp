@@ -130,7 +130,7 @@ Image::Image(const std::string& imageName)
 {
 }
 
-const std::string &
+const SharedString &
 Image::getImageFile() const
 {
 
@@ -157,7 +157,7 @@ Image::mapLocation(const Location& location, std::vector<Location> & stack, uint
 		temp.isMapped(m_lookup.LookupLine(address, i, temp.m_filename,
 		    temp.m_functionname, temp.m_linenumber));
 		if (temp.isMapped())
-			temp.m_modulename = this->getImageFile().c_str();
+			temp.m_modulename = this->getImageFile();
 		stack.push_back(temp);
 	}
 }

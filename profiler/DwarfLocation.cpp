@@ -28,9 +28,9 @@ __FBSDID("$FreeBSD$");
 
 #include <err.h>
 
-std::string DwarfLocation::UNKNOWN_FUNC("<unknown>");
+SharedString DwarfLocation::UNKNOWN_FUNC("<unknown>");
 
-DwarfLocation::DwarfLocation(const std::string &file, const std::string &func,
+DwarfLocation::DwarfLocation(const SharedString &file, const SharedString &func,
     u_int line, uint64_t die)
   : m_file(file),
     m_func(func),
@@ -40,7 +40,7 @@ DwarfLocation::DwarfLocation(const std::string &file, const std::string &func,
 {
 }
 
-DwarfLocation::DwarfLocation(const std::string &file, const std::string &func)
+DwarfLocation::DwarfLocation(const SharedString &file, const SharedString &func)
   : m_file(file),
     m_func(func),
     m_lineno(0),
@@ -49,14 +49,14 @@ DwarfLocation::DwarfLocation(const std::string &file, const std::string &func)
 {
 }
 
-const std::string &
+const SharedString &
 DwarfLocation::GetFile() const
 {
 
 	return (m_file);
 }
 
-const std::string &
+const SharedString &
 DwarfLocation::GetFunc() const
 {
 
@@ -83,11 +83,11 @@ bool
 DwarfLocation::NeedsFunc() const
 {
 
-	return (m_func.empty());
+	return (m_func->empty());
 }
 
 void
-DwarfLocation::SetDebug(const std::string &file, u_int line)
+DwarfLocation::SetDebug(const SharedString &file, u_int line)
 {
 
 	m_file = file;
@@ -96,7 +96,7 @@ DwarfLocation::SetDebug(const std::string &file, u_int line)
 }
 
 void
-DwarfLocation::SetFunc(const std::string &func)
+DwarfLocation::SetFunc(const SharedString &func)
 {
 
 	m_func = func;

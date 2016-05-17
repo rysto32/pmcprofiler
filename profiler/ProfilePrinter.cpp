@@ -56,7 +56,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 		const char* execPath = "";
 		const char* base = "";
 		const Location& location(it->front());
-		char * functionName = Image::demangle(location.getFunctionName());
+		char * functionName = Image::demangle(*location.getFunctionName());
 
 		Process* process = location.getProcess();
 		if (location.isKernelImage()) {
@@ -78,7 +78,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 			location.getAddress(),
 			location.isMapped() ? "mapped  " : "unmapped",
 			execPath,
-			location.getFileName().empty() ? location.getModuleName().c_str() : location.getFileName().c_str(),
+			location.getFileName()->empty() ? location.getModuleName()->c_str() : location.getFileName()->c_str(),
 			location.getLineNumber(),
 			functionName ? functionName : "<unknown>");
 		free(functionName);
@@ -95,14 +95,14 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 		     fprintf(m_outfile, "       time   time-t   samples   env  file / library, line number, function\n");
 		     for (FunctionList::iterator functionListIterator = functionList.begin(); functionListIterator != functionList.end(); ++functionListIterator) {
 			     FunctionLocation& functionLocation(*functionListIterator);
-			     char * functionName = Image::demangle(functionLocation.getFunctionName());
+			     char * functionName = Image::demangle(*functionLocation.getFunctionName());
 			     cumulativeCount += functionLocation.getCount();
 			     fprintf(m_outfile, "    %6.2f%%, %6.2f%%, %8u, %s, %s:%u, %s",
 				     (functionLocation.getCount() * 100.0) / process.getSampleCount(),
 				     (cumulativeCount * 100.0) / process.getSampleCount(),
 				     functionLocation.getCount(),
 				     functionLocation.isKernelImage() ? "kern" : "user",
-				     functionLocation.getFileName().empty() ? functionLocation.getModuleName().c_str() : functionLocation.getFileName().c_str(),
+				     functionLocation.getFileName()->empty() ? functionLocation.getModuleName()->c_str() : functionLocation.getFileName()->c_str(),
 				     functionLocation.getLineNumber(),
 				     functionName ? functionName : "<unknown>");
 			     printLineNumbers(profiler, functionLocation.getLineLocationList());

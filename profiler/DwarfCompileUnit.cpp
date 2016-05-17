@@ -38,7 +38,7 @@ __FBSDID("$FreeBSD$");
 #include <string.h>
 
 DwarfCompileUnit::DwarfCompileUnit(Dwarf_Debug dwarf, Dwarf_Die die,
-   const std::string &file, const RangeMap &functions)
+   const SharedString &file, const RangeMap &functions)
   : m_dwarf(dwarf),
     m_die_offset(GetDieOffset(die)),
     m_die_processed(false),
@@ -70,7 +70,7 @@ DwarfCompileUnit::AddLocations()
 {
 	DwarfLocation *loc;
 	DwarfRange *range;
-	std::string fileStr;
+	SharedString fileStr;
 	char *file;
 	Dwarf_Die die;
 	Dwarf_Line *lbuf;
@@ -104,7 +104,7 @@ DwarfCompileUnit::AddLocations()
 		if (dwarf_linesrc(lbuf[i], &file, &de)) {
 			warnx("dwarf_linesrc: %s",
 			    dwarf_errmsg(de));
-			fileStr = m_image_file.c_str();
+			fileStr = m_image_file;
 		} else
 			fileStr = file;
 
@@ -270,7 +270,7 @@ DwarfCompileUnit::AddInlineLoc(DwarfLocation *loc, Dwarf_Debug dwarf, Dwarf_Die 
 
 	inline_range = new DwarfRange(*loc);
 	m_ranges.push_back(inline_range);
-	std::string inlineFunc(GetSubprogramName(dwarf, die));
+	SharedString inlineFunc(GetSubprogramName(dwarf, die));
 	for (; it != m_locations.end() && it->first < high; ++it) {
 		outer = it->second->GetOutermostCaller();
 		DwarfLocation &loc = outer->GetLocation();
@@ -329,15 +329,15 @@ DwarfCompileUnit::GetInlineCaller(Dwarf_Debug dwarf, Dwarf_Die cu, Dwarf_Die die
 	return (loc);
 }
 
-std::string
+SharedString
 DwarfCompileUnit::GetSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func)
 {
 	Dwarf_Die origin_die;
 	Dwarf_Attribute origin_attr;
 	Dwarf_Off ref;
 	Dwarf_Error derr;
-	std::string name;
-	std::string attr_name;
+	SharedString name;
+	SharedString attr_name;
 	int error;
 
 	/* Fallback name to use if all else fails. */
@@ -359,18 +359,17 @@ DwarfCompileUnit::GetSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func)
 
 	dwarf_dealloc(dwarf, origin_die, DW_DLA_DIE);
 
-	if (name.empty())
+	if (name->empty())
 		return (attr_name);
 	else
 		return (name);
 }
 
-std::string
+SharedString
 DwarfCompileUnit::GetNameAttr(Dwarf_Debug dwarf, Dwarf_Die die)
 {
 	Dwarf_Error derr;
 	const char *func;
-	std::string funcStr;
 	int error;
 
 	error = dwarf_attrval_string(die, DW_AT_MIPS_linkage_name, &func,
@@ -378,21 +377,20 @@ DwarfCompileUnit::GetNameAttr(Dwarf_Debug dwarf, Dwarf_Die die)
 	if (error != DW_DLV_OK) {
 		error = dwarf_attrval_string(die, DW_AT_name, &func, &derr);
 		if (error != DW_DLV_OK)
-			func = "";
+			return ("");
 	}
 
-	funcStr = func;
-	return (funcStr);
+	return (func);
 }
 
-std::string
+SharedString
 DwarfCompileUnit::SpecSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func_die)
 {
 	Dwarf_Die die;
 	Dwarf_Attribute spec_at;
 	Dwarf_Error derr;
 	Dwarf_Off ref;
-	std::string funcStr;
+	SharedString funcStr;
 	int error;
 
 	error = dwarf_attr(func_die, DW_AT_specification, &spec_at, &derr);
@@ -421,7 +419,7 @@ DwarfCompileUnit::SetInlineCaller(Dwarf_Debug dwarf, Dwarf_Die die)
 	Dwarf_Off offset;
 	dwarf_dieoffset(die, &offset, &derr);
 
-	std::string func(GetSubprogramName(dwarf, die));
+	SharedString func(GetSubprogramName(dwarf, die));
 
 	error = dwarf_attrval_unsigned(die, DW_AT_low_pc, &low_pc, &derr);
 	if (error != DW_DLV_OK)
@@ -439,7 +437,7 @@ DwarfCompileUnit::SetInlineCaller(Dwarf_Debug dwarf, Dwarf_Die die)
 }
 
 void
-DwarfCompileUnit::SetLocationFunc(DwarfLocation &loc, const std::string func)
+DwarfCompileUnit::SetLocationFunc(DwarfLocation &loc, SharedString func)
 {
 
 	if (loc.NeedsFunc())
@@ -490,7 +488,7 @@ DwarfCompileUnit::GetDieOffset(Dwarf_Die die)
 
 bool
 DwarfCompileUnit::Lookup(uintptr_t addr, const RangeMap &map,
-    std::string &fileStr, std::string &funcStr, u_int &line, size_t inlineDepth)
+    SharedString &fileStr, SharedString &funcStr, u_int &line, size_t inlineDepth)
 {
 	const DwarfRange *range;
 	RangeMap::const_iterator it = LastSmallerThan(map, addr);
@@ -512,8 +510,8 @@ DwarfCompileUnit::Lookup(uintptr_t addr, const RangeMap &map,
 }
 
 bool
-DwarfCompileUnit::LookupLine(uintptr_t addr, size_t depth, std::string &file,
-    std::string &func, u_int &line)
+DwarfCompileUnit::LookupLine(uintptr_t addr, size_t depth, SharedString &file,
+    SharedString &func, u_int &line)
 {
 
 	AddLocations();

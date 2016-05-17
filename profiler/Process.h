@@ -25,6 +25,7 @@
 #define PROCESS_H
 
 #include "Sample.h"
+#include "SharedString.h"
 #include "Image.h"
 
 #include <string>
@@ -42,6 +43,7 @@ public:
 private:
 	static ProcessMap processMap;
 	static ProcessList processList;
+	static SharedString UNMAPPED_FUNCTION;
 
 	pid_t m_pid;
 	unsigned m_sampleCount;
@@ -136,10 +138,10 @@ Process::mapAllFunctions(LocationList& locationList, ProcessStrategy strategy)
 			continue;
 
 		Location& location(*jt);
-		std::string functionName = location.getFunctionName();
-		std::string fileName = location.getFileName();
-		std::string key(fileName);
-		key += functionName;
+		SharedString functionName = location.getFunctionName();
+		SharedString fileName = location.getFileName();
+		std::string key(*fileName);
+		key += *functionName;
 		Process & process = *location.getProcess();
 		FunctionLocationMap& functionLocationMap(process.m_functionLocationMap);
 
@@ -156,12 +158,12 @@ Process::mapAllFunctions(LocationList& locationList, ProcessStrategy strategy)
 			FunctionLocation funcLoc = *jt;
 
 			if (!funcLoc.isMapped())
-				funcLoc.setFunctionName("[unmapped_function]");
+				funcLoc.setFunctionName(UNMAPPED_FUNCTION);
 
 			std::pair<CallchainMap::iterator, bool> mapInserted =
 			process.m_callchainMap.insert(CallchainMap::value_type(callchain, FunctionLocationMap(1)));
 			std::pair<FunctionLocationMap::iterator, bool> inserted =
-			mapInserted.first->second.insert(FunctionLocationMap::value_type(funcLoc.getFunctionName(), funcLoc));
+			mapInserted.first->second.insert(FunctionLocationMap::value_type(*funcLoc.getFunctionName(), funcLoc));
 
 			if (!inserted.second)
 				inserted.first->second += funcLoc;

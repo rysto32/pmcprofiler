@@ -131,7 +131,7 @@ DwarfLookup::FindSymbolFile()
 	std::string image_dir;
 	int fd;
 
-	image_dir = std::string(dirname(m_image_file.c_str()));
+	image_dir = std::string(dirname(m_image_file->c_str()));
 
 	file = image_dir + "/" + m_symbols_file;
 	fd = open(file.c_str(), O_RDONLY);
@@ -215,7 +215,7 @@ DwarfLookup::FillFunctionsFromSymtab(Elf *elf, Elf_Scn *section,
 }
 
 void
-DwarfLookup::AddFunction(GElf_Addr addr, const std::string &func)
+DwarfLookup::AddFunction(GElf_Addr addr, const SharedString &func)
 {
 	DwarfRange *range;
 	DwarfLocation *loc;
@@ -361,8 +361,8 @@ DwarfLookup::AddCU_SrcLines(Dwarf_Debug dwarf, Dwarf_Die die,
 }
 
 bool
-DwarfLookup::LookupLine(uintptr_t addr, size_t depth, std::string &file,
-    std::string &func, u_int &line) const
+DwarfLookup::LookupLine(uintptr_t addr, size_t depth, SharedString &file,
+    SharedString &func, u_int &line) const
 {
 	bool success;
 	
@@ -383,14 +383,14 @@ DwarfLookup::LookupLine(uintptr_t addr, size_t depth, std::string &file,
 }
 
 bool
-DwarfLookup::LookupFunc(uintptr_t addr, std::string &file,
-    std::string &func, u_int &line) const
+DwarfLookup::LookupFunc(uintptr_t addr, SharedString &file,
+    SharedString &func, u_int &line) const
 {
 
 	return (DwarfCompileUnit::Lookup(addr, m_functions, file, func, line));
 }
 
-const std::string &
+const SharedString &
 DwarfLookup::getImageFile() const
 {
 

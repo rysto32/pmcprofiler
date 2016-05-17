@@ -38,6 +38,7 @@
 
 #include "DwarfLocation.h"
 #include "DwarfRange.h"
+#include "SharedString.h"
 
 class DwarfCompileUnit
 {
@@ -51,7 +52,7 @@ private:
 	RangeList m_ranges;
 	DwarfLocationList m_locationList;
 	
-	const std::string & m_image_file;
+	SharedString m_image_file;
 	const RangeMap & m_functions;
 
 	void AddLocations();
@@ -61,15 +62,15 @@ private:
 	void AddInlines(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
 	DwarfLocation *UnknownLocation();
 	DwarfLocation *GetInlineCaller(Dwarf_Debug, Dwarf_Die, Dwarf_Die);
-	std::string GetSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func);
-	std::string GetNameAttr(Dwarf_Debug dwarf, Dwarf_Die func);
-	std::string SpecSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func_die);
+	SharedString GetSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func);
+	SharedString GetNameAttr(Dwarf_Debug dwarf, Dwarf_Die func);
+	SharedString SpecSubprogramName(Dwarf_Debug dwarf, Dwarf_Die func_die);
 	void AddInlineRanges(Dwarf_Debug, Dwarf_Die , Dwarf_Die, DwarfLocation *);
 	void AddInlineLoc(DwarfLocation *, Dwarf_Debug, Dwarf_Die, uintptr_t,
 	    uintptr_t);
 
 	void SetInlineCaller(Dwarf_Debug dwarf, Dwarf_Die die);
-	void SetLocationFunc(DwarfLocation &loc, const std::string func);
+	void SetLocationFunc(DwarfLocation &loc, SharedString func);
 	void SetAssemblyFuncs();
 	
 	Dwarf_Die GetDie() const;
@@ -83,16 +84,16 @@ private:
 
 public:
 	DwarfCompileUnit(Dwarf_Debug dwarf, Dwarf_Die die,
-	    const std::string &file, const RangeMap &functions);
+	    const SharedString &file, const RangeMap &functions);
 	~DwarfCompileUnit();
 
 	static bool Lookup(uintptr_t addr, const RangeMap &map,
-	    std::string &fileStr, std::string &funcStr, u_int &line,
+	    SharedString &fileStr, SharedString &funcStr, u_int &line,
 	    size_t inlineDepth = 0);
 
-	bool LookupLine(uintptr_t addr, size_t inelineDepth, std::string &file,
-		std::string &func, u_int &line);
-	bool LookupFunc(uintptr_t addr, std::string &file, std::string &func,
+	bool LookupLine(uintptr_t addr, size_t inelineDepth, SharedString &file,
+		SharedString &func, u_int &line);
+	bool LookupFunc(uintptr_t addr, SharedString &file, SharedString &func,
 		u_int &line) const;
 	size_t GetInlineDepth(uintptr_t addr);
 

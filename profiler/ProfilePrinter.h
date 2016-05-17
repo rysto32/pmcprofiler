@@ -138,7 +138,7 @@ struct PrintFlameGraphStrategy
 		if (strcmp(functionName, "[self]") == 0) {
 			const char *sep = "";
 			for (Callchain::iterator it = chain.begin(); it != chain.end(); ++it) {
-				char *demangled = Image::demangle(*it);
+				char *demangled = Image::demangle(**it);
 				fprintf(outfile, "%s%s", sep, demangled);
 				free(demangled);
 				sep = ";";
@@ -241,7 +241,7 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printCallChain(const Pr
 		if (total_percent < m_threshold)
 			continue;
 
-		char * functionName = Image::demangle(it->getFunctionName());
+		char * functionName = Image::demangle(*it->getFunctionName());
 		strategy.printFrame(m_outfile, depth, parent_percent, total_percent, *this, profiler, *it,
 				    process, functionName, chain);
 		free(functionName);
@@ -283,7 +283,7 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printProfile(const Prof
 			if (percent >= m_threshold) {
 				Callchain chain;
 				
-				char * functionName = Image::demangle(functionLocation.getFunctionName());
+				char * functionName = Image::demangle(*functionLocation.getFunctionName());
 				strategy.printFrame(m_outfile, 0, percent, percent, *this, profiler, functionLocation,
 						    process, functionName, chain);
 				

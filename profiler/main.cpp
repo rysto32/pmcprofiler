@@ -28,6 +28,7 @@ __FBSDID("$FreeBSD$");
 #include "Process.h"
 #include "Profiler.h"
 #include "ProfilePrinter.h"
+#include "SharedString.h"
 
 #include <err.h>
 #include <stdlib.h>
@@ -37,6 +38,9 @@ __FBSDID("$FreeBSD$");
 void usage(void);
 
 std::string samplefile("/tmp/samples.out");
+
+std::shared_ptr<std::string> SharedString::NULL_STR(new std::string(""));
+
 
 // this global (sorry) indicates that the process should exit upon certain
 // errors.  Initially it is being used to exit if a .so file cannot be

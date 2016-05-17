@@ -31,30 +31,32 @@
 #include <string>
 #include <vector>
 
+#include "SharedString.h"
+
 class DwarfLocation
 {
 private:
-	std::string m_file;
-	std::string m_func;
+	SharedString m_file;
+	SharedString m_func;
 	u_int m_lineno;
 	bool m_needsDebug;
 	uint64_t m_die;
 
-	static std::string UNKNOWN_FUNC;
+	static SharedString UNKNOWN_FUNC;
 
 public:
-	DwarfLocation(const std::string &, const std::string &, u_int, uint64_t);
-	DwarfLocation(const std::string &, const std::string &);
+	DwarfLocation(const SharedString &, const SharedString &, u_int, uint64_t);
+	DwarfLocation(const SharedString &, const SharedString &);
 
-	const std::string & GetFile() const;
-	const std::string & GetFunc() const;
+	const SharedString & GetFile() const;
+	const SharedString & GetFunc() const;
 	u_int GetLineNumber() const;
 
 	bool NeedsDebug() const;
-	void SetDebug(const std::string &, u_int);
+	void SetDebug(const SharedString &, u_int);
 
 	bool NeedsFunc() const;
-	void SetFunc(const std::string &);
+	void SetFunc(const SharedString &);
 
 	uint64_t GetDie() const
 	{

@@ -38,6 +38,7 @@
 
 #include "DwarfLocation.h"
 #include "DwarfRange.h"
+#include "SharedString.h"
 
 class DwarfCompileUnit;
 
@@ -57,7 +58,7 @@ private:
 	RangeList m_ranges;
 	DwarfLocationList m_locationList;
 	
-	std::string m_image_file;
+	SharedString m_image_file;
 	std::string m_symbols_file;
 	uint64_t m_text_start;
 	uint64_t m_text_end;
@@ -67,7 +68,7 @@ private:
 	void ParseElfFile(Elf *);
 	void ParseDebuglink(Elf_Scn *);
 	void FillFunctionsFromSymtab(Elf *, Elf_Scn *, GElf_Shdr *);
-	void AddFunction(GElf_Addr, const std::string &);
+	void AddFunction(GElf_Addr, const SharedString &);
 	
 	void EnumerateCompileUnits(Dwarf_Debug dwarf);
 	void ProcessCompileUnit(Dwarf_Debug dwarf, Dwarf_Die die);
@@ -83,13 +84,13 @@ public:
 	DwarfLookup(const std::string &file);
 	~DwarfLookup();
 
-	bool LookupLine(uintptr_t addr, size_t inelineDepth, std::string &file,
-		std::string &func, u_int &line) const;
-	bool LookupFunc(uintptr_t addr, std::string &file, std::string &func,
+	bool LookupLine(uintptr_t addr, size_t inelineDepth, SharedString &file,
+		SharedString &func, u_int &line) const;
+	bool LookupFunc(uintptr_t addr, SharedString &file, SharedString &func,
 		u_int &line) const;
 	size_t GetInlineDepth(uintptr_t addr) const;
 
-	const std::string & getImageFile() const;
+	const SharedString & getImageFile() const;
 	bool isContained(uintptr_t addr) const;
 };
 

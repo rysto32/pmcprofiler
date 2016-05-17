@@ -40,6 +40,8 @@
 Process::ProcessMap Process::processMap;
 Process::ProcessList Process::processList;
 
+SharedString Process::UNMAPPED_FUNCTION("[unmapped_function]");
+
 void
 Process::clearOldSamples()
 {

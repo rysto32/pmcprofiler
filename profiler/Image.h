@@ -295,7 +295,7 @@ typedef std::vector<std::vector<Location> > LocationList;
 class Image
 {
 
-	typedef std::map<std::string, Image*> ImageMap;
+	typedef std::unordered_map<std::string, Image*> ImageMap;
 	typedef std::map<uintptr_t, std::string> LoadableImageMap;
 
 	static std::string KERNEL_NAME;

@@ -1,17 +1,20 @@
 
 #include "DwarfLookup.h"
+#include "SharedString.h"
 
 #include <err.h>
 #include <iostream>
 #include <stdlib.h>
+
+SharedString SharedString::NULL_STR("");
 
 int
 main(int argc, char **argv)
 {
 	uintptr_t addr;
 	char *endp;
-	std::string file;
-	std::string func;
+	SharedString file;
+	SharedString func;
 	u_int line;
 	bool success;
 
@@ -35,15 +38,15 @@ main(int argc, char **argv)
 		func = "";
 		line = -1;
 		success = lookup.LookupLine(addr, i, file, func, line);
-		std::cout << func << std::endl;
-		std::cout << file << ":" << line << std::endl;
+		std::cout << *func << std::endl;
+		std::cout << *file << ":" << line << std::endl;
 	}
 
 	file = "";
 	func = "";
 	line = -1;
 	success = lookup.LookupFunc(addr, file, func, line);
-	std::cout << "Func: " << func << " @ " << file << ":" << line << std::endl;
+	std::cout << "Func: " << *func << " @ " << *file << ":" << line << std::endl;
 
 	return (0);
 }

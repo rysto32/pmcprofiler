@@ -39,7 +39,7 @@ void usage(void);
 
 std::string samplefile("/tmp/samples.out");
 
-std::shared_ptr<std::string> SharedString::NULL_STR(new std::string(""));
+SharedString SharedString::NULL_STR("");
 
 
 // this global (sorry) indicates that the process should exit upon certain

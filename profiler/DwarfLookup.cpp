@@ -129,9 +129,12 @@ DwarfLookup::FindSymbolFile()
 {
 	std::string file;
 	std::string image_dir;
+	char *dir;
 	int fd;
 
-	image_dir = std::string(dirname(m_image_file->c_str()));
+	dir = strdup(m_image_file->c_str());
+	image_dir = std::string(dirname(dir));
+	free(dir);
 
 	file = image_dir + "/" + m_symbols_file;
 	fd = open(file.c_str(), O_RDONLY);

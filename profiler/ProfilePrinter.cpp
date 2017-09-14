@@ -54,6 +54,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 	unsigned cumulative = 0;
 	for (LocationList::const_iterator it = locationList.begin(); it != locationList.end(); ++it) {
 		const char* execPath = "";
+		char *execBaseStorage;
 		const char* base = "";
 		const Location& location(it->front());
 		char * functionName = Image::demangle(*location.getFunctionName());
@@ -61,11 +62,11 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 		Process* process = location.getProcess();
 		if (location.isKernelImage()) {
 			execPath = getbootfile();
-			base = basename(execPath);
 		} else {
 			execPath = process == 0 ? "" : (process->getName()).c_str();
-			base = basename(execPath);
 		}
+		execBaseStorage = strdup(execPath);
+		base = basename(execBaseStorage);
 
 		cumulative += location.getCount();
 		fprintf(m_outfile, "%6.2f%% %6.2f%% %s, %6u, %10s, %6u, 0x%08lx, %s, %s, %s:%u %s\n",
@@ -73,7 +74,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 			(cumulative * 100.0) / profiler.getSampleCount(),
 			location.isKernelImage() ? "kern" : "user",
 			process->getPid(),
-			((base == 0) || (*base == '\0')) ? execPath : basename(execPath),
+			((base == 0) || (*base == '\0')) ? execPath : base,
 			location.getCount(),
 			location.getAddress(),
 			location.isMapped() ? "mapped  " : "unmapped",
@@ -82,6 +83,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 			location.getLineNumber(),
 			functionName ? functionName : "<unknown>");
 		free(functionName);
+		free(execBaseStorage);
 	}
 
 	for (Process::ActiveProcessList::const_iterator processListIterator = activeProcessList.begin();

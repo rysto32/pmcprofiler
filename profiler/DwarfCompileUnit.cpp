@@ -372,6 +372,7 @@ DwarfCompileUnit::GetNameAttr(Dwarf_Debug dwarf, Dwarf_Die die)
 	const char *func;
 	int error;
 
+	func = NULL;
 	error = dwarf_attrval_string(die, DW_AT_MIPS_linkage_name, &func,
 	    &derr);
 	if (error != DW_DLV_OK) {
@@ -379,6 +380,9 @@ DwarfCompileUnit::GetNameAttr(Dwarf_Debug dwarf, Dwarf_Die die)
 		if (error != DW_DLV_OK)
 			return ("");
 	}
+
+	if (error == DW_DLV_OK && func == NULL)
+		fprintf(stderr, "error=%d func=%p\n", error, func);
 
 	return (func);
 }

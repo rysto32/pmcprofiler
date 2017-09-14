@@ -76,11 +76,13 @@ private:
 	Dwarf_Die GetDie() const;
 	void FreeDie(Dwarf_Die die) const;
 
+#ifndef DW_AT_MIPS_linkage_name
 	/*
 	 * Some compilers, including clang, put the mangled name of a symbol
 	 * in this non-standard DWARF attribute.
 	 */
 	static const int DW_AT_MIPS_linkage_name = 0x2007;
+#endif
 
 public:
 	DwarfCompileUnit(Dwarf_Debug dwarf, Dwarf_Die die,

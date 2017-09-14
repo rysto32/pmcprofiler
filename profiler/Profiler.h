@@ -30,11 +30,15 @@
 
 #include <sys/types.h>
 
+#include <unordered_set>
+
 class Process;
 class ProcessExit;
 class ProcessExec;
 class Sample;
 class ProfilePrinter;
+
+extern std::unordered_set<pid_t> pid_filter;
 
 class Profiler
 {

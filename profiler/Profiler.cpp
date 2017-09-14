@@ -57,6 +57,9 @@ Profiler::processEvent(const ProcessExec& processExec)
 void
 Profiler::processEvent(const Sample& sample)
 {
+	if (!pid_filter.empty() && pid_filter.count(sample.getProcessID()) == 0)
+		return;
+
 	Process::getProcess(sample).addSample(sample);
 	m_sampleCount++;
 }

@@ -39,8 +39,7 @@ void usage(void);
 
 std::string samplefile("/tmp/samples.out");
 
-SharedString SharedString::NULL_STR("");
-
+std::unordered_set<pid_t> pid_filter;
 
 // this global (sorry) indicates that the process should exit upon certain
 // errors.  Initially it is being used to exit if a .so file cannot be
@@ -78,6 +77,7 @@ main(int argc, char *argv[])
 	FILE * file;
 	char * temp;
 	std::vector<ProfilePrinter*> printers;
+	pid_t pid;
 
 	if (elf_version(EV_CURRENT) == EV_NONE)
 		err(1, "libelf incompatible");
@@ -85,7 +85,7 @@ main(int argc, char *argv[])
 	/* Workaround for libdwarf crash when processing some KLD modules. */
 	dwarf_set_reloc_application(0);
 
-	while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:t:r:N:m:T")) != -1) {
+	while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:p:t:r:N:m:T")) != -1) {
 		switch (ch) {
 			case 'f':
 				samplefile = optarg;
@@ -112,6 +112,14 @@ main(int argc, char *argv[])
 				file = openOutFile(optarg);
 				printers.push_back(new FlatProfilePrinter(file));
 				break;
+			case 'p':
+				pid = strtoul(optarg, &temp, 0);
+
+				if (*temp != '\0' || pid < 1)
+					usage();
+				pid_filter.insert(pid);
+				break;
+
 			case 'b':
 				printBoring = false;
 				break;

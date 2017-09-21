@@ -23,6 +23,53 @@ using namespace llvm;
 
 typedef std::map<GElf_Addr, std::shared_ptr<GElf_Sym>> SymbolMap;
 
+class MemoryOffset
+{
+public:
+	enum AccessType { UNDEFINED, LOAD, STORE };
+
+private:
+	int reg;
+	int32_t offset;
+	AccessType type;
+
+public:
+	MemoryOffset()
+	  : reg(0), offset(0), type(UNDEFINED)
+	{
+	}
+
+	MemoryOffset(int reg, int32_t offset, AccessType type)
+	  : reg(reg), offset(offset), type(type)
+	{
+	}
+
+	int GetReg() const
+	{
+		return (reg);
+	}
+
+	int GetOffset() const
+	{
+		return (offset);
+	}
+
+	AccessType GetType() const
+	{
+		return (type);
+	}
+
+	bool IsDefined() const
+	{
+		return (type != UNDEFINED);
+	}
+
+	const char * GetTypeString() const
+	{
+		return (type == LOAD ? "load" : "store");
+	}
+};
+
 static Elf_Scn *
 FindTextSection(Elf *elf)
 {
@@ -98,7 +145,7 @@ FindContainingSymbol(Elf *elf, const SymbolMap &symbols, GElf_Sym &symbol, u_lon
 	if (it == symbols.end())
 		return (ENOENT);
 
-	fprintf(stderr, "Nearest symbol is %lx\n", it->first);
+	//fprintf(stderr, "Nearest symbol is %lx\n", it->first);
 	symbol = *it->second;
 	return (0);
 }
@@ -114,7 +161,7 @@ GetElfData(Elf *elf, Elf_Scn *text, const GElf_Sym & symbol)
 
 	data = NULL;
 	while ((data = elf_rawdata(text, data)) != NULL) {
-		fprintf(stderr, "sh_addr: %lx off: %lx size: %lx\n", header.sh_addr, data->d_off, data->d_size);
+		//fprintf(stderr, "sh_addr: %lx off: %lx size: %lx\n", header.sh_addr, data->d_off, data->d_size);
 		GElf_Addr addr = header.sh_addr + data->d_off;
 		if (addr <= symbol.st_value &&
 		   ((addr + data->d_size) > symbol.st_value))
@@ -122,6 +169,45 @@ GetElfData(Elf *elf, Elf_Scn *text, const GElf_Sym & symbol)
 	}
 
 	return (NULL);
+}
+
+static void
+FindBaseReg(const MCInst &inst, const MCRegisterInfo &MRI, MemoryOffset &off)
+{
+
+	assert (!off.IsDefined());
+
+	if (inst.getOpcode() == 2227) {
+		// pop
+		return;
+
+	} else if (inst.getOpcode() == 2349) {
+		// push
+		return;
+
+	}
+	// All instructions with memory operands use 6 MCOperands
+	else if (inst.getNumOperands() == 6) {
+		const MCOperand & op0 = inst.getOperand(0);
+		const MCOperand & op1 = inst.getOperand(1);
+		const MCOperand & op5 = inst.getOperand(5);
+
+		if (op0.isReg() && op1.isReg()) {
+			// mov (op1,%reg,0), op0
+			const MCOperand & op4 = inst.getOperand(4);
+			int dwarfReg = MRI.getDwarfRegNum(op1.getReg(), false);
+
+			off = MemoryOffset(dwarfReg, op4.getImm(), MemoryOffset::STORE);
+			return;
+		} else if (op0.isReg() && (op5.isReg() || op5.isImm())) {
+			// mov op5, (op0, %reg, 0)
+			const MCOperand & op3 = inst.getOperand(3);
+			int dwarfReg = MRI.getDwarfRegNum(op0.getReg(), false);
+
+			off = MemoryOffset(dwarfReg, op3.getImm(), MemoryOffset::LOAD);
+			return;
+		}
+	}
 }
 
 static void
@@ -166,7 +252,7 @@ FindRegister(Elf_Scn *text, Elf_Data *data, GElf_Sym &symbol, u_long offset)
 		uint64_t index = i - header.sh_addr - data->d_off;
 		MCDisassembler::DecodeStatus S;
 		S = DisAsm->getInstruction(inst, size, buf.slice(index), index,
-                              /*REMOVE*/ nulls(), nulls());
+		    nulls(), nulls());
 
 		if (S == MCDisassembler::Fail || S == MCDisassembler::SoftFail)
 			errx(1, "Failed to disassemble at index %lx\n", i);
@@ -174,22 +260,13 @@ FindRegister(Elf_Scn *text, Elf_Data *data, GElf_Sym &symbol, u_long offset)
 		assert(S == MCDisassembler::Success);
 	}
 
-	printf("Num Operands: %d i: %lx\n", inst.getNumOperands(), i);
-	/*for (u_int j = 0; j < inst.getNumOperands(); j++) {
-		const MCOperand &op = inst.getOperand(j);
-		if (op.isReg())
-			printf("\t%d: Reg op\n", j);
-		if (op.isImm())
-			printf("\t%d: Imm op\n", j);
-		if (op.isFPImm())
-			printf("\t%d: Reg op\n", j);
-		if (op.isExpr())
-			printf("\t%d: Expr op\n", j);
-		if (op.isInst())
-			printf("\t%d: Inst op\n", j);
-		op.dump();
-	}*/
-	inst.dump();
+	MemoryOffset memOff;
+	FindBaseReg(inst, *MRI, memOff);
+	if (!memOff.IsDefined()) {
+		fprintf(stderr, "0x%lx does not access memory\n", offset);
+		inst.dump();
+		return;
+	}
 }
 
 int main(int argc, char **argv)

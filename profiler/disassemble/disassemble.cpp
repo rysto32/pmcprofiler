@@ -2,6 +2,7 @@
 #include <err.h>
 #include <fcntl.h>
 #include <gelf.h>
+#include <libdwarf.h>
 
 #include <iostream>
 #include <map>
@@ -20,6 +21,7 @@
 #include "MapUtil.h"
 
 using namespace llvm;
+using namespace llvm::dwarf;
 
 typedef std::map<GElf_Addr, std::shared_ptr<GElf_Sym>> SymbolMap;
 
@@ -211,7 +213,7 @@ FindBaseReg(const MCInst &inst, const MCRegisterInfo &MRI, MemoryOffset &off)
 }
 
 static void
-FindRegister(Elf_Scn *text, Elf_Data *data, GElf_Sym &symbol, u_long offset)
+FindRegister(Elf_Scn *text, Elf_Data *data, GElf_Sym &symbol, u_long offset, MemoryOffset &memOff)
 {
 	std::string TripleStr(sys::getDefaultTargetTriple());
 	Triple TheTriple(TripleStr);
@@ -260,12 +262,367 @@ FindRegister(Elf_Scn *text, Elf_Data *data, GElf_Sym &symbol, u_long offset)
 		assert(S == MCDisassembler::Success);
 	}
 
-	MemoryOffset memOff;
 	FindBaseReg(inst, *MRI, memOff);
 	if (!memOff.IsDefined()) {
 		fprintf(stderr, "0x%lx does not access memory\n", offset);
 		inst.dump();
 		return;
+	}
+}
+
+class DwarfDieCollection
+{
+private:
+	Dwarf_Debug dwarf;
+	Dwarf_Die parent;
+
+public:
+	DwarfDieCollection(Dwarf_Debug dwarf, Dwarf_Die die = NULL)
+	  : dwarf(dwarf), parent(die)
+	{
+	}
+
+	DwarfDieCollection() = delete;
+
+	~DwarfDieCollection();
+
+	class const_iterator
+	{
+	private:
+		Dwarf_Debug dwarf;
+		Dwarf_Die die;
+
+		friend class DwarfDieCollection;
+
+		const_iterator(Dwarf_Debug dwarf, Dwarf_Die die)
+		  : dwarf(dwarf), die(die)
+		{
+		}
+
+	public:
+		const_iterator()
+		  : dwarf(NULL), die(NULL)
+		{
+		}
+
+		~const_iterator()
+		{
+			dwarf_dealloc(dwarf, die, DW_DLA_DIE);
+		}
+
+		const Dwarf_Die & operator*() const
+		{
+			return (die);
+		}
+
+		const_iterator &operator++()
+		{
+			Dwarf_Die last_die = die;
+			Dwarf_Error derr;
+			int error;
+
+			error = dwarf_siblingof(dwarf, last_die, &die, &derr);
+			if (last_die != NULL)
+				dwarf_dealloc(dwarf, last_die, DW_DLA_DIE);
+
+			if (error != DW_DLV_OK)
+				die = NULL;
+			return (*this);
+		}
+
+		bool operator==(const const_iterator &rhs) const
+		{
+			if (dwarf != rhs.dwarf)
+				return (false);
+			return (die == rhs.die);
+		}
+
+		bool operator!=(const const_iterator &rhs) const
+		{
+			return !(*this == rhs);
+		}
+
+	};
+
+	const_iterator begin() const
+	{
+		Dwarf_Die child;
+		int error;
+		Dwarf_Error derr;
+
+		error = dwarf_child(parent, &child, &derr);
+		if (error != DW_DLV_OK)
+			child = NULL;
+
+		return (const_iterator(dwarf, child));
+	}
+
+	const_iterator end() const
+	{
+		return (const_iterator(dwarf, NULL));
+	}
+};
+
+static bool
+CheckLocalVar(Dwarf_Debug dwarf, Dwarf_Die die, uint64_t offset,
+    const MemoryOffset &memOff)
+{
+	Dwarf_Attribute attr;
+	Dwarf_Locdesc **llbuf;
+	Dwarf_Signed lcnt, i;
+	Dwarf_Loc *loc;
+	Dwarf_Error derr;
+	Dwarf_Half j;
+	int error;
+
+	error = dwarf_attr(die, DW_AT_location, &attr, &derr);
+	if (error != 0)
+		return (false);
+
+	error = dwarf_loclist_n(attr, &llbuf, &lcnt, &derr);
+	if (error != NULL)
+		return (false);
+
+	for (i = 0; i < lcnt; i++) {
+		for (j = 0; j < llbuf[i]->ld_cents; j++) {
+			lr = &llbuf[i]->ld_s[j];
+		}
+		dwarf_dealloc(dwarf, llbuf[i]->ld_s, DW_DLA_LOC_BLOCK);
+		dwarf_dealloc(dbg, llbuf[i], DW_DLA_LOCDESC);
+	}
+	dwarf_dealloc(dbg, llbuf, DW_DLA_LIST);
+}
+
+static void
+FindCompileUnitVar(Dwarf_Debug dwarf, Dwarf_Die parent, uint64_t offset,
+    const MemoryOffset &memOff)
+{
+	DwarfDieCollection dieList(dwarf, parent);
+	Dwarf_Half tag;
+	Dwarf_Error derr;
+	int error;
+
+	for (auto && die : dieList) {
+		error = dwarf_tag(die, &tag, &derr);
+		if (error == DW_DLV_OK) {
+			if (tag == DW_TAG_formal_parameter || tag == DW_TAG_variable) {
+				if (CheckLocalVar(dwarf, die, offset, memOff))
+					return;
+			}
+		}
+
+		FindCompileUnitVar(dwarf, die, offset, memOff);
+	}
+}
+
+class DwarfRanges
+{
+private:
+	Dwarf_Debug dwarf;
+	Dwarf_Ranges *ranges;
+	Dwarf_Signed count;
+
+public:
+	DwarfRanges(Dwarf_Debug dwarf, Dwarf_Unsigned off)
+	  : dwarf(dwarf), ranges(NULL)
+	{
+		Dwarf_Error derr;
+		Dwarf_Unsigned size;
+		int error;
+
+		error = dwarf_get_ranges(dwarf, off, &ranges, &count, &size, &derr);
+		if (error != DW_DLV_OK)
+			return;
+
+	}
+
+	DwarfRanges() = delete;
+
+	~DwarfRanges()
+	{
+		if (ranges != NULL)
+			dwarf_ranges_dealloc(dwarf, ranges, count);
+	}
+
+	bool IsValid() const
+	{
+		return (ranges != NULL);
+	}
+
+	class const_iterator
+	{
+	private:
+		const DwarfRanges *parent;
+		Dwarf_Signed index;
+
+		friend class DwarfRanges;
+
+		const_iterator(const DwarfRanges *p, int i)
+		  : parent(p), index(i)
+		{
+		}
+
+	public:
+		const_iterator()
+		  : parent(NULL)
+		{
+		}
+
+		const Dwarf_Ranges & operator*() const
+		{
+			return (parent->ranges[index]);
+		}
+
+		const Dwarf_Ranges & operator->() const
+		{
+			return (parent->ranges[index]);
+		}
+
+		const_iterator &operator++()
+		{
+			index++;
+			return (*this);
+		}
+
+		bool operator==(const const_iterator &rhs) const
+		{
+			if (parent != rhs.parent)
+				return (false);
+			return (index == rhs.index);
+		}
+
+		bool operator!=(const const_iterator &rhs) const
+		{
+			return !(*this == rhs);
+		}
+	};
+
+	const_iterator begin() const
+	{
+		return const_iterator(this, 0);
+	}
+
+	const_iterator end() const
+	{
+		return const_iterator(this, count);
+	}
+};
+
+static bool
+SearchCompileUnitRanges(Dwarf_Debug dwarf, Dwarf_Die die, Dwarf_Unsigned range_off,
+    uint64_t offset, const MemoryOffset &memOff)
+{
+	int error;
+	Dwarf_Error derr;
+	Dwarf_Unsigned base_addr, low_pc, high_pc;
+
+	DwarfRanges rangeList(dwarf, range_off);
+	if (!rangeList.IsValid())
+		return (false);
+
+	error = dwarf_attrval_unsigned(die, DW_AT_low_pc, &base_addr, &derr);
+	if (error != 0)
+		base_addr = 0;
+
+	for (auto && range : rangeList) {
+		switch (range.dwr_type) {
+		case DW_RANGES_ENTRY:
+			low_pc = base_addr + range.dwr_addr1;
+			high_pc = base_addr + range.dwr_addr2;
+			if (offset >= low_pc && offset < high_pc) {
+				FindCompileUnitVar(dwarf, die, offset, memOff);
+				return (true);
+			}
+			break;
+		case DW_RANGES_ADDRESS_SELECTION:
+			base_addr = range.dwr_addr2;
+			break;
+		case DW_RANGES_END:
+			goto break_loop;
+		}
+	}
+
+break_loop:
+	return (false);
+}
+
+class DwarfSrcLines
+{
+public:
+	Dwarf_Line *lbuf;
+};
+
+static bool
+SearchCompileUnitSrcLines(Dwarf_Debug dwarf, Dwarf_Die die, uint64_t offset, const MemoryOffset &memOff)
+{
+
+	err(1, "src_lines information needed\n");
+}
+
+static bool
+SearchCompileUnit(Dwarf_Debug dwarf, Dwarf_Die die, uint64_t offset, const MemoryOffset &memOff)
+{
+	Dwarf_Error derr;
+	Dwarf_Unsigned range_off, low_pc, high_pc;
+	int error, err_lo, err_hi;
+
+	error = dwarf_attrval_unsigned(die, DW_AT_ranges, &range_off, &derr);
+	if (error == DW_DLV_OK) {
+		return (SearchCompileUnitRanges(dwarf, die, range_off, offset, memOff));
+	}
+
+	err_lo = dwarf_attrval_unsigned(die, DW_AT_low_pc, &low_pc, &derr);
+	err_hi = dwarf_attrval_unsigned(die, DW_AT_high_pc, &high_pc, &derr);
+	if (err_lo == DW_DLV_OK && err_hi == DW_DLV_OK) {
+		if (offset >= low_pc && offset < high_pc) {
+			FindCompileUnitVar(dwarf, die, offset, memOff);
+			return (true);
+		}
+		return (false);
+	}
+
+	return (SearchCompileUnitSrcLines(dwarf, die, offset, memOff));
+}
+
+static void
+ProcessCompileUnit(Dwarf_Debug dwarf, Dwarf_Die die, uint64_t offset, const MemoryOffset &memOff)
+{
+	Dwarf_Die last_die;
+	Dwarf_Error derr;
+	Dwarf_Half tag;
+	int error;
+	bool found = false;
+
+	do {
+		if (dwarf_tag(die, &tag, &derr) == DW_DLV_OK) {
+			if (tag == DW_TAG_compile_unit)
+				found = SearchCompileUnit(dwarf, die, offset, memOff);
+		}
+
+		last_die = die;
+		error = dwarf_siblingof(dwarf, last_die, &die, &derr);
+
+		dwarf_dealloc(dwarf, last_die, DW_DLA_DIE);
+	} while (error == DW_DLV_OK && !found);
+}
+
+static void
+FindVar(Elf *elf, uint64_t offset, const MemoryOffset &memOff)
+{
+	Dwarf_Debug dwarf;
+	Dwarf_Die die;
+	Dwarf_Error derr;
+	Dwarf_Unsigned next_offset;
+	int error;
+
+	error = dwarf_elf_init(elf, DW_DLC_READ, NULL, NULL, &dwarf, &derr);
+	if (error != 0)
+		errx(1, "Could not read dwarf debug data\n");
+
+	while ((error = dwarf_next_cu_header(dwarf, NULL, NULL, NULL, NULL,
+	    &next_offset, &derr)) == DW_DLV_OK) {
+		if (dwarf_siblingof(dwarf, NULL, &die, &derr) == DW_DLV_OK)
+			ProcessCompileUnit(dwarf, die, offset, memOff);
 	}
 }
 
@@ -323,6 +680,9 @@ int main(int argc, char **argv)
 			errx(1, "Could not find text data containing %lx\n",
 			     offset);
 
-		FindRegister(text, data, symbol, offset);
+		MemoryOffset memOff;
+		FindRegister(text, data, symbol, offset, memOff);
+		if (memOff.IsDefined())
+			FindVar(elf, offset, memOff);
 	}
 }

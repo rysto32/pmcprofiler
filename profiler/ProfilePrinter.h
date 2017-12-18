@@ -78,8 +78,8 @@ class CallchainProfilePrinter : public ProfilePrinter
 	int m_threshold;
 	bool m_printBoring;
 
-	void printCallChain(const Profiler & profiler, Process& process, Callchain & chain, int depth, PrintStrategy &strategy);
-	bool isCallChainBoring(Process& process, Callchain & chain);
+	void printCallChain(const Profiler & profiler, Process& process, StringChain & chain, int depth, PrintStrategy &strategy);
+	bool isCallChainBoring(Process& process, StringChain & chain);
 
 public:
 	CallchainProfilePrinter(FILE * file, uint32_t maximumDepth, int threshold, bool printBoring)
@@ -109,7 +109,7 @@ struct PrintCallchainStrategy
 
 	void printFrame(FILE *outfile, int depth, double processPercent, double parentPercent,
 			ProfilePrinter &printer, const Profiler &profiler, FunctionLocation& functionLocation,
-		 Process &process, const char *functionName, Callchain & chain __unused)
+		 Process &process, const char *functionName, StringChain & chain __unused)
 	{
 		for (int i = 0; i < depth; i++)
 			fprintf(outfile, "  ");
@@ -133,11 +133,11 @@ struct PrintFlameGraphStrategy
 
 	void printFrame(FILE *outfile, int depth __unused, double processPercent __unused, double parentPercent __unused,
 			ProfilePrinter &printer __unused, const Profiler &profiler __unused, FunctionLocation& functionLocation,
-		 Process &process __unused, const char *functionName, Callchain & chain)
+		 Process &process __unused, const char *functionName, StringChain & chain)
 	{
 		if (strcmp(functionName, "[self]") == 0) {
 			const char *sep = "";
-			for (Callchain::iterator it = chain.begin(); it != chain.end(); ++it) {
+			for (StringChain::iterator it = chain.begin(); it != chain.end(); ++it) {
 				char *demangled = Image::demangle(**it);
 				fprintf(outfile, "%s%s", sep, demangled);
 				free(demangled);
@@ -164,7 +164,7 @@ struct LeafProcessStrategy
 		return vec.end();
 	}
 
-	void processEnd(std::vector<Location> & vec __unused, CallchainMap & callchainMap __unused, const Callchain & callchain __unused)
+	void processEnd(std::vector<Location> & vec __unused, CallchainMap & callchainMap __unused, const StringChain & callchain __unused)
 	{
 	}
 };
@@ -189,7 +189,7 @@ struct RootProcessStrategy
 		return vec.rend();
 	}
 
-	void processEnd(std::vector<Location> & vec, CallchainMap & callchainMap, const Callchain & callchain)
+	void processEnd(std::vector<Location> & vec, CallchainMap & callchainMap, const StringChain & callchain)
 	{
 		std::pair<CallchainMap::iterator, bool> mapInserted =
 		callchainMap.insert(CallchainMap::value_type(callchain, FunctionLocationMap(1)));
@@ -204,7 +204,7 @@ struct RootProcessStrategy
 
 template <class ProcessStrategy, class PrintStrategy>
 bool
-CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::isCallChainBoring(Process& process, Callchain & chain)
+CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::isCallChainBoring(Process& process, StringChain & chain)
 {
 	std::vector<FunctionLocation> functions;
 	process.getCallers(chain, functions);
@@ -224,7 +224,7 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::isCallChainBoring(Proce
 
 template <class ProcessStrategy, class PrintStrategy>
 void
-CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printCallChain(const Profiler & profiler, Process& process, Callchain & chain, int depth, PrintStrategy &strategy)
+CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printCallChain(const Profiler & profiler, Process& process, StringChain & chain, int depth, PrintStrategy &strategy)
 {
 	std::vector<FunctionLocation> functions;
 	unsigned total_samples = process.getCallers(chain, functions);
@@ -281,7 +281,7 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printProfile(const Prof
 			
 			double percent = (functionLocation.getCount() * 100.0) / process.getSampleCount();
 			if (percent >= m_threshold) {
-				Callchain chain;
+				StringChain chain;
 				
 				char * functionName = Image::demangle(*functionLocation.getFunctionName());
 				strategy.printFrame(m_outfile, 0, percent, percent, *this, profiler, functionLocation,

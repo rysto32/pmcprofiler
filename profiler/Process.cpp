@@ -216,7 +216,7 @@ Process::getFunctionList(FunctionList& functionList)
 }
 
 unsigned
-Process::getCallers(const Callchain & chain, std::vector<FunctionLocation> & functions)
+Process::getCallers(const StringChain & chain, std::vector<FunctionLocation> & functions)
 {
 	CallchainMap::const_iterator it = m_callchainMap.find(chain);
 	unsigned total_samples = 0;

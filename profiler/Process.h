@@ -115,7 +115,7 @@ public:
 	void addSample(const Sample& sample);
 	void collectLocations(LocationList& locationList);
 	void getFunctionList(FunctionList& functionList);
-	unsigned getCallers(const Callchain & chain, std::vector<FunctionLocation> & functions);
+	unsigned getCallers(const StringChain & chain, std::vector<FunctionLocation> & functions);
 
 	void mapIn(uintptr_t start, const char * imagePath);
 };
@@ -151,7 +151,7 @@ Process::mapAllFunctions(LocationList& locationList, ProcessStrategy strategy)
 		if (!findPos.second)
 			findPos.first->second += location;
 
-		Callchain callchain;
+		StringChain callchain;
 		callchain.push_back(functionName);
 		++jt;
 		for (; jt != jt_end; ++jt) {

@@ -29,6 +29,7 @@
 #include "FunctionLocation.h"
 #include "Location.h"
 #include "SharedString.h"
+#include "StringChain.h"
 
 #include <string>
 #include <algorithm>
@@ -53,90 +54,6 @@ class Process;
 class ProcessExec;
 class FunctionLocation;
 class Location;
-
-class Callchain
-{
-	typedef std::vector<SharedString> CallchainVector;
-
-	CallchainVector vec;
-	mutable size_t hash_value;
-	mutable bool hash_valid;
-
-public:
-	typedef CallchainVector::iterator iterator;
-
-	Callchain()
-	  : hash_valid(false)
-	{
-	}
-
-	size_t hash() const
-	{
-		if (hash_valid)
-			return hash_value;
-
-		CallchainVector::const_iterator it = vec.begin();
-		size_t val = 0;
-		std::hash<std::string> hasher;
-
-		/*
-		 * The default hasher for strings multiplies the hash
-		 * value by 5 for each iteration, so we follow that hash
-		 * function here.
-		 *
-		 * We essentially act as if we have concatenated all of
-		 * the strings in vec together and hashed that one
-		 * string.
-		 */
-		for (; it != vec.end(); ++it)
-			val = 5 * val + hasher(**it);
-
-		hash_value = val;
-		hash_valid = true;
-
-		return val;
-	}
-
-	void push_back(const SharedString& t)
-	{
-		vec.push_back(t);
-		hash_valid = false;
-	}
-
-	void pop_back()
-	{
-		vec.pop_back();
-		hash_valid = false;
-	}
-
-	const SharedString& back()
-	{
-		return vec.back();
-	}
-
-	bool operator==(const Callchain & other) const
-	{
-		return vec == other.vec;
-	}
-
-	struct Hasher
-	{
-		size_t operator()(const Callchain & v) const
-		{
-			return v.hash();
-		}
-	};
-
-	iterator begin()
-	{
-		return vec.begin();
-	}
-
-	iterator end()
-	{
-		return vec.end();
-	}
-};
 
 typedef std::unordered_map<std::string, FunctionLocation> FunctionLocationMap;
 typedef std::unordered_map<Callchain, FunctionLocationMap, Callchain::Hasher> CallchainMap;

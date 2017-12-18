@@ -25,6 +25,9 @@
 #define IMAGE_H
 
 #include "DwarfLookup.h"
+#include "ProfilerTypes.h"
+#include "FunctionLocation.h"
+#include "Location.h"
 #include "SharedString.h"
 
 #include <string>
@@ -46,159 +49,6 @@ extern bool g_includeTemplates;
 
 class Image;
 class Process;
-
-class Location
-{
-	friend              class Image;
-
-	uintptr_t           m_address;
-	bool                m_isKernel;
-	bool                m_isMapped;
-	unsigned            m_count;
-	SharedString m_modulename;
-	SharedString m_filename;
-	SharedString m_functionname;
-	unsigned            m_linenumber;
-	
-	Process *           m_process;
-
-public:
-	Location(bool isAKernel, uintptr_t address, unsigned count, 
-	    Process *process) :
-	m_address(address),
-	m_isKernel(isAKernel),
-	m_isMapped(false),
-	m_count(count),
-	m_modulename(),
-	m_filename(),
-	m_functionname(),
-	m_linenumber(-1),
-	m_process(process)
-	{
-	}
-
-	uintptr_t getAddress() const
-	{
-		return m_address;
-	}
-
-	bool isKernelImage() const
-	{
-		return m_isKernel;
-	}
-
-	bool isMapped() const
-	{
-		return m_isMapped;
-	}
-
-	void isMapped(bool mapped)
-	{
-		m_isMapped = mapped;
-	}
-
-	unsigned getCount() const
-	{
-		return m_count;
-	}
-
-	Process * getProcess() const
-	{
-		return m_process;
-	}
-
-	const SharedString &getModuleName() const
-	{
-		return (m_modulename);
-	}
-
-	const SharedString &getFileName() const
-	{
-		return (m_filename);
-	}
-
-	const SharedString &getFunctionName() const
-	{
-		return (m_functionname);
-	}
-
-	unsigned getLineNumber() const
-	{
-		return m_linenumber;
-	}
-
-	bool operator<(const Location& other) const
-	{
-		return m_count > other.m_count;
-	}
-
-	void setFunctionName(SharedString name)
-	{
-		m_functionname = name;
-	}
-};
-
-typedef std::set<unsigned> LineLocationList;
-
-class FunctionLocation : public Location
-{
-	friend class Image;
-	unsigned m_totalCount;
-	LineLocationList m_lineLocationList;
-
-public:
-	FunctionLocation(const Location& location)
-	  : Location(location),
-	    m_totalCount(location.getCount())
-	{
-		m_lineLocationList.insert(location.getLineNumber());
-	}
-
-	FunctionLocation& operator+=(const Location& location)
-	{
-		m_totalCount += location.getCount();
-		m_lineLocationList.insert(location.getLineNumber());
-
-		return *this;
-	}
-
-	FunctionLocation& operator+=(const FunctionLocation & location)
-	{
-		m_totalCount += location.getCount();
-		m_lineLocationList.insert(location.m_lineLocationList.begin(),
-		    location.m_lineLocationList.end());
-
-		return *this;
-	}
-
-	bool operator<(const FunctionLocation& other) const
-	{
-		return m_totalCount > other.m_totalCount;
-	}
-
-	unsigned getCount() const
-	{
-		return m_totalCount;
-	}
-
-	LineLocationList& getLineLocationList()
-	{
-		return m_lineLocationList;
-	}
-
-	struct hasher
-	{
-		size_t operator()(const FunctionLocation & loc) const
-		{
-			return std::hash<std::string>()(*loc.getFunctionName());
-		}
-	};
-
-	bool operator==(const FunctionLocation & other) const
-	{
-		return (getFunctionName() == other.getFunctionName());
-	}
-};
 
 class ProcessExec;
 class FunctionLocation;

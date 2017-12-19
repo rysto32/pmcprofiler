@@ -308,7 +308,7 @@ Image::mapAllLocations(LocationList& locationList)
 			}
 
 			image->mapLocation(location, stack, loadOffset);
-		}	
+		}
 	}
 }
 

@@ -100,7 +100,8 @@ EventFactory::createEvents(Profiler& profiler, uint32_t maxDepth)
 
 			case PMCLOG_TYPE_PROCEXEC:
 				profiler.processEvent(ProcessExec(pmcEvent.pl_u.pl_x.pl_pid,
-								  std::string(pmcEvent.pl_u.pl_x.pl_pathname)));
+				    std::string(pmcEvent.pl_u.pl_x.pl_pathname),
+				    pmcEvent.pl_u.pl_x.pl_entryaddr));
 				break;
 
 			default:

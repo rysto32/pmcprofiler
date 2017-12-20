@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,63 +21,32 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(PROCESSSTATE_H)
-#define PROCESSSTATE_H
+#include "Callframe.h"
 
-#include "ProfilerTypes.h"
+#include "InlineFrame.h"
+#include "SharedString.h"
 
-#include <string>
-#include <sys/types.h>
-
-class ProcessState
+Callframe::Callframe(TargetAddr off)
+  : offset(off), unmapped(false)
 {
-	pid_t m_processID;
+}
 
-	const std::string& m_processName;
-
-protected:
-	ProcessState(pid_t& processID, const std::string& processName)
-	  : m_processID(processID),
-	    m_processName(processName)
-	{
-	}
-
-public:
-	pid_t getProcessID() const
-	{
-		return m_processID;
-	}
-
-	const std::string& getProcessName() const
-	{
-		return m_processName;
-	}
-};
-
-class ProcessExec : public ProcessState
+void
+Callframe::addFrame(SharedString file, SharedString func,
+     SharedString demangled, int codeLine, int funcLine)
 {
-private:
-	TargetAddr entryAddr;
+	inlineFrames.push_back(InlineFrame(file, func, demangled,
+	    offset, codeLine, funcLine));
+}
 
-public:
-	ProcessExec(pid_t& processID, const std::string& processName, TargetAddr addr)
-	  : ProcessState(processID, processName), entryAddr(addr)
-	{
-	}
 
-	TargetAddr getEntryAddr() const
-	{
-		return entryAddr;
-	}
-};
-
-class ProcessExit : public ProcessState
+void
+Callframe::setUnmapped(SharedString image)
 {
-public:
-	ProcessExit(pid_t& processID)
-	  : ProcessState(processID, "")
-	{
-	}
-};
+	SharedString unmapped_function("[unmapped_function]");
+	inlineFrames.clear();
+	inlineFrames.push_back(InlineFrame(image, unmapped_function,
+	    unmapped_function, offset, -1, -1));
 
-#endif // #if !defined(PROCESSSTATE_H)
+	unmapped = true;
+}

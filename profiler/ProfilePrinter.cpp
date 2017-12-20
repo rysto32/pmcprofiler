@@ -25,6 +25,9 @@
 __FBSDID("$FreeBSD$");
 
 #include "ProfilePrinter.h"
+
+#include "AddressSpace.h"
+
 #include <paths.h>
 #include <libgen.h>
 #include <cassert>
@@ -40,55 +43,61 @@ ProfilePrinter::printLineNumbers(const Profiler & profiler, const LineLocationLi
 	}
 }
 
+std::string
+ProfilePrinter::getBasename(const std::string&file)
+{
+	auto it = file.find_last_of('/');
+	if (it != std::string::npos)
+		return file.substr(it + 1);
+	else
+		return file;
+}
+
+
 void
 FlatProfilePrinter::printProfile(const Profiler & profiler,
-				 const Process::ActiveProcessList & activeProcessList)
+				 const AggregationList & aggList)
 {
+#if 0
 	LocationList locationList;
 	Process::collectAllLocations(locationList);
 	Image::mapAllLocations(locationList);
 	Process::mapAllFunctions(locationList, LeafProcessStrategy());
+#endif
 
 	fprintf(m_outfile, "Events processed: %u\n\n", profiler.getSampleCount());
 
+	CallchainList callchainList;
+	for (auto agg : aggList)
+		agg->getCallchainList(callchainList);
+
+	SortCallchains(callchainList);
+
 	unsigned cumulative = 0;
-	for (LocationList::const_iterator it = locationList.begin(); it != locationList.end(); ++it) {
-		const char* execPath = "";
-		char *execBaseStorage;
-		const char* base = "";
-		const Location& location(it->front());
-		char * functionName = Image::demangle(*location.getFunctionName());
+	for (auto chain : callchainList) {
 
-		Process* process = location.getProcess();
-		if (location.isKernelImage()) {
-			execPath = getbootfile();
-		} else {
-			execPath = process == 0 ? "" : (process->getName()).c_str();
-		}
-		execBaseStorage = strdup(execPath);
-		base = basename(execBaseStorage);
+		const auto & agg = chain->getAggregation();
+		const auto & space = chain->getAddressSpace();
+		auto frame = chain->front();
 
-		cumulative += location.getCount();
+		cumulative += chain->getSampleCount();
 		fprintf(m_outfile, "%6.2f%% %6.2f%% %s, %6u, %10s, %6u, 0x%08lx, %s, %s, %s:%u %s\n",
-			(location.getCount() * 100.0) / profiler.getSampleCount(),
+			(chain->getSampleCount() * 100.0) / profiler.getSampleCount(),
 			(cumulative * 100.0) / profiler.getSampleCount(),
-			location.isKernelImage() ? "kern" : "user",
-			process->getPid(),
-			((base == 0) || (*base == '\0')) ? execPath : base,
-			location.getCount(),
-			location.getAddress(),
-			location.isMapped() ? "mapped  " : "unmapped",
-			execPath,
-			location.getFileName()->empty() ? location.getModuleName()->c_str() : location.getFileName()->c_str(),
-			location.getLineNumber(),
-			functionName ? functionName : "<unknown>");
-		free(functionName);
-		free(execBaseStorage);
+			chain->isKernel() ? "kern" : "user",
+			agg.getPid(),
+			getBasename(*space.getExecutableName()).c_str(),
+			chain->getSampleCount(),
+			chain->getAddress(),
+			chain->isMapped() ? "mapped  " : "unmapped",
+			space.getExecutableName()->c_str(),
+			frame.getFile()->c_str(),
+			frame.getCodeLine(),
+			frame.getDemangled()->c_str());
 	}
 
-	for (Process::ActiveProcessList::const_iterator processListIterator = activeProcessList.begin();
-	     processListIterator != activeProcessList.end(); ++processListIterator) {
-		     Process& process(**processListIterator);
+#if 0
+	for (auto agg : aggList) {
 		     fprintf(m_outfile, "\nProcess: %6u, %s, total: %u (%6.2f%%)\n", process.getPid(), process.getName().c_str(),
 			     process.getSampleCount(), (process.getSampleCount() * 100.0) / profiler.getSampleCount());
 		     FunctionList functionList;
@@ -112,5 +121,28 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 			     free(functionName);
 		     }
 	     }
+#endif
+#if 0
+	for (auto agg : aggList) {
+		double percent = (agg->getSampleCount() * 100.0) / profiler.getSampleCount();
+		fprintf(m_outfile, "\nProcess: %s, total: %zu (%.2f%%)\n",
+		    agg->getDisplayName().c_str(), agg->getSampleCount(),
+		    percent);
+
+		agg->getCallchainList(callchainList);
+
+		for (auto chain : callchainList) {
+			std::vector<InlineFrame> frames;
+			chain->flatten(frames);
+
+			percent = (chain->getSampleCount() * 100.0) / agg->getSampleCount();
+			fprintf(m_outfile, "%6.2f%% 0x%lx %s @ %s:%d\n",
+			    percent, frames.front().getOffset(),
+			    frames.front().getDemangled()->c_str(),
+			    frames.front().getFile()->c_str(),
+			    frames.front().getCodeLine());
+		}
+	}
+#endif
 }
 

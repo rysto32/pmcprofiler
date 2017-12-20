@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,63 +21,85 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(PROCESSSTATE_H)
-#define PROCESSSTATE_H
+#ifndef CALLCHAIN_H
+#define CALLCHAIN_H
+
+#include <vector>
 
 #include "ProfilerTypes.h"
 
-#include <string>
-#include <sys/types.h>
+class AddressSpace;
+class Callframe;
+class InlineFrame;
+class Sample;
+class SampleAggregation;
 
-class ProcessState
-{
-	pid_t m_processID;
-
-	const std::string& m_processName;
-
-protected:
-	ProcessState(pid_t& processID, const std::string& processName)
-	  : m_processID(processID),
-	    m_processName(processName)
-	{
-	}
-
-public:
-	pid_t getProcessID() const
-	{
-		return m_processID;
-	}
-
-	const std::string& getProcessName() const
-	{
-		return m_processName;
-	}
-};
-
-class ProcessExec : public ProcessState
-{
-private:
-	TargetAddr entryAddr;
-
-public:
-	ProcessExec(pid_t& processID, const std::string& processName, TargetAddr addr)
-	  : ProcessState(processID, processName), entryAddr(addr)
-	{
-	}
-
-	TargetAddr getEntryAddr() const
-	{
-		return entryAddr;
-	}
-};
-
-class ProcessExit : public ProcessState
+class Callchain
 {
 public:
-	ProcessExit(pid_t& processID)
-	  : ProcessState(processID, "")
+	class CallchainRecord
 	{
+		TargetAddr addr;
+		const Callframe &frame;
+
+		CallchainRecord(TargetAddr a, const Callframe &f)
+		  : addr(a), frame(f)
+		{
+		}
+
+		friend class Callchain;
+	};
+
+	typedef std::vector<CallchainRecord> RecordChain;
+
+public:
+	const SampleAggregation &aggregation;
+	const AddressSpace &space;
+	RecordChain callframes;
+	unsigned sampleCount;
+	bool kernel;
+
+public:
+	Callchain(const SampleAggregation &, AddressSpace &, const Sample &);
+
+	void addSample();
+
+	const SampleAggregation & getAggregation() const
+	{
+		return aggregation;
 	}
+
+	const AddressSpace & getAddressSpace() const
+	{
+		return space;
+	}
+
+	unsigned getSampleCount() const
+	{
+		return sampleCount;
+	}
+
+	TargetAddr getAddress() const
+	{
+		return callframes.front().addr;
+	}
+
+	bool isKernel() const
+	{
+		return kernel;
+	}
+
+	bool isMapped() const;
+
+	const InlineFrame & front() const;
+
+	void flatten(std::vector<InlineFrame> &) const;
+
+	class SampleCountComp
+	{
+	public:
+		bool operator()(const Callchain *, const Callchain *);
+	};
 };
 
-#endif // #if !defined(PROCESSSTATE_H)
+#endif

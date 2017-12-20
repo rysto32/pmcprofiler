@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,63 +21,55 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(PROCESSSTATE_H)
-#define PROCESSSTATE_H
+#include "Callchain.h"
 
-#include "ProfilerTypes.h"
+#include "AddressSpace.h"
+#include "Callframe.h"
+#include "Sample.h"
 
-#include <string>
-#include <sys/types.h>
-
-class ProcessState
+Callchain::Callchain(const SampleAggregation & agg, AddressSpace & space,
+    const Sample& sample)
+  : aggregation(agg), space(space), sampleCount(1), kernel(sample.isKernel())
 {
-	pid_t m_processID;
+	for (int i = 0; i < sample.getChainDepth(); ++i) {
+		TargetAddr addr = sample.getAddress(i);
+		const Callframe &fr = space.mapFrame(addr);
 
-	const std::string& m_processName;
-
-protected:
-	ProcessState(pid_t& processID, const std::string& processName)
-	  : m_processID(processID),
-	    m_processName(processName)
-	{
+		callframes.push_back(CallchainRecord(addr, fr));
 	}
+}
 
-public:
-	pid_t getProcessID() const
-	{
-		return m_processID;
-	}
-
-	const std::string& getProcessName() const
-	{
-		return m_processName;
-	}
-};
-
-class ProcessExec : public ProcessState
+void
+Callchain::addSample()
 {
-private:
-	TargetAddr entryAddr;
+	sampleCount++;
+}
 
-public:
-	ProcessExec(pid_t& processID, const std::string& processName, TargetAddr addr)
-	  : ProcessState(processID, processName), entryAddr(addr)
-	{
-	}
-
-	TargetAddr getEntryAddr() const
-	{
-		return entryAddr;
-	}
-};
-
-class ProcessExit : public ProcessState
+bool
+Callchain::SampleCountComp::operator()(const Callchain * a, const Callchain * b)
 {
-public:
-	ProcessExit(pid_t& processID)
-	  : ProcessState(processID, "")
-	{
-	}
-};
+	return a->sampleCount < b->sampleCount;
+}
 
-#endif // #if !defined(PROCESSSTATE_H)
+void
+Callchain::flatten(std::vector<InlineFrame> &frameList) const
+{
+	for (const auto & rec : callframes) {
+		for (const auto & frame : rec.frame.getInlineFrames()) {
+			frameList.push_back(frame);
+		}
+	}
+}
+
+const InlineFrame&
+Callchain::front() const
+{
+	return callframes.front().frame.getInlineFrames().front();
+}
+
+bool
+Callchain::isMapped() const
+{
+	return !callframes.front().frame.isUnmapped();
+}
+

@@ -25,8 +25,11 @@
 #define PROFILER_PRINTER_H
 
 #include "Profiler.h"
+#include  "Callchain.h"
 #include "Image.h"
-#include "Process.h"
+#include "InlineFrame.h"
+#include "SampleAggregation.h"
+
 #include <cstdio>
 #include <cassert>
 
@@ -49,7 +52,7 @@ public:
 	}
 
 	virtual void printProfile(const Profiler & profiler,
-	    const Process::ActiveProcessList & activeProcessList) = 0;
+	    const AggregationList & aggList) = 0;
 
 	virtual ~ProfilePrinter()
 	{
@@ -58,6 +61,8 @@ public:
 	}
 
 	void printLineNumbers(const Profiler & profiler, const LineLocationList & functionLocation);
+
+	static std::string getBasename(const std::string &);
 };
 
 class FlatProfilePrinter : public ProfilePrinter
@@ -69,9 +74,10 @@ public:
 	}
 
 	virtual void printProfile(const Profiler & profiler,
-	    const Process::ActiveProcessList & activeProcessList);
+	    const AggregationList & aggList);
 };
 
+#if 0
 template <class ProcessStrategy, class PrintStrategy>
 class CallchainProfilePrinter : public ProfilePrinter
 {
@@ -148,7 +154,7 @@ struct PrintFlameGraphStrategy
 		}
 	}
 };
-
+#endif
 
 struct LeafProcessStrategy
 {
@@ -169,6 +175,7 @@ struct LeafProcessStrategy
 	}
 };
 
+#if 0
 struct RootProcessStrategy
 {
 	typedef std::vector<Location>::reverse_iterator iterator;
@@ -298,6 +305,7 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printProfile(const Prof
 typedef CallchainProfilePrinter<LeafProcessStrategy, PrintCallchainStrategy> LeafProfilePrinter;
 typedef CallchainProfilePrinter<RootProcessStrategy, PrintCallchainStrategy> RootProfilePrinter;
 typedef CallchainProfilePrinter<RootProcessStrategy, PrintFlameGraphStrategy> FlameGraphProfilerPrinter;
+#endif
 
 #endif
 

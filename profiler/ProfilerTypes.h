@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,63 +21,21 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(PROCESSSTATE_H)
-#define PROCESSSTATE_H
+#ifndef PROFILERTYPES_H
+#define PROFILERTYPES_H
 
-#include "ProfilerTypes.h"
+#include <stdint.h>
+#include <memory>
 
-#include <string>
-#include <sys/types.h>
-
-class ProcessState
+typedef uintptr_t TargetAddr;
+/*
+namespace std {
+// XXX hack guess this isn't defined yet?
+template<typename T, typename... Args>
+unique_ptr<T> make_unique(Args&&... args)
 {
-	pid_t m_processID;
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+}*/
 
-	const std::string& m_processName;
-
-protected:
-	ProcessState(pid_t& processID, const std::string& processName)
-	  : m_processID(processID),
-	    m_processName(processName)
-	{
-	}
-
-public:
-	pid_t getProcessID() const
-	{
-		return m_processID;
-	}
-
-	const std::string& getProcessName() const
-	{
-		return m_processName;
-	}
-};
-
-class ProcessExec : public ProcessState
-{
-private:
-	TargetAddr entryAddr;
-
-public:
-	ProcessExec(pid_t& processID, const std::string& processName, TargetAddr addr)
-	  : ProcessState(processID, processName), entryAddr(addr)
-	{
-	}
-
-	TargetAddr getEntryAddr() const
-	{
-		return entryAddr;
-	}
-};
-
-class ProcessExit : public ProcessState
-{
-public:
-	ProcessExit(pid_t& processID)
-	  : ProcessState(processID, "")
-	{
-	}
-};
-
-#endif // #if !defined(PROCESSSTATE_H)
+#endif

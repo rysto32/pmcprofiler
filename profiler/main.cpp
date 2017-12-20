@@ -25,7 +25,6 @@
 __FBSDID("$FreeBSD$");
 
 #include "Image.h"
-#include "Process.h"
 #include "Profiler.h"
 #include "ProfilePrinter.h"
 #include "SharedString.h"
@@ -76,7 +75,8 @@ main(int argc, char *argv[])
 	g_quitOnError = false;
 	FILE * file;
 	char * temp;
-	std::vector<ProfilePrinter*> printers;
+	std::vector<std::unique_ptr<ProfilePrinter> > printers;
+	const char *modulePath = NULL;
 	pid_t pid;
 
 	if (elf_version(EV_CURRENT) == EV_NONE)
@@ -85,32 +85,36 @@ main(int argc, char *argv[])
 	/* Workaround for libdwarf crash when processing some KLD modules. */
 	dwarf_set_reloc_application(0);
 
-	while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:p:t:r:N:m:T")) != -1) {
+	while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:p:t:r:m:T")) != -1) {
 		switch (ch) {
 			case 'f':
 				samplefile = optarg;
 				break;
+#if 0
 			case 'F':
 				file = openOutFile(optarg);
-				printers.push_back(new FlameGraphProfilerPrinter(file, PMC_CALLCHAIN_DEPTH_MAX, threshold, true));
+				printers.push_back(std::make_unique<FlameGraphProfilerPrinter>(file, PMC_CALLCHAIN_DEPTH_MAX, threshold, true));
 				break;
+#endif
 			case 'l':
 				showlines = true;
 				break;
 			case 'q':
 				g_quitOnError = true;
 				break;
+#if 0
 			case 'G':
 				file = openOutFile(optarg);
-				printers.push_back(new LeafProfilePrinter(file, maxDepth, threshold, printBoring));
+				printers.push_back(std::make_unique<LeafProfilePrinter>(file, maxDepth, threshold, printBoring));
 				break;
 			case 'r':
 				file = openOutFile(optarg);
-				printers.push_back(new RootProfilePrinter(file, PMC_CALLCHAIN_DEPTH_MAX, threshold, true));
+				printers.push_back(std::make_unique<RootProfilePrinter>(file, PMC_CALLCHAIN_DEPTH_MAX, threshold, true));
 				break;
+#endif
 			case 'o':
 				file = openOutFile(optarg);
-				printers.push_back(new FlatProfilePrinter(file));
+				printers.push_back(std::make_unique<FlatProfilePrinter>(file));
 				break;
 			case 'p':
 				pid = strtoul(optarg, &temp, 0);
@@ -138,11 +142,13 @@ main(int argc, char *argv[])
 					usage();
 
 				break;
+#if 0
 			case 'N':
 				Image::setBootfile(optarg);
 				break;
+#endif
 			case 'm':
-				Image::setModulePath(optarg);
+				modulePath = optarg;
 				break;
 			case 'T':
 				g_includeTemplates = true;
@@ -157,16 +163,12 @@ main(int argc, char *argv[])
 	argv += optind;
 
 	if (printers.empty())
-		printers.push_back(new FlatProfilePrinter(stdout));
+		printers.push_back(std::make_unique<FlatProfilePrinter>(stdout));
 
-	Profiler profiler(samplefile, showlines);
-	std::vector<ProfilePrinter* >::iterator it = printers.begin();
-	for (; it != printers.end(); ++it) {
-		profiler.createProfile(**it);
-		delete *it;
-	}
+	Profiler profiler(samplefile, showlines, modulePath);
+	for (const auto & printer : printers)
+		profiler.createProfile(*printer);
 
-	Process::freeProcessMap();
 	Image::freeImages();
 	return 0;
 }

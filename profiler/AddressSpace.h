@@ -1,4 +1,5 @@
 // Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,76 +22,80 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(IMAGE_H)
-#define IMAGE_H
+#ifndef ADDRESSSPACE_H
+#define ADDRESSSPACE_H
 
-#include "DwarfLookup.h"
 #include "ProfilerTypes.h"
-#include "FunctionLocation.h"
-#include "Location.h"
-#include "SharedString.h"
-#include "StringChain.h"
 
-#include <string>
-#include <algorithm>
-#include <functional>
-#include <vector>
 #include <map>
 #include <memory>
-#include <set>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
-#include <dwarf.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-
-extern bool g_quitOnError;
-extern bool g_includeTemplates;
+#include <sys/types.h>
 
 class Callframe;
+class Image;
 class ProcessExec;
-class FunctionLocation;
-class Location;
 class SharedString;
 
-typedef std::unordered_map<std::string, FunctionLocation> FunctionLocationMap;
-typedef std::unordered_map<StringChain, FunctionLocationMap, StringChain::Hasher> CallchainMap;
-typedef std::vector<FunctionLocation> FunctionList;
-typedef std::vector<std::vector<Location> > LocationList;
-
-class Image
+class AddressSpace
 {
-	typedef std::unordered_map<std::string, std::unique_ptr<Image> > ImageMap;
-	typedef std::map<TargetAddr, std::unique_ptr<Callframe> > FrameMap;
-
-	static ImageMap imageMap;
-	static const std::string TEXT_SECTION_NAME;
-
-	DwarfLookup m_lookup;
-	FrameMap frameMap;
-	bool mapped;
-
-	Image();
-	Image(const std::string& imageName);
-
-public:
-	static SharedString demangle(SharedString name);
-
-	static Image unmappedImage;
-	static Image *getImage(const char *name);
-	static void freeImages();
-
-	const SharedString & getImageFile() const
+private:
+	struct LoadedImage
 	{
-		return m_lookup.getImageFile();
+		Image *image;
+		TargetAddr loadOffset;
+
+		LoadedImage(Image *i, TargetAddr off)
+		  : image(i), loadOffset(off)
+		{
+		}
+	};
+
+	typedef std::map<TargetAddr, LoadedImage> LoadableImageMap;
+	typedef std::unordered_map<pid_t, AddressSpace*> AddressSpaceMap;
+	typedef std::vector<std::unique_ptr<AddressSpace> > AddressSpaceList;
+
+	static const pid_t KERNEL_PID = -1;
+
+	static AddressSpaceMap addressSpaceMap;
+	static AddressSpaceList addressSpaceList;
+
+	static AddressSpace kernelAddressSpace;
+
+	LoadableImageMap loadableImageMap;
+	Image *executable;
+	pid_t pid;
+
+	void reset();
+
+	bool isKernelSpace() const
+	{
+		return pid == KERNEL_PID;
 	}
 
-	const Callframe & getFrame(TargetAddr offset);
-	void mapAllFrames();
+	static TargetAddr getLoadAddr(const std::string &executable);
 
-	static void mapAll();
+public:
+	AddressSpace(pid_t);
+
+	static void clearAddressSpaces();
+	static AddressSpace &getAddressSpace(bool kernel, pid_t pid);
+	static AddressSpace &getKernelAddressSpace();
+	static AddressSpace &getProcessAddressSpace(pid_t);
+	static void processExec(const ProcessExec& ev);
+
+	Image &getImage(TargetAddr addr, TargetAddr & loadOffset) const;
+
+	void mapIn(TargetAddr start, const char * imagePath);
+	void findAndMap(TargetAddr start, const std::vector<std::string> path,
+	    const char *name);
+
+	const Callframe & mapFrame(TargetAddr addr);
+
+	SharedString getExecutableName() const;
 };
 
-#endif // #if !defined(IMAGE_H)
+#endif

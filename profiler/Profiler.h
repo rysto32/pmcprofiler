@@ -43,20 +43,21 @@ extern std::unordered_set<pid_t> pid_filter;
 class Profiler
 {
 private:
-
 	unsigned m_sampleCount;
 
 	const std::string& m_dataFile;
 	bool m_showlines;
 
+	std::string kernelFile;
+	std::vector<std::string> modulePath;
+
+	void parseModulePath(char * path_buf, std::vector<std::string> & vec);
+	void getLocalModulePath();
+	void overrideModulePath(const char *modulePathStr);
+
 public:
 
-	Profiler(const std::string& dataFile, bool showlines)
-	: m_sampleCount(0),
-	  m_dataFile(dataFile),
-	  m_showlines(showlines)
-	{
-	}
+	Profiler(const std::string& dataFile, bool showlines, const char *modulePathStr);
 
 	const std::string& getDataFile() const
 	{

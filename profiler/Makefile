@@ -8,6 +8,7 @@ COMPILER_TYPE=gcc
 SRCS=	\
 	AddressSpace.cpp \
 	Callchain.cpp \
+	CallchainProfilePrinter.cpp \
 	Callframe.cpp \
 	DwarfCompileUnit.cpp \
 	DwarfLocation.cpp \

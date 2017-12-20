@@ -56,7 +56,7 @@ public:
 	const SampleAggregation &aggregation;
 	const AddressSpace &space;
 	RecordChain callframes;
-	unsigned sampleCount;
+	size_t sampleCount;
 	bool kernel;
 
 public:
@@ -79,7 +79,7 @@ public:
 		return space;
 	}
 
-	unsigned getSampleCount() const
+	size_t getSampleCount() const
 	{
 		return sampleCount;
 	}

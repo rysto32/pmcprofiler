@@ -97,14 +97,16 @@ ProfilePrinter::insertFuncLoc(FuncLocMap &locMap, const InlineFrame &frame, cons
 template <typename Strategy>
 void
 ProfilePrinter::getFunctionLocations(const SampleAggregation &agg,
-    FunctionLocationList &list)
+    FunctionLocationList &list, StringChainMap *chainMap)
 {
 	CallchainList callchainList;
 	agg.getCallchainList(callchainList);
 
 	size_t mapSize = 4 * callchainList.size() / 3;
 	FuncLocMap locMap(mapSize);
-	StringChainMap chainMap(mapSize);
+
+	if (chainMap != NULL)
+		chainMap->rehash(mapSize);
 
 	Strategy strategy;
 
@@ -123,13 +125,15 @@ ProfilePrinter::getFunctionLocations(const SampleAggregation &agg,
 		StringChain strChain;
 		strChain.push_back((*jt)->getDemangled());
 
-		for (++jt; jt != jt_end; ++jt) {
-			const auto & frame = **jt;
+		if (chainMap) {
+			for (++jt; jt != jt_end; ++jt) {
+				const auto & frame = **jt;
 
-			auto insert = chainMap.insert(std::make_pair(strChain, FuncLocMap(1)));
-			insertFuncLoc(insert.first->second, frame, *chain);
+				auto insert = chainMap->insert(std::make_pair(strChain, FuncLocMap(1)));
+				insertFuncLoc(insert.first->second, frame, *chain);
 
-			strChain.push_back(frame.getDemangled());
+				strChain.push_back(frame.getDemangled());
+			}
 		}
 
 		strategy.processEnd(frameList, chainMap, strChain);
@@ -140,6 +144,31 @@ ProfilePrinter::getFunctionLocations(const SampleAggregation &agg,
 	}
 
 	std::sort(list.begin(), list.end());
+}
+
+template void ProfilePrinter::getFunctionLocations<LeafProcessStrategy>(const SampleAggregation &agg, FunctionLocationList &list, StringChainMap *map);
+// template void ProfilePrinter::getFunctionLocations<RootProcessStrategy>(const SampleAggregation &agg, FunctionLocationList &list, StringChainMap *map);
+
+size_t
+ProfilePrinter::getCallers(const StringChainMap & map, const StringChain & chain,
+    FuncLocPtrList & functions)
+{
+	auto it = map.find(chain);
+	size_t total_samples = 0;
+
+	if (it != map.end()) {
+		const auto & count = it->second;
+		functions.reserve(count.size());
+
+		for (const auto & pair : count) {
+			functions.push_back(&pair.second);
+			total_samples += pair.second.getCount();
+		}
+
+		std::sort(functions.begin(), functions.end(), FuncLocPtrComp());
+	}
+
+	return total_samples;
 }
 
 void
@@ -162,7 +191,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 		const auto & frame = chain->front();
 
 		cumulative += chain->getSampleCount();
-		fprintf(m_outfile, "%6.2f%% %6.2f%% %s, %6u, %10s, %6u, 0x%08lx, %s, %s, %s:%u %s\n",
+		fprintf(m_outfile, "%6.2f%% %6.2f%% %s, %6u, %10s, %6zu, 0x%08lx, %s, %s, %s:%u %s\n",
 			(chain->getSampleCount() * 100.0) / profiler.getSampleCount(),
 			(cumulative * 100.0) / profiler.getSampleCount(),
 			chain->isKernel() ? "kern" : "user",
@@ -190,7 +219,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 		     for (const auto & functionLocation : functionList) {
 			    cumulativeCount += functionLocation.getCount();
 			    const InlineFrame & frame = functionLocation.getFrame();
-			     fprintf(m_outfile, "    %6.2f%%, %6.2f%%, %8u, %s, %s:%u, %s",
+			     fprintf(m_outfile, "    %6.2f%%, %6.2f%%, %8zu, %s, %s:%u, %s",
 				     (functionLocation.getCount() * 100.0) / agg->getSampleCount(),
 				     (cumulativeCount * 100.0) / agg->getSampleCount(),
 				     functionLocation.getCount(),
@@ -203,4 +232,3 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 		     }
 	     }
 }
-

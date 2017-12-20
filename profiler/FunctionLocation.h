@@ -35,7 +35,7 @@ class FunctionLocation
 	// XXX this is a pointer to allow this class to be sortable
 	const InlineFrame *frame;
 	LineLocationList lineLocationList;
-	unsigned totalCount;
+	size_t totalCount;
 	bool kernel;
 
 public:
@@ -53,7 +53,7 @@ public:
 	FunctionLocation(const FunctionLocation&) = delete;
 	FunctionLocation& operator=(const FunctionLocation &) = delete;
 
-	void AddSample(const InlineFrame &f, unsigned count)
+	void AddSample(const InlineFrame &f, size_t count)
 	{
 		totalCount += count;
 		lineLocationList.insert(f.getCodeLine());
@@ -64,7 +64,7 @@ public:
 		return totalCount > other.totalCount;
 	}
 
-	unsigned getCount() const
+	size_t getCount() const
 	{
 		return totalCount;
 	}
@@ -82,6 +82,14 @@ public:
 	bool isKernel() const
 	{
 		return kernel;
+	}
+};
+
+struct FuncLocPtrComp
+{
+	bool operator()(const FunctionLocation *a, const FunctionLocation *b) const
+	{
+		return *a < *b;
 	}
 };
 

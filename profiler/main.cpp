@@ -27,6 +27,7 @@ __FBSDID("$FreeBSD$");
 #include "Image.h"
 #include "Profiler.h"
 #include "ProfilePrinter.h"
+#include "CallchainProfilePrinter.h"
 #include "SharedString.h"
 
 #include <err.h>
@@ -104,11 +105,11 @@ main(int argc, char *argv[])
 			case 'q':
 				g_quitOnError = true;
 				break;
-#if 0
 			case 'G':
 				file = openOutFile(optarg);
 				printers.push_back(std::make_unique<LeafProfilePrinter>(file, maxDepth, threshold, printBoring));
 				break;
+#if 0
 			case 'r':
 				file = openOutFile(optarg);
 				printers.push_back(std::make_unique<RootProfilePrinter>(file, PMC_CALLCHAIN_DEPTH_MAX, threshold, true));

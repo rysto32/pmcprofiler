@@ -1,3 +1,5 @@
 *.o
 profiler/pmcprofiler
+profiler/pmcprofiler.debug
+profiler/pmcprofiler.full
 .depend

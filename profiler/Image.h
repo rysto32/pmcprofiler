@@ -56,7 +56,6 @@ class Location;
 class SharedString;
 
 typedef std::unordered_map<std::string, FunctionLocation> FunctionLocationMap;
-typedef std::unordered_map<StringChain, FunctionLocationMap, StringChain::Hasher> CallchainMap;
 typedef std::vector<FunctionLocation> FunctionList;
 typedef std::vector<std::vector<Location> > LocationList;
 

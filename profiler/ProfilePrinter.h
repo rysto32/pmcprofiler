@@ -24,22 +24,57 @@
 #ifndef PROFILER_PRINTER_H
 #define PROFILER_PRINTER_H
 
-#include "Profiler.h"
-#include  "Callchain.h"
-#include "Image.h"
-#include "InlineFrame.h"
-#include "SampleAggregation.h"
+#include "ProfilerTypes.h"
+#include "StringChain.h"
 
 #include <cstdio>
 #include <cassert>
+#include <functional>
+#include <unordered_map>
+#include <vector>
+
+class Callchain;
+class FunctionLocation;
+class InlineFrame;
+class Profiler;
+class SharedString;
+class SampleAggregation;
 
 class ProfilePrinter
 {
 protected:
+	struct FuncLocKey
+	{
+		SharedString file;
+		SharedString func;
+
+		FuncLocKey(SharedString file, SharedString func);
+
+		bool operator==(const FuncLocKey & other) const;
+
+		struct hasher
+		{
+			// XXX I would like a better hash function here
+			size_t operator()(const FuncLocKey & key) const;
+		};
+	};
+
+	typedef std::vector<FunctionLocation> FunctionLocationList;
+	typedef std::unordered_map<FuncLocKey, FunctionLocation, FuncLocKey::hasher> FuncLocMap;
+
 	FILE * m_outfile;
 	uint32_t m_maxDepth;
 
+	template <typename Strategy>
+	void getFunctionLocations(const SampleAggregation &agg, FunctionLocationList &list);
+
+	void insertFuncLoc(FuncLocMap &, const InlineFrame &, const Callchain &);
+
+	static std::string getBasename(const std::string &);
+
 public:
+	typedef std::unordered_map<StringChain, FuncLocMap, StringChain::Hasher> StringChainMap;
+
 	ProfilePrinter(FILE * file, uint32_t maximumDepth)
 	  : m_outfile(file),
 	m_maxDepth(maximumDepth)
@@ -62,7 +97,6 @@ public:
 
 	void printLineNumbers(const Profiler & profiler, const LineLocationList & functionLocation);
 
-	static std::string getBasename(const std::string &);
 };
 
 class FlatProfilePrinter : public ProfilePrinter
@@ -158,19 +192,19 @@ struct PrintFlameGraphStrategy
 
 struct LeafProcessStrategy
 {
-	typedef std::vector<Location>::iterator iterator;
+	typedef std::vector<const InlineFrame*>::iterator iterator;
 
-	iterator begin(std::vector<Location> & vec)
+	iterator begin(std::vector<const InlineFrame*> & vec)
 	{
 		return vec.begin();
 	}
 
-	iterator end(std::vector<Location> & vec)
+	iterator end(std::vector<const InlineFrame*> & vec)
 	{
 		return vec.end();
 	}
 
-	void processEnd(std::vector<Location> & vec __unused, CallchainMap & callchainMap __unused, const StringChain & callchain __unused)
+	void processEnd(std::vector<const InlineFrame*> & vec __unused, ProfilePrinter::StringChainMap & callchainMap __unused, const StringChain & callchain __unused)
 	{
 	}
 };

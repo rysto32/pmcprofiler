@@ -27,10 +27,41 @@ __FBSDID("$FreeBSD$");
 #include "ProfilePrinter.h"
 
 #include "AddressSpace.h"
+#include "Callchain.h"
+#include "FunctionLocation.h"
+#include "InlineFrame.h"
+#include "Profiler.h"
+#include "SampleAggregation.h"
+#include "SharedString.h"
 
 #include <paths.h>
 #include <libgen.h>
+
 #include <cassert>
+#include <functional>
+#include <unordered_map>
+
+ProfilePrinter::FuncLocKey::FuncLocKey(SharedString file, SharedString func)
+: file(file), func(func)
+{
+}
+
+bool
+ProfilePrinter::FuncLocKey::operator==(const FuncLocKey & other) const
+{
+	return file == other.file && func == other.func;
+}
+
+// XXX I would like a better hash function here
+size_t
+ProfilePrinter::FuncLocKey::hasher::operator()(const FuncLocKey & key) const
+{
+	size_t hash = std::hash<std::string>{}(*key.file);
+	hash *= 5;
+	hash += std::hash<std::string>{}(*key.func);
+
+	return hash;
+}
 
 void
 ProfilePrinter::printLineNumbers(const Profiler & profiler, const LineLocationList& lineLocationList)
@@ -53,18 +84,68 @@ ProfilePrinter::getBasename(const std::string&file)
 		return file;
 }
 
+void
+ProfilePrinter::insertFuncLoc(FuncLocMap &locMap, const InlineFrame &frame, const Callchain &chain)
+{
+	FuncLocKey key(frame.getFile(), frame.getFunc());
+	auto insertPos = locMap.insert(std::make_pair(key,
+	    FunctionLocation(frame, chain)));
+	if (!insertPos.second)
+		insertPos.first->second.AddSample(frame, chain.getSampleCount());
+}
+
+template <typename Strategy>
+void
+ProfilePrinter::getFunctionLocations(const SampleAggregation &agg,
+    FunctionLocationList &list)
+{
+	CallchainList callchainList;
+	agg.getCallchainList(callchainList);
+
+	size_t mapSize = 4 * callchainList.size() / 3;
+	FuncLocMap locMap(mapSize);
+	StringChainMap chainMap(mapSize);
+
+	Strategy strategy;
+
+	for (auto chain : callchainList) {
+		std::vector<const InlineFrame*> frameList;
+		chain->flatten(frameList);
+
+		auto jt = strategy.begin(frameList);
+		auto jt_end = strategy.end(frameList);
+
+		if (jt == jt_end)
+			continue;
+
+		insertFuncLoc(locMap, **jt, *chain);
+
+		StringChain strChain;
+		strChain.push_back((*jt)->getDemangled());
+
+		for (++jt; jt != jt_end; ++jt) {
+			const auto & frame = **jt;
+
+			auto insert = chainMap.insert(std::make_pair(strChain, FuncLocMap(1)));
+			insertFuncLoc(insert.first->second, frame, *chain);
+
+			strChain.push_back(frame.getDemangled());
+		}
+
+		strategy.processEnd(frameList, chainMap, strChain);
+	}
+
+	for (auto & pair : locMap) {
+		list.emplace_back(std::move(pair.second));
+	}
+
+	std::sort(list.begin(), list.end());
+}
 
 void
 FlatProfilePrinter::printProfile(const Profiler & profiler,
 				 const AggregationList & aggList)
 {
-#if 0
-	LocationList locationList;
-	Process::collectAllLocations(locationList);
-	Image::mapAllLocations(locationList);
-	Process::mapAllFunctions(locationList, LeafProcessStrategy());
-#endif
-
 	fprintf(m_outfile, "Events processed: %u\n\n", profiler.getSampleCount());
 
 	CallchainList callchainList;
@@ -96,53 +177,30 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 			frame.getDemangled()->c_str());
 	}
 
-#if 0
 	for (auto agg : aggList) {
-		     fprintf(m_outfile, "\nProcess: %6u, %s, total: %u (%6.2f%%)\n", process.getPid(), process.getName().c_str(),
-			     process.getSampleCount(), (process.getSampleCount() * 100.0) / profiler.getSampleCount());
-		     FunctionList functionList;
-		     process.getFunctionList(functionList);
+		fprintf(m_outfile, "\nProcess: %6u, %s, total: %zu (%6.2f%%)\n", agg->getPid(),
+		    agg->getExecutable().c_str(), agg->getSampleCount(),
+		    (agg->getSampleCount() * 100.0) / profiler.getSampleCount());
+
+		     FunctionLocationList functionList;
+		     getFunctionLocations<LeafProcessStrategy>(*agg, functionList);
+
 		     unsigned cumulativeCount = 0;
 		     fprintf(m_outfile, "       time   time-t   samples   env  file / library, line number, function\n");
-		     for (FunctionList::iterator functionListIterator = functionList.begin(); functionListIterator != functionList.end(); ++functionListIterator) {
-			     FunctionLocation& functionLocation(*functionListIterator);
-			     char * functionName = Image::demangle(*functionLocation.getFunctionName());
-			     cumulativeCount += functionLocation.getCount();
+		     for (const auto & functionLocation : functionList) {
+			    cumulativeCount += functionLocation.getCount();
+			    const InlineFrame & frame = functionLocation.getFrame();
 			     fprintf(m_outfile, "    %6.2f%%, %6.2f%%, %8u, %s, %s:%u, %s",
-				     (functionLocation.getCount() * 100.0) / process.getSampleCount(),
-				     (cumulativeCount * 100.0) / process.getSampleCount(),
+				     (functionLocation.getCount() * 100.0) / agg->getSampleCount(),
+				     (cumulativeCount * 100.0) / agg->getSampleCount(),
 				     functionLocation.getCount(),
-				     functionLocation.isKernelImage() ? "kern" : "user",
-				     functionLocation.getFileName()->empty() ? functionLocation.getModuleName()->c_str() : functionLocation.getFileName()->c_str(),
-				     functionLocation.getLineNumber(),
-				     functionName ? functionName : "<unknown>");
+				     functionLocation.isKernel() ? "kern" : "user",
+				     frame.getFile()->c_str(),
+				     frame.getFuncLine(),
+				     frame.getDemangled()->c_str());
 			     printLineNumbers(profiler, functionLocation.getLineLocationList());
 			     fprintf(m_outfile, "\n");
-			     free(functionName);
 		     }
 	     }
-#endif
-#if 0
-	for (auto agg : aggList) {
-		double percent = (agg->getSampleCount() * 100.0) / profiler.getSampleCount();
-		fprintf(m_outfile, "\nProcess: %s, total: %zu (%.2f%%)\n",
-		    agg->getDisplayName().c_str(), agg->getSampleCount(),
-		    percent);
-
-		agg->getCallchainList(callchainList);
-
-		for (auto chain : callchainList) {
-			std::vector<InlineFrame> frames;
-			chain->flatten(frames);
-
-			percent = (chain->getSampleCount() * 100.0) / agg->getSampleCount();
-			fprintf(m_outfile, "%6.2f%% 0x%lx %s @ %s:%d\n",
-			    percent, frames.front().getOffset(),
-			    frames.front().getDemangled()->c_str(),
-			    frames.front().getFile()->c_str(),
-			    frames.front().getCodeLine());
-		}
-	}
-#endif
 }
 

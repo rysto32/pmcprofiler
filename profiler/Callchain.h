@@ -93,7 +93,7 @@ public:
 
 	const InlineFrame & front() const;
 
-	void flatten(std::vector<InlineFrame> &) const;
+	void flatten(std::vector<const InlineFrame*> &) const;
 
 	class SampleCountComp
 	{

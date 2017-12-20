@@ -24,71 +24,64 @@
 #ifndef FUNCTIONLOCATION_H
 #define FUNCTIONLOCATION_H
 
-#include "Location.h"
+#include "Callchain.h"
+#include "InlineFrame.h"
+#include "ProfilerTypes.h"
 
 #include <set>
 
-class Image;
-
-typedef std::set<unsigned> LineLocationList;
-
-class FunctionLocation : public Location
+class FunctionLocation
 {
-	friend class Image;
-	unsigned m_totalCount;
-	LineLocationList m_lineLocationList;
+	// XXX this is a pointer to allow this class to be sortable
+	const InlineFrame *frame;
+	LineLocationList lineLocationList;
+	unsigned totalCount;
+	bool kernel;
 
 public:
-	FunctionLocation(const Location& location)
-	  : Location(location),
-	    m_totalCount(location.getCount())
+	FunctionLocation(const InlineFrame& f, const Callchain &callchain)
+	  : frame(&f),
+	    totalCount(0),
+	    kernel(callchain.isKernel())
 	{
-		m_lineLocationList.insert(location.getLineNumber());
+		AddSample(f, callchain.getSampleCount());
 	}
 
-	FunctionLocation& operator+=(const Location& location)
+	FunctionLocation(FunctionLocation && other) noexcept = default;
+	FunctionLocation& operator=(FunctionLocation &&other) noexcept = default;
+
+	FunctionLocation(const FunctionLocation&) = delete;
+	FunctionLocation& operator=(const FunctionLocation &) = delete;
+
+	void AddSample(const InlineFrame &f, unsigned count)
 	{
-		m_totalCount += location.getCount();
-		m_lineLocationList.insert(location.getLineNumber());
-
-		return *this;
-	}
-
-	FunctionLocation& operator+=(const FunctionLocation & location)
-	{
-		m_totalCount += location.getCount();
-		m_lineLocationList.insert(location.m_lineLocationList.begin(),
-		    location.m_lineLocationList.end());
-
-		return *this;
+		totalCount += count;
+		lineLocationList.insert(f.getCodeLine());
 	}
 
 	bool operator<(const FunctionLocation& other) const
 	{
-		return m_totalCount > other.m_totalCount;
+		return totalCount > other.totalCount;
 	}
 
 	unsigned getCount() const
 	{
-		return m_totalCount;
+		return totalCount;
 	}
 
-	LineLocationList& getLineLocationList()
+	const LineLocationList& getLineLocationList() const
 	{
-		return m_lineLocationList;
+		return lineLocationList;
 	}
 
-	struct hasher
+	const InlineFrame & getFrame() const
 	{
-		size_t operator()(const FunctionLocation & loc) const
-		{
-			return std::hash<std::string>()(*loc.getFunctionName());
-		}
-	};
+		return *frame;
+	}
 
-	bool operator==(const FunctionLocation & other) const
+	bool isKernel() const
 	{
-		return (getFunctionName() == other.getFunctionName());
+		return kernel;
 	}
 };
 

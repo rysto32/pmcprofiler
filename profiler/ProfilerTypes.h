@@ -25,17 +25,16 @@
 #define PROFILERTYPES_H
 
 #include <stdint.h>
-#include <memory>
+#include <set>
+#include <vector>
 
 typedef uintptr_t TargetAddr;
-/*
-namespace std {
-// XXX hack guess this isn't defined yet?
-template<typename T, typename... Args>
-unique_ptr<T> make_unique(Args&&... args)
-{
-    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-}*/
+
+class Callchain;
+class SampleAggregation;
+
+typedef std::vector<SampleAggregation*> AggregationList;
+typedef std::vector<Callchain*> CallchainList;
+typedef std::set<unsigned> LineLocationList;
 
 #endif

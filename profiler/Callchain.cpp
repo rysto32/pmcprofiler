@@ -52,11 +52,11 @@ Callchain::SampleCountComp::operator()(const Callchain * a, const Callchain * b)
 }
 
 void
-Callchain::flatten(std::vector<InlineFrame> &frameList) const
+Callchain::flatten(std::vector<const InlineFrame*> &frameList) const
 {
 	for (const auto & rec : callframes) {
 		for (const auto & frame : rec.frame.getInlineFrames()) {
-			frameList.push_back(frame);
+			frameList.push_back(&frame);
 		}
 	}
 }

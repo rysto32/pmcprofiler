@@ -24,6 +24,7 @@
 #ifndef SAMPLEAGGREGATION_H
 #define SAMPLEAGGREGATION_H
 
+#include "ProfilerTypes.h"
 #include "Sample.h"
 
 #include <sys/types.h>
@@ -36,10 +37,6 @@
 class AddressSpace;
 class Callchain;
 class ProcessExec;
-class SampleAggregation;
-
-typedef std::vector<SampleAggregation*> AggregationList;
-typedef std::vector<Callchain*> CallchainList;
 
 class SampleAggregation
 {

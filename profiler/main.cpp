@@ -30,6 +30,8 @@ __FBSDID("$FreeBSD$");
 #include "SharedString.h"
 
 #include <err.h>
+#include <sys/param.h>
+#include <pmclog.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <memory>

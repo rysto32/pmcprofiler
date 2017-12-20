@@ -117,6 +117,12 @@ public:
 		Copy(other);
 	}
 
+	SharedString(SharedString &&other) noexcept
+	  : value(other.value)
+	{
+		other.value = NULL;
+	}
+
 	~SharedString()
 	{
 		Drop();
@@ -142,6 +148,13 @@ public:
 	SharedString &operator=(const SharedString &other)
 	{
 		Copy(other);
+		return *this;
+	}
+
+	SharedString &operator=(SharedString &&other)
+	{
+		value = other.value;
+		other.value = NULL;
 		return *this;
 	}
 };

@@ -81,6 +81,9 @@ private:
 public:
 	AddressSpace(pid_t);
 
+	AddressSpace(const AddressSpace&) = delete;
+	AddressSpace& operator=(const AddressSpace &) = delete;
+
 	static void clearAddressSpaces();
 	static AddressSpace &getAddressSpace(bool kernel, pid_t pid);
 	static AddressSpace &getKernelAddressSpace();

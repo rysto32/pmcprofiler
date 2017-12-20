@@ -66,6 +66,9 @@ private:
 public:
 	SampleAggregation(const std::string & name, pid_t);
 
+	SampleAggregation(const SampleAggregation&) = delete;
+	SampleAggregation& operator=(const SampleAggregation &) = delete;
+
 	static SampleAggregation &getAggregation(const Sample &);
 	static void clearAggregations();
 	static void getAggregationList(AggregationList &);

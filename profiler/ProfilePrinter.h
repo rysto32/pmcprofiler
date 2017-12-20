@@ -81,6 +81,9 @@ public:
 	{
 	}
 
+	ProfilePrinter(const ProfilePrinter&) = delete;
+	ProfilePrinter& operator=(const ProfilePrinter &) = delete;
+
 	uint32_t getMaxDepth() const
 	{
 		return m_maxDepth;

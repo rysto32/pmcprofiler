@@ -159,7 +159,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 
 		const auto & agg = chain->getAggregation();
 		const auto & space = chain->getAddressSpace();
-		auto frame = chain->front();
+		const auto & frame = chain->front();
 
 		cumulative += chain->getSampleCount();
 		fprintf(m_outfile, "%6.2f%% %6.2f%% %s, %6u, %10s, %6u, 0x%08lx, %s, %s, %s:%u %s\n",

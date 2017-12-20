@@ -31,6 +31,9 @@ class Profiler;
 class EventFactory
 {
 public:
+	EventFactory(const EventFactory&) = delete;
+	EventFactory& operator=(const EventFactory &) = delete;
+
 	static void createEvents(Profiler& profiler, uint32_t maxDepth);
 };
 

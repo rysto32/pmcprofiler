@@ -59,6 +59,9 @@ public:
 
 	Profiler(const std::string& dataFile, bool showlines, const char *modulePathStr);
 
+	Profiler(const Profiler&) = delete;
+	Profiler& operator=(const Profiler &) = delete;
+
 	const std::string& getDataFile() const
 	{
 		return m_dataFile;

@@ -74,6 +74,9 @@ class Image
 	Image();
 	Image(const std::string& imageName);
 
+	Image(const Image&) = delete;
+	Image& operator=(const Image &) = delete;
+
 public:
 	static SharedString demangle(SharedString name);
 

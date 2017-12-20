@@ -42,6 +42,9 @@ protected:
 	{
 	}
 
+	ProcessState(const ProcessState&) = delete;
+	ProcessState& operator=(const ProcessState &) = delete;
+
 public:
 	pid_t getProcessID() const
 	{

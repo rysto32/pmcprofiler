@@ -40,6 +40,9 @@ class Callframe
 public:
 	Callframe(TargetAddr off);
 
+	Callframe(const Callframe&) = delete;
+	Callframe& operator=(const Callframe &) = delete;
+
 	void addFrame(SharedString file, SharedString func,
 		    SharedString demangled, int codeLine, int funcLine);
 	void setUnmapped(SharedString image);

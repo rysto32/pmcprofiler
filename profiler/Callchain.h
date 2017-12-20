@@ -62,6 +62,11 @@ public:
 public:
 	Callchain(const SampleAggregation &, AddressSpace &, const Sample &);
 
+	Callchain(const Callchain&) = delete;
+	Callchain& operator=(const Callchain &) = delete;
+
+	Callchain(Callchain&& other) noexcept = default;
+
 	void addSample();
 
 	const SampleAggregation & getAggregation() const

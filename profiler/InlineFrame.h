@@ -45,21 +45,21 @@ public:
 	{
 	}
 
+	InlineFrame(const InlineFrame &) = delete;
+	InlineFrame(InlineFrame &&other) noexcept = default;
+
 	SharedString getFile() const
 	{
-
 		return (file);
 	}
 
 	SharedString getFunc() const
 	{
-
 		return (func);
 	}
 
 	SharedString getDemangled() const
 	{
-
 		return (demangledFunc);
 	}
 
@@ -70,15 +70,16 @@ public:
 
 	int getCodeLine() const
 	{
-
 		return (codeLine);
 	}
 
 	int getFuncLine() const
 	{
-
 		return (funcLine);
 	}
+
+	InlineFrame &operator=(const InlineFrame &) = delete;
+	InlineFrame &operator=(InlineFrame &&) = delete;
 };
 
 #endif

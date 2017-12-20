@@ -35,8 +35,8 @@ void
 Callframe::addFrame(SharedString file, SharedString func,
      SharedString demangled, int codeLine, int funcLine)
 {
-	inlineFrames.push_back(InlineFrame(file, func, demangled,
-	    offset, codeLine, funcLine));
+	inlineFrames.emplace_back(file, func, demangled, offset, codeLine,
+	    funcLine);
 }
 
 
@@ -45,8 +45,8 @@ Callframe::setUnmapped(SharedString image)
 {
 	SharedString unmapped_function("[unmapped_function]");
 	inlineFrames.clear();
-	inlineFrames.push_back(InlineFrame(image, unmapped_function,
-	    unmapped_function, offset, -1, -1));
+	inlineFrames.emplace_back(image, unmapped_function,
+	    unmapped_function, offset, -1, -1);
 
 	unmapped = true;
 }

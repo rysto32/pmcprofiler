@@ -93,12 +93,10 @@ main(int argc, char *argv[])
 			case 'f':
 				samplefile = optarg;
 				break;
-#if 0
 			case 'F':
 				file = openOutFile(optarg);
 				printers.push_back(std::make_unique<FlameGraphProfilerPrinter>(file, PMC_CALLCHAIN_DEPTH_MAX, threshold, true));
 				break;
-#endif
 			case 'l':
 				showlines = true;
 				break;

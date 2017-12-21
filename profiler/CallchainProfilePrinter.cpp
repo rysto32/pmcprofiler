@@ -31,6 +31,8 @@ __FBSDID("$FreeBSD$");
 #include "SampleAggregation.h"
 #include "StringChain.h"
 
+#include <cstring>
+
 template <class ProcessStrategy, class PrintStrategy>
 bool
 CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::isCallChainBoring(
@@ -144,4 +146,30 @@ PrintCallchainStrategy::printFrame(FILE *outfile, int depth, double processPerce
 		functionLocation.getCount(), agg.getSampleCount(), functionName);
 	printer.printLineNumbers(profiler, functionLocation.getLineLocationList());
 	fprintf(outfile, "\n");
+}
+
+void
+PrintFlameGraphStrategy::printFileHeader(FILE *outfile __unused, const Profiler &profiler __unused) const
+{
+}
+
+void
+PrintFlameGraphStrategy::printProcessHeader(FILE *outfile __unused, const Profiler &profiler __unused, const SampleAggregation &agg __unused) const
+{
+}
+
+void
+PrintFlameGraphStrategy::printFrame(FILE *outfile, int depth, double processPercent, double parentPercent,
+		ProfilePrinter &printer, const Profiler &profiler, const FunctionLocation& functionLocation,
+		const SampleAggregation &agg, const char *functionName, StringChain & chain __unused) const
+{
+	if (strcmp(functionName, "[self]") == 0) {
+		const char *sep = "";
+		for (auto demangled : chain) {
+			fprintf(outfile, "%s%s", sep, demangled->c_str());
+			sep = ";";
+		}
+
+		fprintf(outfile, " %zd\n", functionLocation.getCount());
+	}
 }

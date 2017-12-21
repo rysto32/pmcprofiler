@@ -57,7 +57,17 @@ struct PrintCallchainStrategy
 	void printProcessHeader(FILE *outfile, const Profiler &profiler, const SampleAggregation &agg) const;
 	void printFrame(FILE *outfile, int depth, double processPercent, double parentPercent,
 	    ProfilePrinter &printer, const Profiler &profiler, const FunctionLocation& functionLocation,
-	    const SampleAggregation &agg, const char *functionName, StringChain & chain __unused) const;
+	    const SampleAggregation &agg, const char *functionName, StringChain & chain) const;
+};
+
+
+struct PrintFlameGraphStrategy
+{
+	void printFileHeader(FILE *outfile, const Profiler &profiler) const;
+	void printProcessHeader(FILE *outfile, const Profiler &profiler, const SampleAggregation &agg) const;
+	void printFrame(FILE *outfile, int depth, double processPercent, double parentPercent,
+		ProfilePrinter &printer, const Profiler &profiler, const FunctionLocation& functionLocation,
+		const SampleAggregation &agg, const char *functionName, StringChain & chain) const;
 };
 
 #define DEFINE_PRINTER(procStra, printStra, name) \
@@ -66,7 +76,7 @@ struct PrintCallchainStrategy
 
 DEFINE_PRINTER(LeafProcessStrategy, PrintCallchainStrategy, LeafProfilePrinter);
 DEFINE_PRINTER(RootProcessStrategy, PrintCallchainStrategy, RootProfilePrinter);
-// DEFINE_PRINTER(RootProcessStrategy, PrintFlameGraphStrategy, FlameGraphProfilerPrinter)
+DEFINE_PRINTER(RootProcessStrategy, PrintFlameGraphStrategy, FlameGraphProfilerPrinter);
 
 #undef DEFINE_PRINTER
 

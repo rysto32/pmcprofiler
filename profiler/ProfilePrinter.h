@@ -123,36 +123,6 @@ public:
 	    const AggregationList & aggList);
 };
 
-#if 0
-struct PrintFlameGraphStrategy
-{
-	void printFileHeader(FILE *outfile __unused, const Profiler &profiler __unused)
-	{
-	}
-
-	void printProcessHeader(FILE *outfile __unused, const Profiler &profiler __unused, Process &process __unused)
-	{
-	}
-
-	void printFrame(FILE *outfile, int depth __unused, double processPercent __unused, double parentPercent __unused,
-			ProfilePrinter &printer __unused, const Profiler &profiler __unused, FunctionLocation& functionLocation,
-		 Process &process __unused, const char *functionName, StringChain & chain)
-	{
-		if (strcmp(functionName, "[self]") == 0) {
-			const char *sep = "";
-			for (StringChain::iterator it = chain.begin(); it != chain.end(); ++it) {
-				char *demangled = Image::demangle(**it);
-				fprintf(outfile, "%s%s", sep, demangled);
-				free(demangled);
-				sep = ";";
-			}
-
-			fprintf(outfile, " %d\n", functionLocation.getCount());
-		}
-	}
-};
-#endif
-
 struct LeafProcessStrategy
 {
 	typedef std::vector<const InlineFrame*>::iterator iterator;

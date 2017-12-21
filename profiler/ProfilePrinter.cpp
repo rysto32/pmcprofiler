@@ -112,6 +112,9 @@ ProfilePrinter::getFunctionLocations(const SampleAggregation &agg,
 
 	for (auto chain : callchainList) {
 		std::vector<const InlineFrame*> frameList;
+
+		const InlineFrame & leaf = chain->getLeafFrame();
+		strategy.insertSelfFrame(frameList, *chain, leaf);
 		chain->flatten(frameList);
 
 		auto jt = strategy.begin(frameList);
@@ -135,8 +138,6 @@ ProfilePrinter::getFunctionLocations(const SampleAggregation &agg,
 				strChain.push_back(frame.getDemangled());
 			}
 		}
-
-		strategy.processEnd(frameList, chainMap, strChain);
 	}
 
 	for (auto & pair : locMap) {
@@ -147,7 +148,7 @@ ProfilePrinter::getFunctionLocations(const SampleAggregation &agg,
 }
 
 template void ProfilePrinter::getFunctionLocations<LeafProcessStrategy>(const SampleAggregation &agg, FunctionLocationList &list, StringChainMap *map);
-// template void ProfilePrinter::getFunctionLocations<RootProcessStrategy>(const SampleAggregation &agg, FunctionLocationList &list, StringChainMap *map);
+template void ProfilePrinter::getFunctionLocations<RootProcessStrategy>(const SampleAggregation &agg, FunctionLocationList &list, StringChainMap *map);
 
 size_t
 ProfilePrinter::getCallers(const StringChainMap & map, const StringChain & chain,
@@ -188,7 +189,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 
 		const auto & agg = chain->getAggregation();
 		const auto & space = chain->getAddressSpace();
-		const auto & frame = chain->front();
+		const auto & frame = chain->getLeafFrame();
 
 		cumulative += chain->getSampleCount();
 		fprintf(m_outfile, "%6.2f%% %6.2f%% %s, %6u, %10s, %6zu, 0x%08lx, %s, %s, %s:%u %s\n",
@@ -231,4 +232,29 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 			     fprintf(m_outfile, "\n");
 		     }
 	     }
+}
+
+RootProcessStrategy::iterator
+RootProcessStrategy::begin(std::vector<const InlineFrame*> & vec) const
+{
+	iterator it = vec.rbegin();
+
+	while (it != end(vec) && !(*it)->isMapped()) {
+		++it;
+	}
+
+	return it;
+}
+
+RootProcessStrategy::iterator
+RootProcessStrategy::end(std::vector<const InlineFrame*> & vec) const
+{
+	return vec.rend();
+}
+
+void
+RootProcessStrategy::insertSelfFrame(std::vector<const InlineFrame*> & frameList,
+    Callchain &chain, const InlineFrame & prototype) const
+{
+	frameList.insert(frameList.begin(), chain.getSelfFrame(prototype));
 }

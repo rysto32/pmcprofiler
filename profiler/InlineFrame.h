@@ -78,6 +78,11 @@ public:
 		return (funcLine);
 	}
 
+	bool isMapped() const
+	{
+		return codeLine != -1;
+	}
+
 	InlineFrame &operator=(const InlineFrame &) = delete;
 	InlineFrame &operator=(InlineFrame &&) = delete;
 };

@@ -27,10 +27,10 @@
 #include <vector>
 
 #include "ProfilerTypes.h"
+#include "InlineFrame.h"
 
 class AddressSpace;
 class Callframe;
-class InlineFrame;
 class Sample;
 class SampleAggregation;
 
@@ -56,6 +56,7 @@ public:
 	const SampleAggregation &aggregation;
 	const AddressSpace &space;
 	RecordChain callframes;
+	std::unique_ptr<InlineFrame> selfFrame;
 	size_t sampleCount;
 	bool kernel;
 
@@ -94,9 +95,11 @@ public:
 		return kernel;
 	}
 
+	const InlineFrame * getSelfFrame(const InlineFrame &);
+
 	bool isMapped() const;
 
-	const InlineFrame & front() const;
+	const InlineFrame & getLeafFrame() const;
 
 	void flatten(std::vector<const InlineFrame*> &) const;
 

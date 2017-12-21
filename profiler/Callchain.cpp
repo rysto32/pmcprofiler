@@ -62,7 +62,7 @@ Callchain::flatten(std::vector<const InlineFrame*> &frameList) const
 }
 
 const InlineFrame&
-Callchain::front() const
+Callchain::getLeafFrame() const
 {
 	return callframes.front().frame.getInlineFrames().front();
 }
@@ -73,3 +73,16 @@ Callchain::isMapped() const
 	return !callframes.front().frame.isUnmapped();
 }
 
+const InlineFrame *
+Callchain::getSelfFrame(const InlineFrame & prototype)
+{
+	if (selfFrame)
+		return selfFrame.get();
+
+	SharedString self("[self]");
+	selfFrame = std::make_unique<InlineFrame>(prototype.getFile(),
+	    self, self, prototype.getOffset(), prototype.getCodeLine(),
+	    prototype.getFuncLine());
+
+	return selfFrame.get();
+}

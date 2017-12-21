@@ -73,7 +73,8 @@ protected:
 	uint32_t m_maxDepth;
 
 	template <typename Strategy>
-	void getFunctionLocations(const SampleAggregation &agg, FunctionLocationList &list, StringChainMap *map = NULL);
+	void getFunctionLocations(const SampleAggregation &agg,
+	    FunctionLocationList &list, StringChainMap *map = NULL);
 
 	typedef std::vector<const FunctionLocation*> FuncLocPtrList;
 	size_t getCallers(const StringChainMap & map, const StringChain & chain,
@@ -156,55 +157,29 @@ struct LeafProcessStrategy
 {
 	typedef std::vector<const InlineFrame*>::iterator iterator;
 
-	iterator begin(std::vector<const InlineFrame*> & vec)
+	iterator begin(std::vector<const InlineFrame*> & vec) const
 	{
 		return vec.begin();
 	}
 
-	iterator end(std::vector<const InlineFrame*> & vec)
+	iterator end(std::vector<const InlineFrame*> & vec) const
 	{
 		return vec.end();
 	}
 
-	void processEnd(std::vector<const InlineFrame*> & vec __unused, ProfilePrinter::StringChainMap * callchainMap __unused, const StringChain & callchain __unused)
+	void insertSelfFrame(std::vector<const InlineFrame*> &, Callchain &, const InlineFrame &) const
 	{
 	}
 };
 
-#if 0
 struct RootProcessStrategy
 {
-	typedef std::vector<Location>::reverse_iterator iterator;
+	typedef std::vector<const InlineFrame*>::reverse_iterator iterator;
 
-	iterator begin(std::vector<Location> & vec)
-	{
-		iterator it = vec.rbegin();
-
-		while (it != end(vec) && !it->isMapped()) {
-			++it;
-		}
-
-		return it;
-	}
-
-	iterator end(std::vector<Location> & vec)
-	{
-		return vec.rend();
-	}
-
-	void processEnd(std::vector<Location> & vec, CallchainMap & callchainMap, const StringChain & callchain)
-	{
-		std::pair<CallchainMap::iterator, bool> mapInserted =
-		callchainMap.insert(CallchainMap::value_type(callchain, FunctionLocationMap(1)));
-		std::pair<FunctionLocationMap::iterator, bool> inserted =
-		mapInserted.first->second.insert(FunctionLocationMap::value_type("[self]", FunctionLocation(vec.front())));
-		if (!inserted.second)
-			inserted.first->second += vec.front();
-		else
-			inserted.first->second.setFunctionName("[self]");
-	}
+	iterator begin(std::vector<const InlineFrame*> & vec) const;
+	iterator end(std::vector<const InlineFrame*> & vec) const;
+	void insertSelfFrame(std::vector<const InlineFrame*> &, Callchain &, const InlineFrame &) const;
 };
-#endif
 
 #endif
 

@@ -65,7 +65,7 @@ struct PrintCallchainStrategy
     typedef CallchainProfilePrinter<procStra, printStra> name
 
 DEFINE_PRINTER(LeafProcessStrategy, PrintCallchainStrategy, LeafProfilePrinter);
-// DEFINE_PRINTER(RootProcessStrategy, PrintCallchainStrategy, RootProfilePrinter);
+DEFINE_PRINTER(RootProcessStrategy, PrintCallchainStrategy, RootProfilePrinter);
 // DEFINE_PRINTER(RootProcessStrategy, PrintFlameGraphStrategy, FlameGraphProfilerPrinter)
 
 #undef DEFINE_PRINTER

@@ -141,11 +141,6 @@ main(int argc, char *argv[])
 					usage();
 
 				break;
-#if 0
-			case 'N':
-				Image::setBootfile(optarg);
-				break;
-#endif
 			case 'm':
 				modulePath = optarg;
 				break;

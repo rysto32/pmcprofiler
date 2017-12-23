@@ -21,45 +21,87 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef CALLFRAME_H
-#define CALLFRAME_H
+#ifndef DWARFDIE_H
+#define DWARFDIE_H
 
-#include <vector>
+#include <libdwarf.h>
 
-#include "InlineFrame.h"
-#include "ProfilerTypes.h"
-
-class SharedString;
-
-class Callframe
+class DwarfDie
 {
-	TargetAddr offset;
-	std::vector<InlineFrame> inlineFrames;
-	bool unmapped;
+	Dwarf_Debug dwarf;
+	Dwarf_Die die;
+
+
+	DwarfDie(Dwarf_Debug dwarf, Dwarf_Die die) noexcept
+	  : dwarf(dwarf), die(die)
+	{
+	}
+
+	void Release()
+	{
+		if (die != DW_DLV_BADADDR)
+			dwarf_dealloc(dwarf, die, DW_DLA_DIE);
+	}
 
 public:
-	Callframe(TargetAddr off);
-
-	Callframe(const Callframe&) = delete;
-	Callframe& operator=(const Callframe &) = delete;
-
-	void addFrame(SharedString file, SharedString func,
-		    SharedString demangled, int codeLine, int funcLine);
-	void setUnmapped(SharedString image);
-
-	TargetAddr getOffset() const
+	DwarfDie()
+	  : die(DW_DLV_BADADDR)
 	{
-		return offset;
 	}
 
-	const std::vector<InlineFrame> & getInlineFrames() const
+	~DwarfDie()
 	{
-		return inlineFrames;
+		Release();
 	}
 
-	bool isUnmapped() const
+	DwarfDie(const DwarfDie &) = delete;
+
+	DwarfDie(DwarfDie && other) noexcept
+	  : dwarf(other.dwarf), die(other.die)
 	{
-		return unmapped;
+		other.die = DW_DLV_BADADDR;
+	}
+
+	DwarfDie & operator=(const DwarfDie&) = delete;
+
+	DwarfDie & operator=(DwarfDie && other) noexcept
+	{
+		Release();
+
+		dwarf = other.dwarf;
+		die = other.die;
+
+		other.die = DW_DLV_BADADDR;
+
+		return *this;
+	}
+
+	operator bool() const
+	{
+		return die != DW_DLV_BADADDR;
+	}
+
+	bool operator!() const
+	{
+		return !this->operator bool();
+	}
+
+	const Dwarf_Die &operator*() const
+	{
+		return die;
+	}
+
+	static DwarfDie OffDie(Dwarf_Debug dwarf, Dwarf_Off ref)
+	{
+		Dwarf_Die die;
+		Dwarf_Error derr;
+		int error;
+
+		error = dwarf_offdie(dwarf, ref, &die, &derr);
+		if (error != 0)
+			return DwarfDie();
+		else
+			return DwarfDie(dwarf, die);
 	}
 };
 

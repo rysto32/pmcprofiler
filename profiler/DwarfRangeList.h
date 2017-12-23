@@ -21,45 +21,45 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef CALLFRAME_H
-#define CALLFRAME_H
+#ifndef DWARFRANGELIST_H
+#define DWARFRANGELIST_H
 
-#include <vector>
+#include <libdwarf.h>
 
-#include "InlineFrame.h"
-#include "ProfilerTypes.h"
+#include "DwarfArray.h"
+#include "DwarfException.h"
 
-class SharedString;
-
-class Callframe
+struct DwarfRangeDeleter
 {
-	TargetAddr offset;
-	std::vector<InlineFrame> inlineFrames;
-	bool unmapped;
+	void operator()(Dwarf_Debug dwarf, Dwarf_Ranges *ranges, Dwarf_Signed count)
+	{
+		dwarf_ranges_dealloc(dwarf, ranges, count);
+	}
+};
+
+class DwarfRangeList : public DwarfArray<Dwarf_Ranges, DwarfRangeDeleter>
+{
+	typedef DwarfArray<Dwarf_Ranges, DwarfRangeDeleter> Super;
+
+	static Super::Array GetArray(Dwarf_Debug dwarf, Dwarf_Unsigned off)
+	{
+		Dwarf_Error derr;
+		Dwarf_Ranges *array;
+		Dwarf_Signed count;
+		Dwarf_Unsigned size;
+		int error;
+
+		error = dwarf_get_ranges(dwarf, off, &array, &count, &size, &derr);
+		if (error != DW_DLV_OK)
+			throw DwarfException("dwarf_get_ranges failed");
+
+		return Super::Array(array, count);
+	}
 
 public:
-	Callframe(TargetAddr off);
-
-	Callframe(const Callframe&) = delete;
-	Callframe& operator=(const Callframe &) = delete;
-
-	void addFrame(SharedString file, SharedString func,
-		    SharedString demangled, int codeLine, int funcLine);
-	void setUnmapped(SharedString image);
-
-	TargetAddr getOffset() const
+	DwarfRangeList(Dwarf_Debug dwarf, Dwarf_Unsigned off)
+	  : DwarfArray(dwarf, GetArray(dwarf, off))
 	{
-		return offset;
-	}
-
-	const std::vector<InlineFrame> & getInlineFrames() const
-	{
-		return inlineFrames;
-	}
-
-	bool isUnmapped() const
-	{
-		return unmapped;
 	}
 };
 

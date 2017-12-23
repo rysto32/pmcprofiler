@@ -27,6 +27,7 @@ __FBSDID("$FreeBSD$");
 #include "Image.h"
 
 #include "Callframe.h"
+#include "DwarfResolver.h"
 #include "SharedString.h"
 
 #include <cxxabi.h>
@@ -34,7 +35,7 @@ __FBSDID("$FreeBSD$");
 const std::string Image::TEXT_SECTION_NAME(".text");
 Image::ImageMap Image::imageMap;
 
-Image Image::unmappedImage;
+Image Image::unmappedImage("");
 
 Image *
 Image::getImage(const char *name)
@@ -56,13 +57,8 @@ Image::freeImages()
 	imageMap.clear();
 }
 
-Image::Image()
-  : m_lookup("<unknown>"), mapped(false)
-{
-}
-
 Image::Image(const std::string& imageName)
-  : m_lookup(imageName), mapped(true)
+  : imageFile(imageName), mapped(!imageName.empty())
 {
 }
 
@@ -134,31 +130,9 @@ Image::getFrame(TargetAddr offset)
 void
 Image::mapAllFrames()
 {
-	for (FrameMap::iterator it = frameMap.begin();
-	    it != frameMap.end(); ++it) {
-		int totalDepth = m_lookup.GetInlineDepth(it->first);
-		for (int depth = 0; depth < totalDepth; ++depth) {
-			SharedString file, func, dummy1, dummy2, demangled;
-			u_int codeLine, funcLine;
+	DwarfResolver resolver(imageFile);
 
-			bool success = m_lookup.LookupLine(it->first, depth,
-			    file, func, codeLine);
-			if (!success) {
-				it->second->setUnmapped(getImageFile());
-				break;
-			}
-
-			success = m_lookup.LookupFunc(it->first, dummy1,
-			    dummy2, funcLine);
-			if (!success)
-				funcLine = codeLine;
-
-			demangled = demangle(func);
-
-			it->second->addFrame(file, func, demangled, codeLine,
-			    funcLine);
-		}
-	}
+	resolver.Resolve(frameMap);
 }
 
 void

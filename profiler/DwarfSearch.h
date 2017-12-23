@@ -21,46 +21,37 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef CALLFRAME_H
-#define CALLFRAME_H
+#ifndef DWARFSEARCH_H
+#define DWARFSEARCH_H
 
-#include <vector>
+#include <libdwarf.h>
 
-#include "InlineFrame.h"
-#include "ProfilerTypes.h"
+#include "DwarfSrcLinesList.h"
+#include "DwarfDieStack.h"
+#include "SharedString.h"
 
-class SharedString;
+class Callframe;
 
-class Callframe
+class DwarfSearch
 {
-	TargetAddr offset;
-	std::vector<InlineFrame> inlineFrames;
-	bool unmapped;
+private:
+	SharedString imageFile;
+	DwarfDieStack stack;
+	DwarfSrcLinesList srcLines;
+	DwarfSrcLinesList::const_iterator srcIt;
+
+	bool FindLeaf(const Callframe & frame, SharedString &file, int &line);
 
 public:
-	Callframe(TargetAddr off);
+	DwarfSearch(Dwarf_Debug, Dwarf_Die, SharedString, const SymbolMap &);
 
-	Callframe(const Callframe&) = delete;
-	Callframe& operator=(const Callframe &) = delete;
+	DwarfSearch(const DwarfSearch &) = delete;
+	DwarfSearch(DwarfSearch &&) = delete;
 
-	void addFrame(SharedString file, SharedString func,
-		    SharedString demangled, int codeLine, int funcLine);
-	void setUnmapped(SharedString image);
+	DwarfSearch & operator=(const DwarfSearch &) = delete;
+	DwarfSearch & operator=(DwarfSearch &&) = delete;
 
-	TargetAddr getOffset() const
-	{
-		return offset;
-	}
-
-	const std::vector<InlineFrame> & getInlineFrames() const
-	{
-		return inlineFrames;
-	}
-
-	bool isUnmapped() const
-	{
-		return unmapped;
-	}
+	bool AdvanceAndMap(Callframe &);
 };
 
 #endif

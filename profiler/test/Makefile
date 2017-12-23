@@ -3,12 +3,19 @@ WARNS=0
 NO_MAN=
 
 SRCS=	\
-	DwarfCompileUnit.cpp \
-	DwarfLocation.cpp \
-	DwarfLookup.cpp \
-	DwarfRange.cpp \
+	Callframe.cpp \
+	DwarfCompileUnitSearch.cpp \
+	DwarfDieRanges.cpp \
+	DwarfDieStack.cpp \
+	DwarfResolver.cpp \
+	DwarfSearch.cpp \
+	DwarfStackState.cpp \
+	DwarfSubprogramInfo.cpp \
+	DwarfUtil.cpp \
+	Image.cpp \
 	main.cpp \
 
+CXXFLAGS=-std=c++14 -DLOG_ENABLED
 LDADD = -ldwarf -lelf
 DEBUG_FLAGS=-g -O0
 WARNS=3

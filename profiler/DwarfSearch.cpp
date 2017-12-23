@@ -21,46 +21,55 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef CALLFRAME_H
-#define CALLFRAME_H
+#include "DwarfSearch.h"
 
-#include <vector>
+#include "Callframe.h"
+#include "DwarfSrcLine.h"
 
-#include "InlineFrame.h"
-#include "ProfilerTypes.h"
-
-class SharedString;
-
-class Callframe
+DwarfSearch::DwarfSearch(Dwarf_Debug dwarf, Dwarf_Die cu, SharedString imageFile,
+    const SymbolMap & symbols)
+  : imageFile(imageFile),
+    stack(imageFile, dwarf, cu, symbols),
+    srcLines(dwarf, cu),
+    srcIt(srcLines.begin())
 {
-	TargetAddr offset;
-	std::vector<InlineFrame> inlineFrames;
-	bool unmapped;
 
-public:
-	Callframe(TargetAddr off);
+}
 
-	Callframe(const Callframe&) = delete;
-	Callframe& operator=(const Callframe &) = delete;
+bool
+DwarfSearch::FindLeaf(const Callframe & frame, SharedString &file, int &line)
+{
 
-	void addFrame(SharedString file, SharedString func,
-		    SharedString demangled, int codeLine, int funcLine);
-	void setUnmapped(SharedString image);
+	while (srcIt != srcLines.end()) {
+		auto nextIt = srcIt;
+		++nextIt;
 
-	TargetAddr getOffset() const
-	{
-		return offset;
+		DwarfSrcLine next(*nextIt);
+
+		if (frame.getOffset() < next.GetAddr()) {
+			DwarfSrcLine src(*srcIt);
+			file = src.GetFile(imageFile);
+			line = src.GetLine();
+			return true;
+		}
+
+		srcIt = nextIt;
 	}
 
-	const std::vector<InlineFrame> & getInlineFrames() const
-	{
-		return inlineFrames;
+	return false;
+}
+
+bool
+DwarfSearch::AdvanceAndMap(Callframe &frame)
+{
+	SharedString file;
+	int line;
+
+	if (FindLeaf(frame, file, line)) {
+		return stack.AdvanceAndMap(frame, file, line);
+	} else {
+		frame.setUnmapped(imageFile);
 	}
 
-	bool isUnmapped() const
-	{
-		return unmapped;
-	}
-};
-
-#endif
+	return false;
+}

@@ -2,18 +2,22 @@ PROG_CXX=pmcprofiler
 WARNS=3
 NO_MAN=
 
-CXX=g++8
-COMPILER_TYPE=gcc
+#CXX=g++8
+#COMPILER_TYPE=gcc
 
 SRCS=	\
 	AddressSpace.cpp \
 	Callchain.cpp \
 	CallchainProfilePrinter.cpp \
 	Callframe.cpp \
-	DwarfCompileUnit.cpp \
-	DwarfLocation.cpp \
-	DwarfLookup.cpp \
-	DwarfRange.cpp \
+	DwarfCompileUnitSearch.cpp \
+	DwarfDieRanges.cpp \
+	DwarfDieStack.cpp \
+	DwarfResolver.cpp \
+	DwarfSearch.cpp \
+	DwarfStackState.cpp \
+	DwarfSubprogramInfo.cpp \
+	DwarfUtil.cpp \
 	EventFactory.cpp \
 	Image.cpp \
 	main.cpp \
@@ -21,10 +25,12 @@ SRCS=	\
 	ProfilePrinter.cpp \
 	SampleAggregation.cpp
 
-LDADD=	-lpmc -ldwarf -lelf -Wl,-rpath=/usr/local/lib/gcc8
+LDADD=	-lpmc -ldwarf -lelf
+#-Wl,-rpath=/usr/local/lib/gcc8
 CFLAGS += -I/usr/local/include
 CXXFLAGS += -std=c++14
 
 .include <bsd.prog.mk>
 
 CWARNFLAGS.gcc += -Wno-expansion-to-defined -Wno-extra -Wno-unused-but-set-variable
+CWARNFLAGS.clang += -Wno-user-defined-literals

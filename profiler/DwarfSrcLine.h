@@ -21,45 +21,73 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef CALLFRAME_H
-#define CALLFRAME_H
+#ifndef DWARFSRCLINE_H
+#define DWARFSRCLINE_H
 
-#include <vector>
+#include <libdwarf.h>
 
-#include "InlineFrame.h"
-#include "ProfilerTypes.h"
+#include "DwarfException.h"
 
-class SharedString;
-
-class Callframe
+class DwarfSrcLine
 {
-	TargetAddr offset;
-	std::vector<InlineFrame> inlineFrames;
-	bool unmapped;
+private:
+	Dwarf_Line line;
+	Dwarf_Addr addr;
+
+	static Dwarf_Addr GetAddr(const Dwarf_Line &l)
+	{
+		Dwarf_Error derr;
+		Dwarf_Addr addr;
+		int error;
+
+		error = dwarf_lineaddr(l, &addr, &derr);
+		if (error != 0)
+			throw DwarfException("dwarf_lineaddr failed");
+
+		return addr;
+	}
 
 public:
-	Callframe(TargetAddr off);
-
-	Callframe(const Callframe&) = delete;
-	Callframe& operator=(const Callframe &) = delete;
-
-	void addFrame(SharedString file, SharedString func,
-		    SharedString demangled, int codeLine, int funcLine);
-	void setUnmapped(SharedString image);
-
-	TargetAddr getOffset() const
+	DwarfSrcLine(const Dwarf_Line & l)
+	  : line(l), addr(GetAddr(l))
 	{
-		return offset;
 	}
 
-	const std::vector<InlineFrame> & getInlineFrames() const
+	DwarfSrcLine(const DwarfSrcLine &) = delete;
+	DwarfSrcLine(DwarfSrcLine &&) = delete;
+
+	DwarfSrcLine & operator=(const DwarfSrcLine &) = delete;
+	DwarfSrcLine & operator=(DwarfSrcLine && other) = default;
+
+	Dwarf_Addr GetAddr() const
 	{
-		return inlineFrames;
+		return addr;
 	}
 
-	bool isUnmapped() const
+	Dwarf_Unsigned GetLine() const
 	{
-		return unmapped;
+		Dwarf_Error derr;
+		Dwarf_Unsigned lineno;
+		int error;
+
+		error = dwarf_lineno(line, &lineno, &derr);
+		if (error != 0)
+			throw DwarfException("dwarf_lineno failed");
+
+		return lineno;
+	}
+
+	SharedString GetFile(SharedString image) const
+	{
+		Dwarf_Error derr;
+		char *file;
+		int error;
+
+		error = dwarf_linesrc(line, &file, &derr);
+		if (error != 0)
+			return image;
+
+		return file;
 	}
 };
 

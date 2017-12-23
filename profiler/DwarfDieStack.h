@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,84 +21,51 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
+#ifndef DWARFDIESTACK_H
+#define DWARFDIESTACK_H
 
-#include "DwarfLocation.h"
+#include "DwarfDieList.h"
+#include "DwarfStackState.h"
+#include "ProfilerTypes.h"
 
-#include <err.h>
+#include <libdwarf.h>
+#include <vector>
 
-SharedString DwarfLocation::UNKNOWN_FUNC("<unknown>");
+class Callframe;
 
-DwarfLocation::DwarfLocation(const SharedString &file, const SharedString &func,
-    u_int line, uint64_t die)
-  : m_file(file),
-    m_func(func),
-    m_lineno(line),
-    m_needsDebug(false),
-    m_die(die)
+class DwarfDieStack
 {
-}
+private:
+	SharedString imageFile;
+	const Dwarf_Debug dwarf;
+	std::vector<DwarfStackState> dieStack;
+	DwarfStackState peekState;
+	Dwarf_Die cuDie;
+	const SymbolMap & elfSymbols;
 
-DwarfLocation::DwarfLocation(const SharedString &file, const SharedString &func)
-  : m_file(file),
-    m_func(func),
-    m_lineno(0),
-    m_needsDebug(true),
-    m_die(0)
-{
-}
+	bool Advance(TargetAddr offset);
+	void PeekInline(TargetAddr offset);
+	void PushPeekState();
 
-const SharedString &
-DwarfLocation::GetFile() const
-{
+	SharedPtr<DwarfSubprogramInfo> GetSharedInfo(Dwarf_Die die) const;
 
-	return (m_file);
-}
+	bool Skippable(Dwarf_Die die);
+	static Dwarf_Half GetDwarfTag(Dwarf_Die die);
+	SharedString GetCallFile(Dwarf_Die die);
+	int GetCallLine(Dwarf_Die die);
 
-const SharedString &
-DwarfLocation::GetFunc() const
-{
+	bool Map(Callframe& frame, SharedString leafFile, int leafLine);
 
-	if (NeedsFunc())
-		return (UNKNOWN_FUNC);
-	return (m_func);
-}
+public:
+	DwarfDieStack(SharedString imageFile, Dwarf_Debug dwarf, Dwarf_Die cu,
+	    const SymbolMap &);
 
-u_int
-DwarfLocation::GetLineNumber() const
-{
+	DwarfDieStack(const DwarfDieStack &) = delete;
+	DwarfDieStack(DwarfDieStack &&) = delete;
+	DwarfDieStack & operator=(const DwarfDieStack &) = delete;
+	DwarfDieStack & operator=(DwarfDieStack &&) = delete;
 
-	return (m_lineno);
-}
+	bool AdvanceAndMap(Callframe& frame, SharedString leafFile, int leafLine);
+};
 
-bool
-DwarfLocation::NeedsDebug() const
-{
-
-	return (m_needsDebug);
-}
-
-bool
-DwarfLocation::NeedsFunc() const
-{
-
-	return (m_func->empty());
-}
-
-void
-DwarfLocation::SetDebug(const SharedString &file, u_int line)
-{
-
-	m_file = file;
-	m_lineno = line;
-	m_needsDebug = false;
-}
-
-void
-DwarfLocation::SetFunc(const SharedString &func)
-{
-
-	m_func = func;
-}
-
+#endif

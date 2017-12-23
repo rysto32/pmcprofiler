@@ -24,12 +24,9 @@
 #if !defined(IMAGE_H)
 #define IMAGE_H
 
-#include "DwarfLookup.h"
+#include "DwarfResolver.h"
 #include "ProfilerTypes.h"
-#include "FunctionLocation.h"
-#include "Location.h"
 #include "SharedString.h"
-#include "StringChain.h"
 
 #include <string>
 #include <algorithm>
@@ -62,20 +59,21 @@ typedef std::vector<std::vector<Location> > LocationList;
 class Image
 {
 	typedef std::unordered_map<std::string, std::unique_ptr<Image> > ImageMap;
-	typedef std::map<TargetAddr, std::unique_ptr<Callframe> > FrameMap;
 
 	static ImageMap imageMap;
 	static const std::string TEXT_SECTION_NAME;
 
-	DwarfLookup m_lookup;
+	SharedString imageFile;
 	FrameMap frameMap;
 	bool mapped;
 
-	Image();
 	Image(const std::string& imageName);
 
+	Image() = delete;
 	Image(const Image&) = delete;
+	Image(Image&&) = delete;
 	Image& operator=(const Image &) = delete;
+	Image& operator=(Image &&) = delete;
 
 public:
 	static SharedString demangle(SharedString name);
@@ -84,9 +82,14 @@ public:
 	static Image *getImage(const char *name);
 	static void freeImages();
 
+	bool isMapped() const
+	{
+		return mapped;
+	}
+
 	const SharedString & getImageFile() const
 	{
-		return m_lookup.getImageFile();
+		return imageFile;
 	}
 
 	const Callframe & getFrame(TargetAddr offset);

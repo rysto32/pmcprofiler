@@ -25,16 +25,23 @@
 #define PROFILERTYPES_H
 
 #include <stdint.h>
+
+#include <map>
+#include <memory>
 #include <set>
 #include <vector>
 
 typedef uintptr_t TargetAddr;
 
 class Callchain;
+class Callframe;
 class SampleAggregation;
+class SharedString;
 
 typedef std::vector<SampleAggregation*> AggregationList;
 typedef std::vector<Callchain*> CallchainList;
+typedef std::map<TargetAddr, std::unique_ptr<Callframe> > FrameMap;
 typedef std::set<unsigned> LineLocationList;
+typedef std::map<TargetAddr, SharedString> SymbolMap;
 
 #endif

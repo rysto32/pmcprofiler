@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2015 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -20,38 +20,45 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
-//
-// $FreeBSD$
 
-#ifndef DWARF_RANGE_H
-#define DWARF_RANGE_H
+#ifndef DWARFFUNCINFO_H
+#define DWARFFUNCINFO_H
 
-#include <stdint.h>
+#include <libdwarf.h>
 
-#include <map>
-#include <vector>
+#include "SharedString.h"
 
-class DwarfLocation;
-
-class DwarfRange
+class DwarfSubprogramInfo
 {
-private:
-	DwarfLocation &m_location;
-	DwarfRange *m_caller;
-	int m_inline_depth;
+	Dwarf_Debug dwarf;
+	Dwarf_Die die;
+	SharedString func;
+	SharedString demangled;
+	int line;
+	bool inited;
+
+	void CheckInitialized();
+
+	void InitFromAbstractOrigin(Dwarf_Attribute);
+	void InitFromSpecification(Dwarf_Die);
+	void InitFromLocalAttr(Dwarf_Die);
+
+	void SetFunc(SharedString f, int l);
 
 public:
-	DwarfRange(DwarfLocation &);
-	
-	int GetInlineDepth() const;
-	DwarfLocation &GetLocation() const;
-	DwarfRange *GetCaller() const;
-	DwarfRange *GetOutermostCaller();
+	DwarfSubprogramInfo(Dwarf_Debug dwarf, Dwarf_Die die)
+	  : dwarf(dwarf), die(die), inited(false)
+	{
+	}
 
-	void SetCaller(DwarfRange *caller);
+	DwarfSubprogramInfo(const DwarfSubprogramInfo &) = delete;
+	DwarfSubprogramInfo(DwarfSubprogramInfo &&) = delete;
+	DwarfSubprogramInfo & operator=(const DwarfSubprogramInfo &) = delete;
+	DwarfSubprogramInfo & operator=(DwarfSubprogramInfo &&) = delete;
+
+	SharedString GetFunc();
+	SharedString GetDemangled();
+	int GetLine();
 };
-
-typedef std::map<uintptr_t, DwarfRange *> RangeMap;
-typedef std::vector <DwarfRange *> RangeList;
 
 #endif

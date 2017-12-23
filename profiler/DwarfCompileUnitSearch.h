@@ -21,46 +21,15 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef CALLFRAME_H
-#define CALLFRAME_H
+#ifndef DWARFCOMPILEUNITSEARCH_H
+#define DWARFCOMPILEUNITSEARCH_H
 
-#include <vector>
+#include "DwarfSrcLinesList.h"
 
-#include "InlineFrame.h"
-#include "ProfilerTypes.h"
-
-class SharedString;
-
-class Callframe
+class DwarfCompileUnitSearch
 {
-	TargetAddr offset;
-	std::vector<InlineFrame> inlineFrames;
-	bool unmapped;
-
-public:
-	Callframe(TargetAddr off);
-
-	Callframe(const Callframe&) = delete;
-	Callframe& operator=(const Callframe &) = delete;
-
-	void addFrame(SharedString file, SharedString func,
-		    SharedString demangled, int codeLine, int funcLine);
-	void setUnmapped(SharedString image);
-
-	TargetAddr getOffset() const
-	{
-		return offset;
-	}
-
-	const std::vector<InlineFrame> & getInlineFrames() const
-	{
-		return inlineFrames;
-	}
-
-	bool isUnmapped() const
-	{
-		return unmapped;
-	}
+private:
+	DwarfSrcLinesList srcLines;
 };
 
 #endif

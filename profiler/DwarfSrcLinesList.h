@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -20,50 +20,44 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
-//
-// $FreeBSD$
 
-#ifndef DWARF_LOCATION_H
-#define DWARF_LOCATION_H
+#ifndef DWARFSRCLINESLIST_H
+#define DWARFSRCLINESLIST_H
 
-#include <sys/types.h>
+#include "DwarfArray.h"
+#include "DwarfException.h"
 
-#include <string>
-#include <vector>
-
-#include "SharedString.h"
-
-class DwarfLocation
+struct DwarfSrcLinesDeleter
 {
-private:
-	SharedString m_file;
-	SharedString m_func;
-	u_int m_lineno;
-	bool m_needsDebug;
-	uint64_t m_die;
-
-	static SharedString UNKNOWN_FUNC;
-
-public:
-	DwarfLocation(const SharedString &, const SharedString &, u_int, uint64_t);
-	DwarfLocation(const SharedString &, const SharedString &);
-
-	const SharedString & GetFile() const;
-	const SharedString & GetFunc() const;
-	u_int GetLineNumber() const;
-
-	bool NeedsDebug() const;
-	void SetDebug(const SharedString &, u_int);
-
-	bool NeedsFunc() const;
-	void SetFunc(const SharedString &);
-
-	uint64_t GetDie() const
+	void operator()(Dwarf_Debug dwarf, Dwarf_Line *lines, Dwarf_Signed count)
 	{
-		return m_die;
+		dwarf_srclines_dealloc(dwarf, lines, count);
 	}
 };
 
-typedef std::vector<DwarfLocation*> DwarfLocationList;
+class DwarfSrcLinesList : public DwarfArray<Dwarf_Line, DwarfSrcLinesDeleter>
+{
+	typedef DwarfArray<Dwarf_Line, DwarfSrcLinesDeleter> Super;
+
+	static Super::Array GetArray(Dwarf_Die die)
+	{
+		Dwarf_Error derr;
+		Dwarf_Line *array;
+		Dwarf_Signed count;
+		int error;
+
+		error = dwarf_srclines(die, &array, &count, &derr);
+		if (error != DW_DLV_OK)
+			throw DwarfException("dwarf_srclines failed");
+
+		return Super::Array(array, count);
+	}
+
+public:
+	DwarfSrcLinesList(Dwarf_Debug dwarf, Dwarf_Die die)
+	  : DwarfArray(dwarf, GetArray(die))
+	{
+	}
+};
 
 #endif

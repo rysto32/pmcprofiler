@@ -21,46 +21,83 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef CALLFRAME_H
-#define CALLFRAME_H
+#ifndef DWARFSTACKSTATE_H
+#define DWARFSTACKSTATE_H
 
-#include <vector>
+#include "DwarfDieList.h"
+#include "DwarfDieRanges.h"
+#include "DwarfSubprogramInfo.h"
+#include "SharedPtr.h"
+#include "SharedString.h"
 
-#include "InlineFrame.h"
-#include "ProfilerTypes.h"
-
-class SharedString;
-
-class Callframe
+class DwarfStackState
 {
-	TargetAddr offset;
-	std::vector<InlineFrame> inlineFrames;
-	bool unmapped;
+public:
+	typedef DwarfDieList::const_iterator const_iterator;
+
+private:
+	DwarfDieList list;
+	const_iterator iterator;
+	DwarfDieRanges ranges;
+
+	SharedPtr<DwarfSubprogramInfo> funcInfo;
 
 public:
-	Callframe(TargetAddr off);
+	DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die,
+	    SharedPtr<DwarfSubprogramInfo> funcInfo);
 
-	Callframe(const Callframe&) = delete;
-	Callframe& operator=(const Callframe &) = delete;
+	DwarfStackState(Dwarf_Debug dwarf);
 
-	void addFrame(SharedString file, SharedString func,
-		    SharedString demangled, int codeLine, int funcLine);
-	void setUnmapped(SharedString image);
+	DwarfStackState(DwarfStackState &&) noexcept = default;
+	DwarfStackState & operator=(DwarfStackState && other) = default;
 
-	TargetAddr getOffset() const
+	DwarfStackState(const DwarfStackState &) = delete;
+	DwarfStackState & operator=(const DwarfStackState &) = delete;
+
+	SharedPtr<DwarfSubprogramInfo> GetFuncInfo() const
 	{
-		return offset;
+		return funcInfo;
 	}
 
-	const std::vector<InlineFrame> & getInlineFrames() const
+	SharedString GetFunc()
 	{
-		return inlineFrames;
+		return funcInfo->GetFunc();
 	}
 
-	bool isUnmapped() const
+	SharedString GetDemangled()
 	{
-		return unmapped;
+		return funcInfo->GetDemangled();
 	}
+
+	int GetFuncLine()
+	{
+		return funcInfo->GetLine();
+	}
+
+	const Dwarf_Die & GetLeafDie()
+	{
+		return *iterator;
+	}
+
+	operator bool() const
+	{
+		return iterator != list.end();
+	}
+
+	bool Contains(TargetAddr addr) const
+	{
+		return ranges.Contains(addr);
+	}
+
+	bool Preceeds(TargetAddr addr) const
+	{
+		return ranges.Preceeds(addr);
+	}
+
+	void Skip();
+
+	bool Advance(TargetAddr addr);
+	void Reset();
 };
 
 #endif

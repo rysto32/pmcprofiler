@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Ryan Stone.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,81 +21,40 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef SHARED_STRING_H
-#define SHARED_STRING_H
+#ifndef SHAREDPTR_H
+#define SHAREDPTR_H
 
 #include <assert.h>
-#include <memory>
 #include <string>
 #include <unordered_map>
 
-class SharedString
+template <typename T>
+class SharedPtr
 {
-	struct StringValue
+private:
+	struct RefValue
 	{
-		std::string str;
+		T value;
 		int count;
 
-		StringValue(const char *s)
-		  : str(s), count(1)
+		template <typename... Args>
+		RefValue(Args &&... args)
+		  : value(std::forward<Args>(args)...), count(1)
 		{
 		}
 	};
 
-	StringValue *value;
+	RefValue *value;
 
-	typedef std::unordered_map<std::string, StringValue*> InternMap;
-
-	// To avoid static initialization/deinitialization issues, we make the
-	// intern_map a pointer that is allocated on first use and never
-	// deallocated.
-	static InternMap *GetInternMap()
-	{
-		static InternMap *intern_map;
-
-		if (intern_map == NULL)
-			intern_map = new InternMap;
-		return intern_map;
-	}
-
-	static StringValue *Intern(const char *str)
-	{
-		InternMap::iterator it = GetInternMap()->find(str);
-
-		if (it != GetInternMap()->end()) {
-			//printf("String '%s' interned\n", str);
-			it->second->count++;
-			return it->second;
-		}
-
-		StringValue *val = new StringValue(str);
-		GetInternMap()->insert(std::make_pair(val->str, val));
-		//printf("String '%s' create\n", str);
-		return val;
-	}
-
-	static void Destroy(StringValue *str)
-	{
-		GetInternMap()->erase(str->str);
-		//printf("String '%s' destroy\n", str->str.c_str());
-		delete str;
-	}
-
-	void Init(const char *str)
-	{
-		Drop();
-		value = Intern(str);
-// 		fprintf(stderr, "%p: Init SharedString for '%s'; count=%d\n",
-// 			value, str, value->count);
-	}
-
-	void Copy(const SharedString &other)
+	void Copy(const SharedPtr<T> &other)
 	{
 		Drop();
 
 		value = other.value;
-		assert(value->count > 0);
-		++value->count;
+		if (value != NULL) {
+			assert(value->count > 0);
+			++value->count;
+		}
 // 		fprintf(stderr, "%p: Add ref; count=%d\n",
 // 			value, value->count);
 	}
@@ -110,80 +69,98 @@ class SharedString
 		assert(value->count > 0);
 		--value->count;
 		if (value->count == 0)
-			Destroy(value);
+			delete value;
 		value = NULL;
 	}
 
+	explicit SharedPtr(RefValue *v)
+	  : value(v)
+	{
+	}
+
 public:
-	SharedString()
+	SharedPtr()
 	  : value(NULL)
 	{
-		Init("");
 	}
 
-	SharedString(const std::string &str)
-	  : value(NULL)
-	{
-		Init(str.c_str());
-	}
-
-	SharedString(const char *str)
-	  : value(NULL)
-	{
-		Init(str);
-	}
-
-	SharedString(const SharedString &other)
+	SharedPtr(const SharedPtr<T> &other)
 	  : value(NULL)
 	{
 		Copy(other);
 	}
 
-	SharedString(SharedString &&other) noexcept
+	SharedPtr(SharedPtr<T> &&other) noexcept
 	  : value(other.value)
 	{
 		other.value = NULL;
 	}
 
-	~SharedString()
+	template <typename... Args>
+	static SharedPtr<T> make(Args &&... args)
+	{
+		return SharedPtr<T>(new RefValue(args...));
+	}
+
+	~SharedPtr()
 	{
 		Drop();
 	}
 
-	const std::string &operator*() const
+	T &operator*()
 	{
-		return value->str;
+		return value->value;
 	}
 
-	const std::string *operator->() const
+	T *operator->()
 	{
-		return &value->str;
+		return &value->value;
+	}
+
+	const T &operator*() const
+	{
+		return value->value;
+	}
+
+	const T *operator->() const
+	{
+		return &value->value;
 	}
 
 	void clear()
 	{
-		*this = "";
+		Drop();
 	}
 
-	bool operator==(const SharedString &other) const
+	bool operator==(const SharedPtr<T> &other) const
 	{
 		if (value == other.value)
 			return true;
-		return value->str == other.value->str;
+		return value->value == other.value->value;
 	}
 
-	SharedString &operator=(const SharedString &other)
+	SharedPtr<T> &operator=(const SharedPtr<T> &other)
 	{
 		Copy(other);
 		return *this;
 	}
 
-	SharedString &operator=(SharedString &&other)
+	SharedPtr<T> &operator=(SharedPtr<T> &&other)
 	{
 		Drop();
 		value = other.value;
 		other.value = NULL;
 		return *this;
+	}
+
+	T *get()
+	{
+		return &value->value;
+	}
+
+	const T * get() const
+	{
+		return &value->value;
 	}
 };
 

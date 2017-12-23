@@ -21,46 +21,30 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef CALLFRAME_H
-#define CALLFRAME_H
+#include "DwarfUtil.h"
 
-#include <vector>
+#include "DwarfException.h"
 
-#include "InlineFrame.h"
-#include "ProfilerTypes.h"
-
-class SharedString;
-
-class Callframe
+Dwarf_Off GetDieOffset(Dwarf_Die die)
 {
-	TargetAddr offset;
-	std::vector<InlineFrame> inlineFrames;
-	bool unmapped;
+	Dwarf_Error derr;
+	Dwarf_Off offset;
+	int error;
 
-public:
-	Callframe(TargetAddr off);
+	error = dwarf_dieoffset(die, &offset, &derr);
+	if (error != 0)
+		throw DwarfException("dwarf_dieoffset failed");
+	return (offset);
+}
 
-	Callframe(const Callframe&) = delete;
-	Callframe& operator=(const Callframe &) = delete;
+Dwarf_Half GetDieTag(Dwarf_Die die)
+{
+	Dwarf_Error derr;
+	Dwarf_Half tag;
+	int error;
 
-	void addFrame(SharedString file, SharedString func,
-		    SharedString demangled, int codeLine, int funcLine);
-	void setUnmapped(SharedString image);
-
-	TargetAddr getOffset() const
-	{
-		return offset;
-	}
-
-	const std::vector<InlineFrame> & getInlineFrames() const
-	{
-		return inlineFrames;
-	}
-
-	bool isUnmapped() const
-	{
-		return unmapped;
-	}
-};
-
-#endif
+	error = dwarf_tag(die, &tag, &derr);
+	if (error != 0)
+		throw DwarfException("dwarf_tag failed");
+	return (tag);
+}

@@ -21,45 +21,24 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef CALLFRAME_H
-#define CALLFRAME_H
+#ifndef DWARFEXCEPTION_H
+#define DWARFEXCEPTION_H
 
-#include <vector>
+#include <exception>
 
-#include "InlineFrame.h"
-#include "ProfilerTypes.h"
-
-class SharedString;
-
-class Callframe
+class DwarfException : public std::exception
 {
-	TargetAddr offset;
-	std::vector<InlineFrame> inlineFrames;
-	bool unmapped;
-
+private:
+	const char *msg;
 public:
-	Callframe(TargetAddr off);
-
-	Callframe(const Callframe&) = delete;
-	Callframe& operator=(const Callframe &) = delete;
-
-	void addFrame(SharedString file, SharedString func,
-		    SharedString demangled, int codeLine, int funcLine);
-	void setUnmapped(SharedString image);
-
-	TargetAddr getOffset() const
+	DwarfException(const char * msg)
+	  : msg(msg)
 	{
-		return offset;
 	}
 
-	const std::vector<InlineFrame> & getInlineFrames() const
+	virtual const char *what() const noexcept
 	{
-		return inlineFrames;
-	}
-
-	bool isUnmapped() const
-	{
-		return unmapped;
+		return msg;
 	}
 };
 

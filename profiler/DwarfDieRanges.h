@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,71 +21,54 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
+#ifndef DWARFDIERANGES_H
+#define DWARFDIERANGES_H
 
-#include "DwarfRange.h"
+#include <libdwarf.h>
 
-#include <assert.h>
-#include <stdlib.h>
+#include <vector>
 
-DwarfRange::DwarfRange(DwarfLocation &loc)
-  : m_location(loc),
-    m_caller(NULL),
-    m_inline_depth(1)
+#include "ProfilerTypes.h"
+
+class DwarfDieRanges
 {
-}
+private:
+	struct Range
+	{
+		TargetAddr low;
+		TargetAddr high;
 
-int
-DwarfRange::GetInlineDepth() const
-{
+		Range(TargetAddr l, TargetAddr h)
+		  : low(l), high(h)
+		{
+		}
 
-	return (m_inline_depth);
-}
+		bool Contains(TargetAddr a) const
+		{
+			return low <= a && a < high;
+		}
+	};
 
-DwarfLocation &
-DwarfRange::GetLocation() const
-{
+	Dwarf_Debug dwarf;
+	std::vector<Range> ranges;
 
-	return (m_location);
-}
+	void InitFromRanges(Dwarf_Die, Dwarf_Unsigned);
+	void AddRange(TargetAddr low, TargetAddr high);
 
-DwarfRange *
-DwarfRange::GetCaller() const
-{
+public:
+	DwarfDieRanges(Dwarf_Debug dwarf);
 
-	return (m_caller);
-}
+	DwarfDieRanges(DwarfDieRanges &&) noexcept = default;
+	DwarfDieRanges & operator=(DwarfDieRanges &&) = default;
 
-DwarfRange *
-DwarfRange::GetOutermostCaller()
-{
-	DwarfRange *range, *next;
+	DwarfDieRanges(const DwarfDieRanges &) = delete;
+	DwarfDieRanges & operator=(const DwarfDieRanges &) = delete;
 
-	range = this;
-	while(1) {
-		next = range->GetCaller();
-		if (next == NULL)
-			return (range);
-		range = next;
-	}
-}
+	void Reinit(Dwarf_Die die);
+	void Reset();
 
-void
-DwarfRange::SetCaller(DwarfRange *caller)
-{
+	bool Contains(TargetAddr a) const;
+	bool Preceeds(TargetAddr a) const;
+};
 
-	/*
-	 * A previous call may have already set caller as the caller for
-	 * this range.  If so, skip setting it a second time to avoid
-	 * introducing a cycle in the call graph here.
-	 */
-	if (caller == this)
-		return;
-	else if (m_caller == NULL)
-		m_caller = caller;
-	else
-		m_caller->SetCaller(caller);
-	m_inline_depth = m_caller->GetInlineDepth() + 1;
-}
-
+#endif

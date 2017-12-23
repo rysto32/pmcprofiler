@@ -21,46 +21,12 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef CALLFRAME_H
-#define CALLFRAME_H
+#ifndef DWARFUTIL_H
+#define DWARFUTIL_H
 
-#include <vector>
+#include <libdwarf.h>
 
-#include "InlineFrame.h"
-#include "ProfilerTypes.h"
-
-class SharedString;
-
-class Callframe
-{
-	TargetAddr offset;
-	std::vector<InlineFrame> inlineFrames;
-	bool unmapped;
-
-public:
-	Callframe(TargetAddr off);
-
-	Callframe(const Callframe&) = delete;
-	Callframe& operator=(const Callframe &) = delete;
-
-	void addFrame(SharedString file, SharedString func,
-		    SharedString demangled, int codeLine, int funcLine);
-	void setUnmapped(SharedString image);
-
-	TargetAddr getOffset() const
-	{
-		return offset;
-	}
-
-	const std::vector<InlineFrame> & getInlineFrames() const
-	{
-		return inlineFrames;
-	}
-
-	bool isUnmapped() const
-	{
-		return unmapped;
-	}
-};
+Dwarf_Off GetDieOffset(Dwarf_Die die);
+Dwarf_Half GetDieTag(Dwarf_Die die);
 
 #endif

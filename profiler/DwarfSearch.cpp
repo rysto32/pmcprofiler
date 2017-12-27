@@ -33,7 +33,7 @@
 DwarfSearch::DwarfSearch(Dwarf_Debug dwarf, Dwarf_Die cu, SharedString imageFile,
     const SymbolMap & symbols)
   : imageFile(imageFile),
-    stack(imageFile, dwarf, cu, symbols),
+    stack(imageFile, dwarf, cu),
     srcLines(dwarf, cu),
     srcIt(srcLines.begin()),
     cuDie(cu),

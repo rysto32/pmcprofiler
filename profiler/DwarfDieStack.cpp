@@ -32,17 +32,12 @@
 #include <cassert>
 #include <dwarf.h>
 
-DwarfDieStack::DwarfDieStack(SharedString imageFile, Dwarf_Debug dwarf, Dwarf_Die cu,
-    const SymbolMap & symbols)
+DwarfDieStack::DwarfDieStack(SharedString imageFile, Dwarf_Debug dwarf, Dwarf_Die cu)
   : imageFile(imageFile),
     dwarf(dwarf),
     cuBaseAddr(GetBaseAddr(cu)),
-    peekState(dwarf, cuBaseAddr),
-    cuDie(cu),
-    elfSymbols(symbols)//,
-//     subprogramState(NULL)
+    cuDie(cu)
 {
-
 	dieStack.emplace_back(dwarf, cu, SharedPtr<DwarfSubprogramInfo>(), cuBaseAddr);
 }
 
@@ -60,78 +55,6 @@ DwarfDieStack::GetBaseAddr(Dwarf_Die cu)
 	return addr;
 }
 
-bool
-DwarfDieStack::Advance(TargetAddr offset)
-{
-	if (peekState.Contains(offset)) {
-		PushPeekState();
-		PeekInline(offset);
-	}
-
-	if (peekState && peekState.Preceeds(offset)) {
-		peekState.Reset();
-		PeekInline(offset);
-	}
-
-	while(1) {
-		DwarfStackState &top = dieStack.back();
-		bool advanced = top.Advance(offset);
-
-		if (!top) {
-			dieStack.pop_back();
-			if (dieStack.empty())
-				return false;
-			continue;
-		}
-
-		if (advanced)
-			PeekInline(offset);
-
-		return true;
-	}
-}
-
-void
-DwarfDieStack::PeekInline(TargetAddr offset)
-{
-	assert (!peekState);
-
-	while(1) {
-		Dwarf_Die die = dieStack.back().GetLeafDie();
-
-		peekState = DwarfStackState(dwarf, die, GetSharedInfo(die), cuBaseAddr);
-		LOG("peek at %lx (tag %d)\n",
-		    peekState ? GetDieOffset(peekState.GetLeafDie()) : 0,
-		    peekState ? GetDieTag(peekState.GetLeafDie()) : 0);
-		while (peekState && Skippable(offset)) {
-			peekState.Skip();
-			LOG("peek at %lx (tag %d)\n",
-			peekState ? GetDieOffset(peekState.GetLeafDie()) : 0,
-			peekState ? GetDieTag(peekState.GetLeafDie()) : 0);
-		}
-
-		if (!peekState || !peekState.Contains(offset))
-			break;
-		PushPeekState();
-	}
-}
-
-bool
-DwarfDieStack::Skippable(TargetAddr offset)
-{
-	return !peekState.HasRanges() || peekState.Preceeds(offset);
-}
-
-void
-DwarfDieStack::PushPeekState()
-{
-	dieStack.push_back(std::move(peekState));
-// 	LOG("Pushed back for die %lx; funcInfo=%p\n",
-// 	    GetDieOffset(dieStack.back().GetLeafDie()),
-// 	    dieStack.back().GetFuncInfo().get());
-	assert(!peekState);
-}
-
 SharedPtr<DwarfSubprogramInfo>
 DwarfDieStack::GetSharedInfo(Dwarf_Die die) const
 {
@@ -139,47 +62,6 @@ DwarfDieStack::GetSharedInfo(Dwarf_Die die) const
 		return dieStack.back().GetFuncInfo();
 
 	return SharedPtr<DwarfSubprogramInfo>::make(dwarf, die);
-}
-
-bool
-DwarfDieStack::Map(Callframe& frame, SharedString leafFile, int leafLine)
-{
-	SharedString nextFile = leafFile;
-	int nextLine = leafLine;
-	bool mapped = false;
-
-// 	size_t i = 0;
-	for (auto rit = dieStack.rbegin(); rit != dieStack.rend(); ++rit) {
-// 		i++;
-// 		fprintf(stderr, "iteration %zd/%zd\n", i, dieStack.size());
-		Dwarf_Die die = rit->GetLeafDie();
-		Dwarf_Half tag = GetDieTag(die);
-
-		switch (tag) {
-		case DW_TAG_subprogram: {
-				DwarfSubprogramInfo info(dwarf, die);
-				/*fprintf(stderr, "Map subprogram die %lx funcInfo=%p\n",
-				    GetDieOffset(die), rit->GetFuncInfo().get());*/
-				frame.addFrame(nextFile, info.GetFunc(), info.GetDemangled(),
-				    nextLine, info.GetLine(), GetDieOffset(die));
-				mapped = true;
-				goto out;
-			}
-		case DW_TAG_inlined_subroutine: {
-				DwarfSubprogramInfo info(dwarf, die);
-				frame.addFrame(nextFile, info.GetFunc(), info.GetDemangled(),
-				     nextLine, rit->GetFuncLine(), GetDieOffset(die));
-
-				nextFile = GetCallFile(die);
-				nextLine = GetCallLine(die);
-				mapped = true;
-				break;
-			}
-		}
-	}
-
-out:
-	return mapped;
 }
 
 SharedString

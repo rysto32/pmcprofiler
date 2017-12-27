@@ -39,33 +39,24 @@ class DwarfDieStack
 private:
 	SharedString imageFile;
 	const Dwarf_Debug dwarf;
-	TargetAddr cuBaseAddr;
 	std::vector<DwarfStackState> dieStack;
-	DwarfStackState peekState;
+	TargetAddr cuBaseAddr;
 	Dwarf_Die cuDie;
-	const SymbolMap & elfSymbols;
-// 	DwarfStackState *subprogramState;
 
 	static TargetAddr GetBaseAddr(Dwarf_Die cu);
 
-	bool Advance(TargetAddr offset);
-	void PeekInline(TargetAddr offset);
-	void PushPeekState();
-
 	SharedPtr<DwarfSubprogramInfo> GetSharedInfo(Dwarf_Die die) const;
 
-	bool Skippable(TargetAddr offset);
 	SharedString GetCallFile(Dwarf_Die die);
 	int GetCallLine(Dwarf_Die die);
 
-	bool Map(Callframe& frame, SharedString leafFile, int leafLine);
+	void FillSubprogramSymbols(DwarfLocationList &list);
 
 	void AddSubprogramSymbol(DwarfLocationList &list);
 	void AddInlineSymbol(DwarfLocationList &list, Dwarf_Die die);
 
 public:
-	DwarfDieStack(SharedString imageFile, Dwarf_Debug dwarf, Dwarf_Die cu,
-	    const SymbolMap &);
+	DwarfDieStack(SharedString imageFile, Dwarf_Debug dwarf, Dwarf_Die cu);
 
 	DwarfDieStack(const DwarfDieStack &) = delete;
 	DwarfDieStack(DwarfDieStack &&) = delete;
@@ -74,8 +65,6 @@ public:
 
 	bool AdvanceToSubprogram(Callframe &frame);
 	bool AdvanceAndMap(Callframe& frame, SharedString leafFile, int leafLine);
-
-	void FillSubprogramSymbols(DwarfLocationList &list);
 
 	bool SubprogramContains(TargetAddr) const;
 	bool SubprogramSucceeds(TargetAddr) const;

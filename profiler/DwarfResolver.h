@@ -74,7 +74,7 @@ private:
 	    const FrameMap::const_iterator &end) const;
 
 public:
-	DwarfResolver(SharedString image);
+	explicit DwarfResolver(SharedString image);
 	~DwarfResolver();
 
 	DwarfResolver(const DwarfResolver &) = delete;

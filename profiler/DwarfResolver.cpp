@@ -107,17 +107,17 @@ DwarfResolver::OpenSymbolFile(Elf* origElf)
 	int fd;
 
 	if (symbolFile->empty())
-		return (elf);
+		return (origElf);
 
 	fd = FindSymbolFile();
 	if (fd < 0)
-		return (elf);
+		return (origElf);
 
 	debug_elf = elf_begin(fd, ELF_C_READ, NULL);
 	if (debug_elf == NULL)
-		return (elf);
+		return (origElf);
 
-	elf_end(elf);
+	elf_end(origElf);
 	return (debug_elf);
 }
 

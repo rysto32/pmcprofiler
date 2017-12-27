@@ -36,7 +36,7 @@ class DwarfDie
 
 
 	DwarfDie(Dwarf_Debug dwarf, Dwarf_Die die) noexcept
-	  : dwarf(dwarf), die(die), ownDie(true)
+	  : dwarf(dwarf), die(die), ownDie(die != nullptr)
 	{
 	}
 

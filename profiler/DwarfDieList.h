@@ -54,7 +54,7 @@ public:
 
 		friend class DwarfDieList;
 
-		const_iterator(DwarfDie &&die)
+		explicit const_iterator(DwarfDie &&die)
 		  : die(std::move(die))
 		{
 		}
@@ -115,7 +115,7 @@ public:
 
 	const_iterator end() const
 	{
-		return (const_iterator());
+		return (const_iterator(DwarfDie(dwarf, nullptr)));
 	}
 };
 

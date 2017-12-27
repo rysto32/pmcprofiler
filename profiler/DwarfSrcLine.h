@@ -27,6 +27,7 @@
 #include <libdwarf.h>
 
 #include "DwarfException.h"
+#include "SharedString.h"
 
 class DwarfSrcLine
 {

@@ -26,26 +26,31 @@
 
 #include <libdwarf.h>
 
+class DwarfDieList;
+
 class DwarfDie
 {
 	Dwarf_Debug dwarf;
 	Dwarf_Die die;
+	bool ownDie;
 
 
 	DwarfDie(Dwarf_Debug dwarf, Dwarf_Die die) noexcept
-	  : dwarf(dwarf), die(die)
+	  : dwarf(dwarf), die(die), ownDie(true)
 	{
 	}
 
 	void Release()
 	{
-		if (die != DW_DLV_BADADDR)
+		if (ownDie)
 			dwarf_dealloc(dwarf, die, DW_DLA_DIE);
 	}
 
+	friend class DwarfDieList;
+
 public:
 	DwarfDie()
-	  : die(DW_DLV_BADADDR)
+	  : die(nullptr), ownDie(false)
 	{
 	}
 
@@ -57,9 +62,9 @@ public:
 	DwarfDie(const DwarfDie &) = delete;
 
 	DwarfDie(DwarfDie && other) noexcept
-	  : dwarf(other.dwarf), die(other.die)
+	  : dwarf(other.dwarf), die(other.die), ownDie(other.ownDie)
 	{
-		other.die = DW_DLV_BADADDR;
+		other.ownDie = false;
 	}
 
 	DwarfDie & operator=(const DwarfDie&) = delete;
@@ -70,15 +75,21 @@ public:
 
 		dwarf = other.dwarf;
 		die = other.die;
+		ownDie = other.ownDie;
 
-		other.die = DW_DLV_BADADDR;
+		other.ownDie = false;
 
 		return *this;
 	}
 
+	bool operator==(const DwarfDie & other) const
+	{
+		return dwarf == other.dwarf && die == other.die;
+	}
+
 	operator bool() const
 	{
-		return die != DW_DLV_BADADDR;
+		return die != nullptr;
 	}
 
 	bool operator!() const
@@ -89,6 +100,22 @@ public:
 	const Dwarf_Die &operator*() const
 	{
 		return die;
+	}
+
+	void AdvanceToSibling()
+	{
+		Dwarf_Die last_die = die;
+		Dwarf_Error derr;
+		int error;
+
+		error = dwarf_siblingof(dwarf, last_die, &die, &derr);
+		if (ownDie)
+			dwarf_dealloc(dwarf, last_die, DW_DLA_DIE);
+
+		if (error != DW_DLV_OK) {
+			die = nullptr;
+			ownDie = false;
+		}
 	}
 
 	static DwarfDie OffDie(Dwarf_Debug dwarf, Dwarf_Off ref)

@@ -27,10 +27,10 @@
 #include "Image.h"
 
 DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die,
-    SharedPtr<DwarfSubprogramInfo> funcInfo)
+    SharedPtr<DwarfSubprogramInfo> funcInfo, TargetAddr cuBase)
   : list(dwarf, die),
     iterator(list.begin()),
-    ranges(dwarf),
+    ranges(dwarf, cuBase),
     funcInfo(funcInfo)
 {
 // 	fprintf(stderr, "Using funcInfo %p for die %lx tag %d\n",
@@ -39,10 +39,10 @@ DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die,
 		ranges.Reinit(*iterator);
 }
 
-DwarfStackState::DwarfStackState(Dwarf_Debug dwarf)
+DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, TargetAddr cuBase)
   : list(dwarf),
     iterator(list.end()),
-    ranges(dwarf)
+    ranges(dwarf, cuBase)
 {
 }
 /*
@@ -82,6 +82,8 @@ void DwarfStackState::Skip()
 // 	fprintf(stderr, "Skip die %lx tag %d\n",
 // 	    GetDieOffset(die), GetDieTag(die));
 	++iterator;
+	if (*this)
+		ranges.Reinit(GetLeafDie());
 }
 
 bool

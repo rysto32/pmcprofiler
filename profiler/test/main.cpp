@@ -39,20 +39,20 @@ main(int argc, char **argv)
 		frameList.push_back(&image->getFrame(addr));
 	}
 
-	image->mapAll();
+	Image::mapAll();
 
 	for (auto frame : frameList) {
 		const auto & inlines = frame->getInlineFrames();
 		std::cout << "Offset=" << std::hex << frame->getOffset() << " Depth=" << std::dec << inlines.size() << std::endl;
 		for (const auto & inFrame : inlines) {
-			std::cout << *inFrame.getDemangled() << std::endl;
-			std::cout << *inFrame.getFile() << ":" << inFrame.getCodeLine() << std::endl;
+			std::cout << *inFrame.getDemangled() << "(die=" << std::hex << inFrame.getDieOffset() << std::dec << ")\n";
+			std::cout << *inFrame.getFile() << ":" << inFrame.getCodeLine() << "\n";
 		}
 
-		const auto & leafFrame = inlines.front();
+		const auto & leafFrame = inlines.back();
 		std::cout << "Func: " << *leafFrame.getDemangled()
 		    << " @ " << *leafFrame.getFile() << ":" <<
-		    leafFrame.getFuncLine() << std::endl << std::endl;
+		    leafFrame.getFuncLine() << "\n\n";
 	}
 
 	return (0);

@@ -25,7 +25,7 @@
 
 #include "DwarfException.h"
 
-Dwarf_Off GetDieOffset(Dwarf_Die die)
+DwarfDieOffset GetDieOffset(Dwarf_Die die)
 {
 	Dwarf_Error derr;
 	Dwarf_Off offset;
@@ -48,3 +48,28 @@ Dwarf_Half GetDieTag(Dwarf_Die die)
 		throw DwarfException("dwarf_tag failed");
 	return (tag);
 }
+
+#ifdef GNU_LIBDWARF
+int
+dwarf_attrval_string(Dwarf_Die die, Dwarf_Half tag, const char **str, Dwarf_Error *derr)
+{
+	Dwarf_Attribute attr;
+	int error = dwarf_attr(die, tag, &attr, derr);
+	if (error != 0)
+		return (error);
+
+	return dwarf_formstring(attr, const_cast<char**>(str), derr);
+
+}
+
+int
+dwarf_attrval_unsigned(Dwarf_Die die, Dwarf_Half tag, Dwarf_Unsigned *val, Dwarf_Error *derr)
+{
+	Dwarf_Attribute attr;
+	int error = dwarf_attr(die, tag, &attr, derr);
+	if (error != 0)
+		return (error);
+
+	return dwarf_formudata(attr, val, derr);
+}
+#endif

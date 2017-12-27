@@ -35,13 +35,15 @@ class InlineFrame
 	TargetAddr offset;
 	int codeLine;
 	int funcLine;
+	uint64_t dwarfDieOffset;
 
 public:
 	InlineFrame(SharedString file, SharedString func,
 	    SharedString demangled, TargetAddr off,
-	    int codeLine, int funcLine)
+	    int codeLine, int funcLine, uint64_t dwarfDieOffset)
 	  : file(file), func(func), demangledFunc(demangled),
-	    offset(off), codeLine(codeLine), funcLine(funcLine)
+	    offset(off), codeLine(codeLine), funcLine(funcLine),
+	    dwarfDieOffset(dwarfDieOffset)
 	{
 	}
 
@@ -81,6 +83,11 @@ public:
 	bool isMapped() const
 	{
 		return codeLine != -1;
+	}
+
+	uint64_t getDieOffset() const
+	{
+		return dwarfDieOffset;
 	}
 
 	InlineFrame &operator=(const InlineFrame &) = delete;

@@ -25,6 +25,9 @@
 #define DWARFDIELIST_H
 
 #include <libdwarf.h>
+#include <memory>
+
+#include "DwarfDie.h"
 
 class DwarfDieList
 {
@@ -47,70 +50,39 @@ public:
 	class const_iterator
 	{
 	private:
-		Dwarf_Debug dwarf;
-		Dwarf_Die die;
+		DwarfDie die;
 
 		friend class DwarfDieList;
 
-		const_iterator(Dwarf_Debug dwarf, Dwarf_Die die)
-		  : dwarf(dwarf), die(die)
+		const_iterator(DwarfDie &&die)
+		  : die(std::move(die))
 		{
 		}
 
 	public:
 		const_iterator()
-		  : dwarf(nullptr), die(nullptr)
 		{
 		}
 
-		const_iterator(const_iterator && other) noexcept
-		  : dwarf(other.dwarf), die(other.die)
-		{
-			other.die = nullptr;
-		}
-
+		const_iterator(const_iterator && other) noexcept = default;
 		const_iterator(const const_iterator &) = delete;
 
-		~const_iterator()
-		{
-			if (die != nullptr)
-				dwarf_dealloc(dwarf, die, DW_DLA_DIE);
-		}
-
-		const_iterator & operator=(const_iterator && other)
-		{
-			dwarf = other.dwarf;
-			die = other.die;
-			other.die = nullptr;
-			return *this;
-		}
-
+		const_iterator & operator=(const_iterator && other) = default;
 		const_iterator & operator=(const const_iterator &) = delete;
 
 		const Dwarf_Die & operator*() const
 		{
-			return (die);
+			return (*die);
 		}
 
 		const_iterator &operator++()
 		{
-			Dwarf_Die last_die = die;
-			Dwarf_Error derr;
-			int error;
-
-			error = dwarf_siblingof(dwarf, last_die, &die, &derr);
-			if (last_die != nullptr)
-				dwarf_dealloc(dwarf, last_die, DW_DLA_DIE);
-
-			if (error != DW_DLV_OK)
-				die = nullptr;
+			die.AdvanceToSibling();
 			return (*this);
 		}
 
 		bool operator==(const const_iterator &rhs) const
 		{
-			if (dwarf != rhs.dwarf)
-				return (false);
 			return (die == rhs.die);
 		}
 
@@ -119,6 +91,10 @@ public:
 			return !(*this == rhs);
 		}
 
+		DwarfDie Take()
+		{
+			return std::move(die);
+		}
 	};
 
 	const_iterator begin() const
@@ -132,14 +108,14 @@ public:
 
 		error = dwarf_child(parent, &child, &derr);
 		if (error != DW_DLV_OK)
-			child = nullptr;
-
-		return (const_iterator(dwarf, child));
+			return end();
+		else
+			return const_iterator(DwarfDie(dwarf, child));
 	}
 
 	const_iterator end() const
 	{
-		return (const_iterator(dwarf, nullptr));
+		return (const_iterator());
 	}
 };
 

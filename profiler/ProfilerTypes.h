@@ -25,6 +25,7 @@
 #define PROFILERTYPES_H
 
 #include <stdint.h>
+#include <stdio.h>
 
 #include <map>
 #include <memory>
@@ -43,5 +44,16 @@ typedef std::vector<Callchain*> CallchainList;
 typedef std::map<TargetAddr, std::unique_ptr<Callframe> > FrameMap;
 typedef std::set<unsigned> LineLocationList;
 typedef std::map<TargetAddr, SharedString> SymbolMap;
+
+#ifdef LOG_ENABLED
+
+#define LOG(args...) \
+	fprintf(stderr, args)
+
+#else
+
+#define LOG(args...)
+
+#endif
 
 #endif

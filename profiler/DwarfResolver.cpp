@@ -44,21 +44,10 @@
 
 #include <cstring>
 
-#ifdef LOG_ENABLED
-
-#define LOG(args...) \
-	fprintf(stderr, args)
-
-#else
-
-#define LOG(args...)
-
-#endif
-
 DwarfResolver::DwarfResolver(SharedString image)
   : imageFile(image),
     elf(NULL),
-    dwarf(DW_DLV_BADADDR)
+    dwarf(nullptr)
 {
 	Dwarf_Error derr;
 
@@ -68,6 +57,9 @@ DwarfResolver::DwarfResolver(SharedString image)
 	elf = GetSymbolFile();
 	if (elf == NULL)
 		return;
+
+	LOG("imageFile=%s symbolsFile=%s\n", imageFile->c_str(),
+	    symbolFile->c_str());
 
 	/*
 	 * It is not fatal if this fails: we'll do out best without debug
@@ -182,14 +174,12 @@ DwarfResolver::HaveSymbolFile(Elf *origElf)
 
 		name = elf_strptr(origElf, shdrstrndx, shdr.sh_name);
 		if (name != NULL) {
-			if (strcmp(name, ".gnu_debuglink") == 0) {
+			if (strcmp(name, ".gnu_debuglink") == 0)
 				ParseDebuglink(section);
-				return !symbolFile->empty();
-			}
 		}
 	}
 
-	return false;
+	return !symbolFile->empty();
 }
 
 void
@@ -205,7 +195,7 @@ DwarfResolver::ParseDebuglink(Elf_Scn *section)
 bool
 DwarfResolver::DwarfValid() const
 {
-	return dwarf != DW_DLV_BADADDR;
+	return dwarf != nullptr;
 }
 
 bool
@@ -235,6 +225,8 @@ DwarfResolver::ResolveDwarf(const FrameMap &frameMap) const
 
 	auto fit = frameMap.begin();
 
+	LOG("DwarfResolve %s\n", imageFile->c_str());
+
 	while (fit != frameMap.end()) {
 		error = dwarf_next_cu_header(dwarf, NULL, NULL, NULL, NULL,
 		    &next_offset, &derr);
@@ -252,7 +244,7 @@ DwarfResolver::ResolveDwarf(const FrameMap &frameMap) const
 
 	while (fit != frameMap.end()) {
 		fit->second->setUnmapped(imageFile);
-		fit++;
+		++fit;
 	}
 }
 
@@ -304,13 +296,17 @@ DwarfResolver::SearchCompileUnit(Dwarf_Die cu, FrameMap::const_iterator &fit,
 	err_lo = dwarf_attrval_unsigned(cu, DW_AT_low_pc, &low_pc, &derr);
 	err_hi = dwarf_attrval_unsigned(cu, DW_AT_high_pc, &high_pc, &derr);
 	if (err_lo == DW_DLV_OK && err_hi == DW_DLV_OK) {
+// 		LOG("%lx: low/high pc = %lx/%lx\n", GetDieOffset(cu), low_pc, high_pc);
 		TryCompileUnitRange(cu, low_pc, high_pc, fit, end);
 		return;
 	}
 
+	// This likely indicates a CU with no code
+#if 0
 	// We can't tell whether fit is covered by this CU.  Try the srclines
 	// data and see if we find a match.
 	SearchCompileUnitFuncs(cu, fit, end);
+#endif
 }
 
 void
@@ -371,13 +367,10 @@ void
 DwarfResolver::SearchCompileUnitFuncs(Dwarf_Die cu, FrameMap::const_iterator &fit,
     const FrameMap::const_iterator &fend) const
 {
+	LOG("cu is die %lx\n", GetDieOffset(cu));
 	DwarfSearch search(dwarf, cu, imageFile, elfSymbols);
 
-	LOG("%s: map %lx in %lx\n", imageFile->c_str(),
-	    fit->second->getOffset(), GetDieOffset(cu));
-
-	search.AdvanceAndMap(*fit->second);
-	++fit;
+	search.AdvanceAndMap(fit, fend);
 }
 
 void
@@ -410,7 +403,7 @@ DwarfResolver::ResolveElf(const FrameMap &frameMap) const
 		while (fit != frameMap.end() && (sit == elfSymbols.end() ||
 		    fit->second->getOffset() > sit->first)) {
 			fit->second->addFrame(imageFile, old_sit->second,
-			    old_sit->second, -1, -1);
+			    old_sit->second, -1, -1, 0);
 			++fit;
 		}
 	}

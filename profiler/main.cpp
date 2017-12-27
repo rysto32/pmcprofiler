@@ -86,7 +86,7 @@ main(int argc, char *argv[])
 		err(1, "libelf incompatible");
 
 	/* Workaround for libdwarf crash when processing some KLD modules. */
-	dwarf_set_reloc_application(0);
+	//dwarf_set_reloc_application(0);
 
 	while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:p:t:r:m:T")) != -1) {
 		switch (ch) {

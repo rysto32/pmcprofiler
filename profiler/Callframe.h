@@ -44,7 +44,8 @@ public:
 	Callframe& operator=(const Callframe &) = delete;
 
 	void addFrame(SharedString file, SharedString func,
-		    SharedString demangled, int codeLine, int funcLine);
+	    SharedString demangled, int codeLine, int funcLine,
+	    uint64_t dwarfDieOffset);
 	void setUnmapped(SharedString image);
 
 	TargetAddr getOffset() const

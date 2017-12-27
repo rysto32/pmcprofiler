@@ -25,6 +25,7 @@
 #define DWARFARRAY_H
 
 #include <libdwarf.h>
+#include <sys/types.h>
 
 template <typename ArrType, typename Deleter>
 class DwarfArray
@@ -63,6 +64,11 @@ public:
 			Deleter del;
 			del(dwarf, array.buffer, array.count);
 		}
+	}
+
+	size_t size() const
+	{
+		return array.count;
 	}
 
 	class const_iterator

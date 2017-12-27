@@ -162,6 +162,11 @@ public:
 	{
 		return &value->value;
 	}
+
+	operator bool() const
+	{
+		return value != NULL;
+	}
 };
 
 #endif

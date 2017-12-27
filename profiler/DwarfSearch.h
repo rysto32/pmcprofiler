@@ -39,8 +39,17 @@ private:
 	DwarfDieStack stack;
 	DwarfSrcLinesList srcLines;
 	DwarfSrcLinesList::const_iterator srcIt;
+	Dwarf_Die cuDie;
+	const SymbolMap & symbols;
 
 	bool FindLeaf(const Callframe & frame, SharedString &file, int &line);
+
+	void AddLeafSymbol(DwarfLocationList &list, const DwarfSrcLine & src,
+	    const DwarfSrcLinesList::const_iterator &nextIt);
+	void FillLeafSymbols(DwarfLocationList &list);
+
+	void MapAssembly(Callframe &frame);
+	void MapFrame(Callframe & frame, const DwarfLocationList &list);
 
 public:
 	DwarfSearch(Dwarf_Debug, Dwarf_Die, SharedString, const SymbolMap &);
@@ -51,7 +60,7 @@ public:
 	DwarfSearch & operator=(const DwarfSearch &) = delete;
 	DwarfSearch & operator=(DwarfSearch &&) = delete;
 
-	bool AdvanceAndMap(Callframe &);
+	void AdvanceAndMap(FrameMap::const_iterator & fit, const FrameMap::const_iterator & end);
 };
 
 #endif

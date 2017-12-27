@@ -17,4 +17,13 @@ int test(void)
 	return (4);
 }
 
+namespace testns {
+int bar(int);
+
+int foo(int y)
+{
+
+	return bar(y) * bar(y - 1);
+}
+}
 

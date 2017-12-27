@@ -28,7 +28,7 @@ SRCS=	\
 LDADD=	-lpmc -ldwarf -lelf
 #-Wl,-rpath=/usr/local/lib/gcc8
 CFLAGS += -I/usr/local/include
-CXXFLAGS += -std=c++14
+CXXFLAGS += -std=c++17
 
 .include <bsd.prog.mk>
 

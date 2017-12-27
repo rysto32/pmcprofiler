@@ -24,12 +24,19 @@
 #include "DwarfDieRanges.h"
 
 #include "DwarfRangeList.h"
+#include "DwarfUtil.h"
 
 #include <dwarf.h>
 
-DwarfDieRanges::DwarfDieRanges(Dwarf_Debug dwarf)
-  : dwarf(dwarf)
+DwarfDieRanges::DwarfDieRanges(Dwarf_Debug dwarf, TargetAddr base)
+  : dwarf(dwarf), cuBaseAddr(base)
 {
+}
+
+DwarfDieRanges::DwarfDieRanges(Dwarf_Debug dwarf, Dwarf_Die die, TargetAddr base)
+  : dwarf(dwarf), cuBaseAddr(base)
+{
+	Reinit(die);
 }
 
 void
@@ -40,6 +47,7 @@ DwarfDieRanges::Reinit(Dwarf_Die die)
 	int error, err_lo, err_hi;
 
 	Reset();
+	this->die = die;
 
 	error = dwarf_attrval_unsigned(die, DW_AT_ranges, &off, &derr);
 	if (error == DW_DLV_OK) {
@@ -68,15 +76,11 @@ DwarfDieRanges::AddRange(TargetAddr low, TargetAddr high)
 void
 DwarfDieRanges::InitFromRanges(Dwarf_Die die, Dwarf_Unsigned rangeOff)
 {
-	Dwarf_Unsigned baseAddr, low, high;
-	int error;
-	Dwarf_Error derr;
+	TargetAddr baseAddr, low, high;
 
 	DwarfRangeList rangeList(dwarf, rangeOff);
 
-	error = dwarf_attrval_unsigned(die, DW_AT_low_pc, &baseAddr, &derr);
-	if (error == 0)
-		baseAddr = 0;
+	baseAddr = cuBaseAddr;
 
 	for (const auto & range : rangeList) {
 		switch (range.dwr_type) {
@@ -98,8 +102,9 @@ bool
 DwarfDieRanges::Contains(TargetAddr a) const
 {
 	for (const auto & range : ranges) {
-		if (range.Contains(a))
+		if (range.Contains(a)) {
 			return true;
+		}
 	}
 
 	return false;
@@ -109,4 +114,10 @@ bool
 DwarfDieRanges::Preceeds(TargetAddr a) const
 {
 	return ranges.back().high < a;
+}
+
+bool
+DwarfDieRanges::Succeeds(TargetAddr a) const
+{
+	return ranges.front().low > a;
 }

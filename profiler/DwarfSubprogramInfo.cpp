@@ -23,6 +23,8 @@
 
 #include "DwarfSubprogramInfo.h"
 #include "DwarfDie.h"
+#include "DwarfUtil.h"
+
 #include "Image.h"
 
 void

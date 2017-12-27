@@ -44,9 +44,9 @@ private:
 
 public:
 	DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die,
-	    SharedPtr<DwarfSubprogramInfo> funcInfo);
+	    SharedPtr<DwarfSubprogramInfo> funcInfo, TargetAddr cuBase);
 
-	DwarfStackState(Dwarf_Debug dwarf);
+	DwarfStackState(Dwarf_Debug dwarf, TargetAddr cuBase);
 
 	DwarfStackState(DwarfStackState &&) noexcept = default;
 	DwarfStackState & operator=(DwarfStackState && other) = default;
@@ -74,7 +74,7 @@ public:
 		return funcInfo->GetLine();
 	}
 
-	const Dwarf_Die & GetLeafDie()
+	const Dwarf_Die & GetLeafDie() const
 	{
 		return *iterator;
 	}
@@ -92,6 +92,21 @@ public:
 	bool Preceeds(TargetAddr addr) const
 	{
 		return ranges.Preceeds(addr);
+	}
+
+	bool Succeeds(TargetAddr addr) const
+	{
+		return ranges.Succeeds(addr);
+	}
+
+	bool HasRanges() const
+	{
+		return ranges.HasRanges();
+	}
+
+	const DwarfDieRanges & GetRanges() const
+	{
+		return ranges;
 	}
 
 	void Skip();

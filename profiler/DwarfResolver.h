@@ -39,6 +39,7 @@ class DwarfResolver
 private:
 	SharedString imageFile;
 	SharedString symbolFile;
+	SharedString symbolFilePath;
 
 	Elf *elf;
 	Dwarf_Debug dwarf;

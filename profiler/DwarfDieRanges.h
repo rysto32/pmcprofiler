@@ -32,7 +32,7 @@
 
 class DwarfDieRanges
 {
-private:
+public:
 	struct Range
 	{
 		TargetAddr low;
@@ -49,14 +49,18 @@ private:
 		}
 	};
 
+private:
 	Dwarf_Debug dwarf;
 	std::vector<Range> ranges;
+	TargetAddr cuBaseAddr;
+	Dwarf_Die die;
 
 	void InitFromRanges(Dwarf_Die, Dwarf_Unsigned);
 	void AddRange(TargetAddr low, TargetAddr high);
 
 public:
-	DwarfDieRanges(Dwarf_Debug dwarf);
+	DwarfDieRanges(Dwarf_Debug dwarf, TargetAddr base);
+	DwarfDieRanges(Dwarf_Debug dwarf, Dwarf_Die die, TargetAddr base);
 
 	DwarfDieRanges(DwarfDieRanges &&) noexcept = default;
 	DwarfDieRanges & operator=(DwarfDieRanges &&) = default;
@@ -69,6 +73,22 @@ public:
 
 	bool Contains(TargetAddr a) const;
 	bool Preceeds(TargetAddr a) const;
+	bool Succeeds(TargetAddr a) const;
+
+	bool HasRanges() const
+	{
+		return !ranges.empty();
+	}
+
+	std::vector<Range>::const_iterator begin() const
+	{
+		return ranges.begin();
+	}
+
+	std::vector<Range>::const_iterator end() const
+	{
+		return ranges.end();
+	}
 };
 
 #endif

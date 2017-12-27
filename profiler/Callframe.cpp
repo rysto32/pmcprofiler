@@ -33,10 +33,10 @@ Callframe::Callframe(TargetAddr off)
 
 void
 Callframe::addFrame(SharedString file, SharedString func,
-     SharedString demangled, int codeLine, int funcLine)
+     SharedString demangled, int codeLine, int funcLine, uint64_t dwarfDieOffset)
 {
 	inlineFrames.emplace_back(file, func, demangled, offset, codeLine,
-	    funcLine);
+	    funcLine, dwarfDieOffset);
 }
 
 
@@ -46,7 +46,7 @@ Callframe::setUnmapped(SharedString image)
 	SharedString unmapped_function("[unmapped_function]");
 	inlineFrames.clear();
 	inlineFrames.emplace_back(image, unmapped_function,
-	    unmapped_function, offset, -1, -1);
+	    unmapped_function, offset, -1, -1, 0);
 
 	unmapped = true;
 }

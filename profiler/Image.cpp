@@ -130,8 +130,10 @@ Image::getFrame(TargetAddr offset)
 void
 Image::mapAllFrames()
 {
-	DwarfResolver resolver(imageFile);
+	if (frameMap.empty())
+		return;
 
+	DwarfResolver resolver(imageFile);
 	resolver.Resolve(frameMap);
 }
 

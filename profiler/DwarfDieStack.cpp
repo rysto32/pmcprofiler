@@ -27,6 +27,7 @@
 #include "DwarfException.h"
 #include "DwarfStackState.h"
 #include "DwarfUtil.h"
+#include "MapUtil.h"
 
 #include <cassert>
 #include <dwarf.h>
@@ -35,11 +36,28 @@ DwarfDieStack::DwarfDieStack(SharedString imageFile, Dwarf_Debug dwarf, Dwarf_Di
     const SymbolMap & symbols)
   : imageFile(imageFile),
     dwarf(dwarf),
-    peekState(dwarf),
+    cuBaseAddr(GetBaseAddr(cu)),
+    peekState(dwarf, cuBaseAddr),
     cuDie(cu),
-    elfSymbols(symbols)
+    elfSymbols(symbols)//,
+//     subprogramState(NULL)
 {
-	dieStack.emplace_back(dwarf, cu, SharedPtr<DwarfSubprogramInfo>());
+
+	dieStack.emplace_back(dwarf, cu, SharedPtr<DwarfSubprogramInfo>(), cuBaseAddr);
+}
+
+TargetAddr
+DwarfDieStack::GetBaseAddr(Dwarf_Die cu)
+{
+	Dwarf_Unsigned addr;
+	Dwarf_Error derr;
+	int error;
+
+	error = dwarf_attrval_unsigned(cu, DW_AT_low_pc, &addr, &derr);
+	if (error != DW_DLV_OK)
+		return 0;
+
+	return addr;
 }
 
 bool
@@ -81,9 +99,16 @@ DwarfDieStack::PeekInline(TargetAddr offset)
 	while(1) {
 		Dwarf_Die die = dieStack.back().GetLeafDie();
 
-		peekState = DwarfStackState(dwarf, die, GetSharedInfo(die));
-		while (peekState && Skippable(peekState.GetLeafDie()))
+		peekState = DwarfStackState(dwarf, die, GetSharedInfo(die), cuBaseAddr);
+		LOG("peek at %lx (tag %d)\n",
+		    peekState ? GetDieOffset(peekState.GetLeafDie()) : 0,
+		    peekState ? GetDieTag(peekState.GetLeafDie()) : 0);
+		while (peekState && Skippable(offset)) {
 			peekState.Skip();
+			LOG("peek at %lx (tag %d)\n",
+			peekState ? GetDieOffset(peekState.GetLeafDie()) : 0,
+			peekState ? GetDieTag(peekState.GetLeafDie()) : 0);
+		}
 
 		if (!peekState || !peekState.Contains(offset))
 			break;
@@ -92,23 +117,18 @@ DwarfDieStack::PeekInline(TargetAddr offset)
 }
 
 bool
-DwarfDieStack::Skippable(Dwarf_Die die)
+DwarfDieStack::Skippable(TargetAddr offset)
 {
-	Dwarf_Half tag;
-
-	tag = GetDieTag(die);
-
-	return (tag != DW_TAG_subprogram) &&
-	    (tag != DW_TAG_inlined_subroutine);
+	return !peekState.HasRanges() || peekState.Preceeds(offset);
 }
 
 void
 DwarfDieStack::PushPeekState()
 {
 	dieStack.push_back(std::move(peekState));
-	/*fprintf(stderr, "Pushed back for die %lx; funcInfo=%p\n",
-	    GetDieOffset(dieStack.back().GetLeafDie()),
-	    dieStack.back().GetFuncInfo().get());*/
+// 	LOG("Pushed back for die %lx; funcInfo=%p\n",
+// 	    GetDieOffset(dieStack.back().GetLeafDie()),
+// 	    dieStack.back().GetFuncInfo().get());
 	assert(!peekState);
 }
 
@@ -119,25 +139,6 @@ DwarfDieStack::GetSharedInfo(Dwarf_Die die) const
 		return dieStack.back().GetFuncInfo();
 
 	return SharedPtr<DwarfSubprogramInfo>::make(dwarf, die);
-}
-
-bool
-DwarfDieStack::AdvanceAndMap(Callframe& frame, SharedString leafFile, int leafLine)
-{
-	bool found = Advance(frame.getOffset());
-	if (found) {
-		bool mapped = Map(frame, leafFile, leafLine);
-		if (mapped)
-			return true;
-	}
-
-	SharedString func("[unknown_function]");
-	auto it = elfSymbols.find(frame.getOffset());
-	if (it != elfSymbols.end())
-		func = it->second;
-	frame.addFrame(leafFile, func, func,
-	    leafLine, leafLine);
-	return true;
 }
 
 bool
@@ -160,14 +161,14 @@ DwarfDieStack::Map(Callframe& frame, SharedString leafFile, int leafLine)
 				/*fprintf(stderr, "Map subprogram die %lx funcInfo=%p\n",
 				    GetDieOffset(die), rit->GetFuncInfo().get());*/
 				frame.addFrame(nextFile, info.GetFunc(), info.GetDemangled(),
-				    nextLine, info.GetLine());
+				    nextLine, info.GetLine(), GetDieOffset(die));
 				mapped = true;
 				goto out;
 			}
 		case DW_TAG_inlined_subroutine: {
 				DwarfSubprogramInfo info(dwarf, die);
 				frame.addFrame(nextFile, info.GetFunc(), info.GetDemangled(),
-				     nextLine, rit->GetFuncLine());
+				     nextLine, rit->GetFuncLine(), GetDieOffset(die));
 
 				nextFile = GetCallFile(die);
 				nextLine = GetCallLine(die);
@@ -218,4 +219,124 @@ DwarfDieStack::GetCallLine(Dwarf_Die die)
 		return -1;
 
 	return lineno;
+}
+
+bool
+DwarfDieStack::AdvanceToSubprogram(Callframe& frame)
+{
+	TargetAddr offset = frame.getOffset();
+
+	while (1) {
+		while (!dieStack.empty() && !dieStack.back()) {
+			dieStack.pop_back();
+			if (dieStack.empty())
+				break;
+			dieStack.back().Skip();
+		}
+
+		if (dieStack.empty())
+			return false;
+
+		DwarfStackState &state = dieStack.back();
+
+		if (state.HasRanges() && state.Succeeds(offset))
+			return false;
+
+		Dwarf_Die die = state.GetLeafDie();
+
+		Dwarf_Half tag = GetDieTag(die);
+		if (tag == DW_TAG_namespace) {
+			dieStack.emplace_back(dwarf, die,
+			    GetSharedInfo(die), cuBaseAddr);
+			continue;
+		} else if (tag == DW_TAG_subprogram) {
+			if (state.Contains(offset))
+				return true;
+		}
+
+		state.Skip();
+	}
+}
+
+void
+DwarfDieStack::AddSubprogramSymbol(DwarfLocationList &list)
+{
+	Dwarf_Die die = dieStack.back().GetLeafDie();
+
+	assert (GetDieTag(die) == DW_TAG_subprogram);
+
+	DwarfSubprogramInfo info(dwarf, die);
+
+	for (const auto & range : dieStack.back().GetRanges()) {
+// 		LOG("Add subprogram covering %lx-%lx\n", range.low, range.high);
+		list.insert(std::make_pair(range.low, SharedPtr<DwarfLocation>::make(
+		    range.low, range.high, info.GetFunc(), info.GetLine())));
+	}
+}
+
+void
+DwarfDieStack::AddInlineSymbol(DwarfLocationList &list, Dwarf_Die die)
+{
+	DwarfSubprogramInfo info(dwarf, die);
+
+	for (const auto & range : dieStack.back().GetRanges()) {
+// 		LOG("Add inline %lx covering %lx-%lx\n", GetDieOffset(die), range.low, range.high);
+		AddDwarfSymbol(list, range.low, range.high,
+		    GetCallFile(die), GetCallLine(die), info.GetFunc(),
+		    GetDieOffset(die));
+	}
+}
+
+void
+DwarfDieStack::FillSubprogramSymbols(DwarfLocationList& list)
+{
+	AddSubprogramSymbol(list);
+
+	size_t stackPos = dieStack.size();
+	Dwarf_Die subprogram = dieStack.back().GetLeafDie();
+	dieStack.emplace_back(dwarf, subprogram, GetSharedInfo(subprogram), cuBaseAddr);
+
+	LOG("*** Start scan for inlines in %lx\n", GetDieOffset(subprogram));
+	while (1) {
+		while (dieStack.size() > stackPos && !dieStack.back()) {
+			dieStack.pop_back();
+			if (dieStack.size() == stackPos)
+				break;
+			dieStack.back().Skip();
+		}
+
+		if (dieStack.size() == stackPos)
+			break;
+
+		Dwarf_Die die = dieStack.back().GetLeafDie();
+		Dwarf_Half tag = GetDieTag(die);
+
+		switch (tag) {
+			case DW_TAG_inlined_subroutine:
+				AddInlineSymbol(list, die);
+				break;
+		}
+
+		if (dieStack.back().HasRanges()) {
+			dieStack.emplace_back(dwarf, die, GetSharedInfo(die), cuBaseAddr);
+			continue;
+		}
+
+		dieStack.back().Skip();
+	}
+
+	assert(subprogram == dieStack.back().GetLeafDie());
+}
+
+bool
+DwarfDieStack::SubprogramContains(TargetAddr addr) const
+{
+	return dieStack.back().Contains(addr);
+}
+
+
+bool
+DwarfDieStack::SubprogramSucceeds(TargetAddr addr) const
+{
+	return dieStack.back().Succeeds(addr);
 }

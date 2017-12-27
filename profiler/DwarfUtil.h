@@ -25,8 +25,18 @@
 #define DWARFUTIL_H
 
 #include <libdwarf.h>
+#include <sys/types.h>
 
-Dwarf_Off GetDieOffset(Dwarf_Die die);
+typedef uint64_t DwarfDieOffset;
+
+DwarfDieOffset GetDieOffset(Dwarf_Die die);
 Dwarf_Half GetDieTag(Dwarf_Die die);
+
+#ifdef GNU_LIBDWARF
+int		dwarf_attrval_string(Dwarf_Die, Dwarf_Half, const char **,
+		    Dwarf_Error *);
+int		dwarf_attrval_unsigned(Dwarf_Die, Dwarf_Half, Dwarf_Unsigned *,
+		    Dwarf_Error *);
+#endif
 
 #endif

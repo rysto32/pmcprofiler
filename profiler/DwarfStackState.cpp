@@ -26,12 +26,10 @@
 #include "DwarfUtil.h"
 #include "Image.h"
 
-DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die,
-    SharedPtr<DwarfSubprogramInfo> funcInfo, TargetAddr cuBase)
+DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die, TargetAddr cuBase)
   : list(dwarf, die),
     iterator(list.begin()),
-    ranges(dwarf, cuBase),
-    funcInfo(funcInfo)
+    ranges(dwarf, cuBase)
 {
 // 	fprintf(stderr, "Using funcInfo %p for die %lx tag %d\n",
 // 	    funcInfo.get(), GetDieOffset(die), GetDieTag(die));

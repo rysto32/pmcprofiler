@@ -40,11 +40,8 @@ private:
 	const_iterator iterator;
 	DwarfDieRanges ranges;
 
-	SharedPtr<DwarfSubprogramInfo> funcInfo;
-
 public:
-	DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die,
-	    SharedPtr<DwarfSubprogramInfo> funcInfo, TargetAddr cuBase);
+	DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die, TargetAddr cuBase);
 
 	DwarfStackState(Dwarf_Debug dwarf, TargetAddr cuBase);
 
@@ -53,26 +50,6 @@ public:
 
 	DwarfStackState(const DwarfStackState &) = delete;
 	DwarfStackState & operator=(const DwarfStackState &) = delete;
-
-	SharedPtr<DwarfSubprogramInfo> GetFuncInfo() const
-	{
-		return funcInfo;
-	}
-
-	SharedString GetFunc()
-	{
-		return funcInfo->GetFunc();
-	}
-
-	SharedString GetDemangled()
-	{
-		return funcInfo->GetDemangled();
-	}
-
-	int GetFuncLine()
-	{
-		return funcInfo->GetLine();
-	}
 
 	const Dwarf_Die & GetLeafDie() const
 	{

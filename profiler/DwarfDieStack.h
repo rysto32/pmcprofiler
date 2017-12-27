@@ -45,12 +45,8 @@ private:
 
 	static TargetAddr GetBaseAddr(Dwarf_Die cu);
 
-	SharedPtr<DwarfSubprogramInfo> GetSharedInfo(Dwarf_Die die) const;
-
 	SharedString GetCallFile(Dwarf_Die die);
 	int GetCallLine(Dwarf_Die die);
-
-	void FillSubprogramSymbols(DwarfLocationList &list);
 
 	void AddSubprogramSymbol(DwarfLocationList &list);
 	void AddInlineSymbol(DwarfLocationList &list, Dwarf_Die die);
@@ -64,7 +60,7 @@ public:
 	DwarfDieStack & operator=(DwarfDieStack &&) = delete;
 
 	bool AdvanceToSubprogram(Callframe &frame);
-	bool AdvanceAndMap(Callframe& frame, SharedString leafFile, int leafLine);
+	void FillSubprogramSymbols(DwarfLocationList &list);
 
 	bool SubprogramContains(TargetAddr) const;
 	bool SubprogramSucceeds(TargetAddr) const;

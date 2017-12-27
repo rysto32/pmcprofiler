@@ -33,7 +33,6 @@ class DwarfSubprogramInfo
 	Dwarf_Debug dwarf;
 	Dwarf_Die die;
 	SharedString func;
-	SharedString demangled;
 	int line;
 	bool inited;
 
@@ -57,7 +56,6 @@ public:
 	DwarfSubprogramInfo & operator=(DwarfSubprogramInfo &&) = delete;
 
 	SharedString GetFunc();
-	SharedString GetDemangled();
 	int GetLine();
 };
 

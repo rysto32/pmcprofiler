@@ -125,17 +125,7 @@ void
 DwarfSubprogramInfo::SetFunc(SharedString f, int l)
 {
 	func = f;
-	demangled = Image::demangle(f);
 	line = l;
-}
-
-
-SharedString
-DwarfSubprogramInfo::GetDemangled()
-{
-	CheckInitialized();
-
-	return demangled;
 }
 
 SharedString

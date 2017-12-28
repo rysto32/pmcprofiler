@@ -59,7 +59,7 @@ template <class ProcessStrategy, class PrintStrategy>
 void
 CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printCallChain(
     const Profiler & profiler, const SampleAggregation &agg, StringChain & chain,
-    int depth, PrintStrategy &strategy, const StringChainMap &chainMap)
+    uint32_t depth, PrintStrategy &strategy, const StringChainMap &chainMap)
 {
 	FuncLocPtrList functions;
 	size_t total_samples = getCallers(chainMap, chain, functions);
@@ -81,7 +81,7 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printCallChain(
 		    *this, profiler, *funcLoc, agg,
 		    frame.getDemangled()->c_str(), chain);
 
-		if (!isBoring) {
+		if (!isBoring && depth < m_maxDepth) {
 			chain.push_back(frame.getFunc());
 			printCallChain(profiler, agg, chain, depth + 1, strategy, chainMap);
 			assert(chain.back() == frame.getFunc());
@@ -135,11 +135,11 @@ PrintCallchainStrategy::printProcessHeader(FILE *outfile, const Profiler &profil
 }
 
 void
-PrintCallchainStrategy::printFrame(FILE *outfile, int depth, double processPercent, double parentPercent,
+PrintCallchainStrategy::printFrame(FILE *outfile, uint32_t depth, double processPercent, double parentPercent,
 		ProfilePrinter &printer, const Profiler &profiler, const FunctionLocation& functionLocation,
 		const SampleAggregation &agg, const char *functionName, StringChain & chain __unused) const
 {
-	for (int i = 0; i < depth; i++)
+	for (uint32_t i = 0; i < depth; i++)
 		fprintf(outfile, "  ");
 
 	fprintf(outfile, "[%d] %.2f%% %.2f%%(%zd/%zd) %s", depth, parentPercent, processPercent,
@@ -159,7 +159,7 @@ PrintFlameGraphStrategy::printProcessHeader(FILE *outfile __unused, const Profil
 }
 
 void
-PrintFlameGraphStrategy::printFrame(FILE *outfile, int depth, double processPercent, double parentPercent,
+PrintFlameGraphStrategy::printFrame(FILE *outfile, uint32_t depth, double processPercent, double parentPercent,
 		ProfilePrinter &printer, const Profiler &profiler, const FunctionLocation& functionLocation,
 		const SampleAggregation &agg, const char *functionName, StringChain & chain __unused) const
 {

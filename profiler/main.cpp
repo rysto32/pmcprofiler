@@ -35,6 +35,8 @@ __FBSDID("$FreeBSD$");
 #include <pmclog.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#include <functional>
 #include <memory>
 
 void usage(void);
@@ -73,7 +75,7 @@ main(int argc, char *argv[])
 	int ch;
 	bool showlines = false;
 	bool printBoring = true;
-	uint32_t maxDepth = PMC_CALLCHAIN_DEPTH_MAX;
+	int32_t minDepth = 1, preferredDepth = 1, maxDepth, configedDepth = 0;
 	int threshold = 0;
 	g_quitOnError = false;
 	FILE * file;
@@ -96,6 +98,8 @@ main(int argc, char *argv[])
 			case 'F':
 				file = openOutFile(optarg);
 				printers.push_back(std::make_unique<FlameGraphProfilerPrinter>(file, PMC_CALLCHAIN_DEPTH_MAX, threshold, true));
+				minDepth = std::max(minDepth, PMC_CALLCHAIN_DEPTH_MAX);
+				preferredDepth = std::max(preferredDepth, PMC_CALLCHAIN_DEPTH_MAX);
 				break;
 			case 'l':
 				showlines = true;
@@ -106,10 +110,13 @@ main(int argc, char *argv[])
 			case 'G':
 				file = openOutFile(optarg);
 				printers.push_back(std::make_unique<LeafProfilePrinter>(file, maxDepth, threshold, printBoring));
+				preferredDepth = std::max(preferredDepth, PMC_CALLCHAIN_DEPTH_MAX);
 				break;
 			case 'r':
 				file = openOutFile(optarg);
 				printers.push_back(std::make_unique<RootProfilePrinter>(file, PMC_CALLCHAIN_DEPTH_MAX, threshold, true));
+				minDepth = std::max(minDepth, PMC_CALLCHAIN_DEPTH_MAX);
+				preferredDepth = std::max(preferredDepth, PMC_CALLCHAIN_DEPTH_MAX);
 				break;
 			case 'o':
 				file = openOutFile(optarg);
@@ -134,8 +141,7 @@ main(int argc, char *argv[])
 
 				break;
 			case 'd':
-				char * temp;
-				maxDepth = strtoul(optarg, &temp, 0);
+				configedDepth = strtoul(optarg, &temp, 0);
 
 				if (*temp != '\0')
 					usage();
@@ -159,7 +165,14 @@ main(int argc, char *argv[])
 	if (printers.empty())
 		printers.push_back(std::make_unique<FlatProfilePrinter>(stdout));
 
+	// If the user asked for a depth less than our minimum, ignore it for mapping
+	// The ProfilePrinter will obey the minimum anyway.
+	configedDepth = std::max(configedDepth, minDepth);
+	maxDepth = std::min(preferredDepth, configedDepth);
+
 	Profiler profiler(samplefile, showlines, modulePath);
+
+	profiler.MapSamples(maxDepth);
 	for (const auto & printer : printers)
 		profiler.createProfile(*printer);
 

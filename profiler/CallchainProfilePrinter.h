@@ -33,7 +33,7 @@ class CallchainProfilePrinter : public ProfilePrinter
 	bool printBoring;
 
 	void printCallChain(const Profiler & profiler, const SampleAggregation& agg,
-	    StringChain & chain, int depth, PrintStrategy &strategy,
+	    StringChain & chain, uint32_t depth, PrintStrategy &strategy,
 	    const StringChainMap &chainMap);
 	bool isCallChainBoring(const SampleAggregation& agg, StringChain & chain,
 	    const StringChainMap &chainMap);
@@ -55,7 +55,7 @@ struct PrintCallchainStrategy
 {
 	void printFileHeader(FILE *outfile, const Profiler &profiler) const;
 	void printProcessHeader(FILE *outfile, const Profiler &profiler, const SampleAggregation &agg) const;
-	void printFrame(FILE *outfile, int depth, double processPercent, double parentPercent,
+	void printFrame(FILE *outfile, uint32_t depth, double processPercent, double parentPercent,
 	    ProfilePrinter &printer, const Profiler &profiler, const FunctionLocation& functionLocation,
 	    const SampleAggregation &agg, const char *functionName, StringChain & chain) const;
 };
@@ -65,7 +65,7 @@ struct PrintFlameGraphStrategy
 {
 	void printFileHeader(FILE *outfile, const Profiler &profiler) const;
 	void printProcessHeader(FILE *outfile, const Profiler &profiler, const SampleAggregation &agg) const;
-	void printFrame(FILE *outfile, int depth, double processPercent, double parentPercent,
+	void printFrame(FILE *outfile, uint32_t depth, double processPercent, double parentPercent,
 		ProfilePrinter &printer, const Profiler &profiler, const FunctionLocation& functionLocation,
 		const SampleAggregation &agg, const char *functionName, StringChain & chain) const;
 };

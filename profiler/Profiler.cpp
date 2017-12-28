@@ -54,17 +54,20 @@ Profiler::Profiler(const std::string& dataFile, bool showlines,
 		getLocalModulePath();
 }
 
-
 void
-Profiler::createProfile(ProfilePrinter & printer)
+Profiler::MapSamples(uint32_t maxDepth)
 {
 	m_sampleCount = 0;
 	AddressSpace::clearAddressSpaces();
 	SampleAggregation::clearAggregations();
 
-	EventFactory::createEvents(*this, printer.getMaxDepth());
+	EventFactory::createEvents(*this, maxDepth);
 	Image::mapAll();
+}
 
+void
+Profiler::createProfile(ProfilePrinter & printer)
+{
 	AggregationList aggregations;
 	SampleAggregation::getAggregationList(aggregations);
 

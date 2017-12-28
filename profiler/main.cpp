@@ -163,7 +163,6 @@ main(int argc, char *argv[])
 	for (const auto & printer : printers)
 		profiler.createProfile(*printer);
 
-	Image::freeImages();
 	return 0;
 }
 

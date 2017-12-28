@@ -80,7 +80,6 @@ public:
 
 	static Image unmappedImage;
 	static Image *getImage(const char *name);
-	static void freeImages();
 
 	bool isMapped() const
 	{

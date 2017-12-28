@@ -51,12 +51,6 @@ Image::getImage(const char *name)
 	return it->second.get();
 }
 
-void
-Image::freeImages()
-{
-	imageMap.clear();
-}
-
 Image::Image(const std::string& imageName)
   : imageFile(imageName), mapped(!imageName.empty())
 {

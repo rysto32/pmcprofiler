@@ -4,7 +4,6 @@ NO_MAN=
 
 SRCS=	\
 	Callframe.cpp \
-	DwarfCompileUnitSearch.cpp \
 	DwarfDieRanges.cpp \
 	DwarfDieStack.cpp \
 	DwarfResolver.cpp \

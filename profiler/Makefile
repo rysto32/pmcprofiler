@@ -10,7 +10,6 @@ SRCS=	\
 	Callchain.cpp \
 	CallchainProfilePrinter.cpp \
 	Callframe.cpp \
-	DwarfCompileUnitSearch.cpp \
 	DwarfDieRanges.cpp \
 	DwarfDieStack.cpp \
 	DwarfResolver.cpp \

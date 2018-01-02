@@ -172,11 +172,8 @@ DwarfSearch::AdvanceAndMap(FrameMap::const_iterator & fit,
 	FrameMap::const_iterator last = fit;
 	++last;
 
-	size_t count = 1;
-	while (last != fend && stack.SubprogramContains(last->second->getOffset())) {
-		++count;
+	while (last != fend && stack.SubprogramContains(last->second->getOffset()))
 		++last;
-	}
 
 	DwarfLocationList list;
 

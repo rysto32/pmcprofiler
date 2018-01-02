@@ -21,90 +21,38 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef DWARFDIE_H
-#define DWARFDIE_H
+#include "DwarfDie.h"
 
-#include <libdwarf.h>
+#include "DwarfException.h"
 
-class DwarfDieList;
-
-class DwarfDie
+void
+DwarfDie::AdvanceToSibling()
 {
-	Dwarf_Debug dwarf;
+	Dwarf_Die last_die = die;
+	Dwarf_Error derr;
+	int error;
+
+	error = dwarf_siblingof(dwarf, last_die, &die, &derr);
+	if (ownDie)
+		dwarf_dealloc(dwarf, last_die, DW_DLA_DIE);
+
+	if (error != DW_DLV_OK) {
+		die = nullptr;
+		ownDie = false;
+	}
+}
+
+
+DwarfDie
+DwarfDie::OffDie(Dwarf_Debug dwarf, Dwarf_Off ref)
+{
 	Dwarf_Die die;
-	bool ownDie;
+	Dwarf_Error derr;
+	int error;
 
-
-	DwarfDie(Dwarf_Debug dwarf, Dwarf_Die die) noexcept
-	  : dwarf(dwarf), die(die), ownDie(die != nullptr)
-	{
-	}
-
-	void Release()
-	{
-		if (ownDie)
-			dwarf_dealloc(dwarf, die, DW_DLA_DIE);
-	}
-
-	friend class DwarfDieList;
-
-public:
-	DwarfDie()
-	  : die(nullptr), ownDie(false)
-	{
-	}
-
-	~DwarfDie()
-	{
-		Release();
-	}
-
-	DwarfDie(const DwarfDie &) = delete;
-
-	DwarfDie(DwarfDie && other) noexcept
-	  : dwarf(other.dwarf), die(other.die), ownDie(other.ownDie)
-	{
-		other.ownDie = false;
-	}
-
-	DwarfDie & operator=(const DwarfDie&) = delete;
-
-	DwarfDie & operator=(DwarfDie && other) noexcept
-	{
-		Release();
-
-		dwarf = other.dwarf;
-		die = other.die;
-		ownDie = other.ownDie;
-
-		other.ownDie = false;
-
-		return *this;
-	}
-
-	bool operator==(const DwarfDie & other) const
-	{
-		return dwarf == other.dwarf && die == other.die;
-	}
-
-	operator bool() const
-	{
-		return die != nullptr;
-	}
-
-	bool operator!() const
-	{
-		return !this->operator bool();
-	}
-
-	const Dwarf_Die &operator*() const
-	{
-		return die;
-	}
-
-	void AdvanceToSibling();
-
-	static DwarfDie OffDie(Dwarf_Debug dwarf, Dwarf_Off ref);
-};
-
-#endif
+	error = dwarf_offdie(dwarf, ref, &die, &derr);
+	if (error != 0)
+		return DwarfDie();
+	else
+		return DwarfDie(dwarf, die);
+}

@@ -33,6 +33,7 @@
 #include <vector>
 
 class Callframe;
+class DwarfCompileUnit;
 
 class DwarfDieStack
 {
@@ -40,10 +41,7 @@ private:
 	SharedString imageFile;
 	const Dwarf_Debug dwarf;
 	std::vector<DwarfStackState> dieStack;
-	TargetAddr cuBaseAddr;
-	Dwarf_Die cuDie;
-
-	static TargetAddr GetBaseAddr(Dwarf_Die cu);
+	const DwarfCompileUnit &cu;
 
 	SharedString GetCallFile(Dwarf_Die die);
 	int GetCallLine(Dwarf_Die die);
@@ -52,7 +50,8 @@ private:
 	void AddInlineSymbol(DwarfLocationList &list, Dwarf_Die die);
 
 public:
-	DwarfDieStack(SharedString imageFile, Dwarf_Debug dwarf, Dwarf_Die cu);
+	DwarfDieStack(SharedString imageFile, Dwarf_Debug dwarf,
+	    const DwarfCompileUnit &cu);
 
 	DwarfDieStack(const DwarfDieStack &) = delete;
 	DwarfDieStack(DwarfDieStack &&) = delete;

@@ -41,9 +41,9 @@ private:
 	DwarfDieRanges ranges;
 
 public:
-	DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die, TargetAddr cuBase);
+	DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die, const DwarfCompileUnit &cu);
 
-	DwarfStackState(Dwarf_Debug dwarf, TargetAddr cuBase);
+	DwarfStackState(Dwarf_Debug dwarf, const DwarfCompileUnit &cu);
 
 	DwarfStackState(DwarfStackState &&) noexcept = default;
 	DwarfStackState & operator=(DwarfStackState && other) = default;

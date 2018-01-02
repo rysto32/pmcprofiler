@@ -24,19 +24,20 @@
 #include "DwarfSearch.h"
 
 #include "Callframe.h"
+#include "DwarfCompileUnit.h"
 #include "DwarfLocation.h"
 #include "DwarfSrcLine.h"
 #include "DwarfUtil.h"
 #include "Image.h"
 #include "MapUtil.h"
 
-DwarfSearch::DwarfSearch(Dwarf_Debug dwarf, Dwarf_Die cu, SharedString imageFile,
-    const SymbolMap & symbols)
+DwarfSearch::DwarfSearch(Dwarf_Debug dwarf, const DwarfCompileUnit &cu,
+    SharedString imageFile, const SymbolMap & symbols)
   : imageFile(imageFile),
     stack(imageFile, dwarf, cu),
-    srcLines(dwarf, cu),
+    srcLines(dwarf, cu.GetDie()),
     srcIt(srcLines.begin()),
-    cuDie(cu),
+    cu(cu),
     symbols(symbols)
 {
 
@@ -78,7 +79,7 @@ DwarfSearch::AddLeafSymbol(DwarfLocationList &list, const DwarfSrcLine & src,
 	}
 // 	LOG("Add leaf symbol covering %lx-%lx\n", src.GetAddr(), nextAddr);
 	AddDwarfSymbol(list, src.GetAddr(), nextAddr, src.GetFile(imageFile), src.GetLine(),
-	    imageFile, GetDieOffset(cuDie));
+	    imageFile, GetDieOffset(cu.GetDie()));
 }
 
 void
@@ -119,7 +120,7 @@ DwarfSearch::MapAssembly(Callframe &frame)
 	if (it != symbols.end())
 		func = it->second;
 
-	frame.addFrame(file, func, func, line, -1, GetDieOffset(cuDie));
+	frame.addFrame(file, func, func, line, -1, GetDieOffset(cu.GetDie()));
 }
 
 void

@@ -21,75 +21,61 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef DWARFDIE_H
-#define DWARFDIE_H
+#ifndef DWARFCOMPILEUNIT_H
+#define DWARFCOMPILEUNIT_H
 
 #include <libdwarf.h>
 
-class DwarfDieList;
+#include "DwarfDie.h"
+#include "ProfilerTypes.h"
 
-class DwarfDie
+class DwarfCompileUnit
 {
+private:
 	Dwarf_Debug dwarf;
-	Dwarf_Die die;
-	bool ownDie;
+	DwarfDie die;
+	TargetAddr baseAddr;
 
+	Dwarf_Unsigned cu_length;
+	Dwarf_Half cu_version;
+	Dwarf_Off cu_abbrev_offset;
+	Dwarf_Half cu_pointer_size;
+	Dwarf_Half cu_offset_size;
+	Dwarf_Half cu_extension_size;
+	Dwarf_Sig8 type_signature;
+	Dwarf_Unsigned type_offset;
+	Dwarf_Unsigned cu_next_offset;
+	Dwarf_Bool is_info;
 
-	DwarfDie(Dwarf_Debug dwarf, Dwarf_Die die) noexcept
-	  : dwarf(dwarf), die(die), ownDie(die != nullptr)
-	{
-	}
+	DwarfCompileUnit(Dwarf_Debug dwarf, Dwarf_Bool is_info);
 
-	void Release()
-	{
-		if (ownDie)
-			dwarf_dealloc(dwarf, die, DW_DLA_DIE);
-	}
-
-	friend class DwarfDieList;
+	void InitBaseAddr();
 
 public:
-	DwarfDie()
-	  : die(nullptr), ownDie(false)
+	DwarfCompileUnit()
+	  : dwarf(nullptr)
 	{
 	}
 
-	~DwarfDie()
+	DwarfCompileUnit(const DwarfCompileUnit &) = delete;
+	DwarfCompileUnit(DwarfCompileUnit &&) = default;
+
+	DwarfCompileUnit & operator=(const DwarfCompileUnit &) = delete;
+	DwarfCompileUnit & operator=(DwarfCompileUnit &&) = default;
+
+	static DwarfCompileUnit GetFirstCU(Dwarf_Debug, Dwarf_Bool is_info = 1);
+
+	void AdvanceDie();
+	void AdvanceToSibling();
+
+	bool DieValid() const
 	{
-		Release();
-	}
-
-	DwarfDie(const DwarfDie &) = delete;
-
-	DwarfDie(DwarfDie && other) noexcept
-	  : dwarf(other.dwarf), die(other.die), ownDie(other.ownDie)
-	{
-		other.ownDie = false;
-	}
-
-	DwarfDie & operator=(const DwarfDie&) = delete;
-
-	DwarfDie & operator=(DwarfDie && other) noexcept
-	{
-		Release();
-
-		dwarf = other.dwarf;
-		die = other.die;
-		ownDie = other.ownDie;
-
-		other.ownDie = false;
-
-		return *this;
-	}
-
-	bool operator==(const DwarfDie & other) const
-	{
-		return dwarf == other.dwarf && die == other.die;
+		return die;
 	}
 
 	operator bool() const
 	{
-		return die != nullptr;
+		return dwarf != nullptr;
 	}
 
 	bool operator!() const
@@ -97,15 +83,25 @@ public:
 		return !this->operator bool();
 	}
 
-	const Dwarf_Die &operator*() const
+	TargetAddr GetBaseAddr() const
 	{
-		return die;
+		return baseAddr;
 	}
 
-	void AdvanceToSibling();
+	Dwarf_Die GetDie() const
+	{
+		return *die;
+	}
 
-	static DwarfDie OffDie(Dwarf_Debug dwarf, Dwarf_Off ref);
-	static DwarfDie GetCuDie(Dwarf_Debug dwarf);
+	Dwarf_Half GetDwarfVersion() const
+	{
+		return cu_version;
+	}
+
+	Dwarf_Half GetOffsetSize() const
+	{
+		return cu_offset_size;
+	}
 };
 
 #endif

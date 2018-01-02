@@ -56,3 +56,17 @@ DwarfDie::OffDie(Dwarf_Debug dwarf, Dwarf_Off ref)
 	else
 		return DwarfDie(dwarf, die);
 }
+
+DwarfDie
+DwarfDie::GetCuDie(Dwarf_Debug dwarf)
+{
+	int error;
+	Dwarf_Die die;
+	Dwarf_Error derr;
+
+	error = dwarf_siblingof(dwarf, NULL, &die, &derr);
+	if (error != 0)
+		return DwarfDie();
+	else
+		return DwarfDie(dwarf, die);
+}

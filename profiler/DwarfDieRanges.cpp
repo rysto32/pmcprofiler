@@ -23,18 +23,20 @@
 
 #include "DwarfDieRanges.h"
 
+#include "DwarfCompileUnit.h"
 #include "DwarfRangeList.h"
 #include "DwarfUtil.h"
 
 #include <dwarf.h>
 
-DwarfDieRanges::DwarfDieRanges(Dwarf_Debug dwarf, TargetAddr base)
-  : dwarf(dwarf), cuBaseAddr(base)
+DwarfDieRanges::DwarfDieRanges(Dwarf_Debug dwarf, const DwarfCompileUnit & cu)
+  : dwarf(dwarf), compileUnit(cu)
 {
 }
 
-DwarfDieRanges::DwarfDieRanges(Dwarf_Debug dwarf, Dwarf_Die die, TargetAddr base)
-  : dwarf(dwarf), cuBaseAddr(base)
+DwarfDieRanges::DwarfDieRanges(Dwarf_Debug dwarf, Dwarf_Die die,
+    const DwarfCompileUnit & cu)
+  : dwarf(dwarf), compileUnit(cu)
 {
 	Reinit(die);
 }
@@ -44,7 +46,7 @@ DwarfDieRanges::Reinit(Dwarf_Die die)
 {
 	Dwarf_Error derr;
 	Dwarf_Unsigned low_pc, high_pc, off;
-	int error, err_lo, err_hi;
+	int error;
 
 	Reset();
 	this->die = die;
@@ -55,11 +57,52 @@ DwarfDieRanges::Reinit(Dwarf_Die die)
 		return;
 	}
 
-	err_lo = dwarf_attrval_unsigned(die, DW_AT_low_pc, &low_pc, &derr);
-	err_hi = dwarf_attrval_unsigned(die, DW_AT_high_pc, &high_pc, &derr);
-	if (err_lo == DW_DLV_OK && err_hi == DW_DLV_OK)
+	error = dwarf_attrval_unsigned(die, DW_AT_low_pc, &low_pc, &derr);
+	if (error != DW_DLV_OK)
+		return;
+
+	error = GetHighPc(die, low_pc, high_pc);
+	if (error == DW_DLV_OK) {
 		AddRange(low_pc, high_pc);
+	}
 }
+
+int
+DwarfDieRanges::GetHighPc(Dwarf_Die die, TargetAddr low_pc, TargetAddr &high_pc)
+{
+	int error;
+	Dwarf_Attribute attr;
+	Dwarf_Unsigned high;
+	Dwarf_Half form;
+	Dwarf_Error derr;
+	Dwarf_Form_Class cls;
+
+	error = dwarf_attr(die, DW_AT_high_pc, &attr, &derr);
+	if (error != 0)
+		return error;
+
+	error = dwarf_attrval_unsigned(die, DW_AT_high_pc, &high, &derr);
+	if (error != DW_DLV_OK)
+		return error;
+
+	error = dwarf_whatform(attr, &form, &derr);
+	if (error != 0)
+		return error;
+
+	cls = dwarf_get_form_class(compileUnit.GetDwarfVersion(), DW_AT_high_pc,
+	    compileUnit.GetOffsetSize(), form);
+	switch (cls) {
+	case DW_FORM_CLASS_ADDRESS:
+		high_pc = high;
+		return 0;
+	case DW_FORM_CLASS_CONSTANT:
+		high_pc = low_pc + high;
+		return 0;
+	default:
+		return DW_DLV_ERROR;
+	}
+}
+
 
 void
 DwarfDieRanges::Reset()
@@ -80,7 +123,7 @@ DwarfDieRanges::InitFromRanges(Dwarf_Die die, Dwarf_Unsigned rangeOff)
 
 	DwarfRangeList rangeList(dwarf, rangeOff);
 
-	baseAddr = cuBaseAddr;
+	baseAddr = compileUnit.GetBaseAddr();
 
 	for (const auto & range : rangeList) {
 		switch (range.dwr_type) {

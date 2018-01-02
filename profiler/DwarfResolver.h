@@ -34,6 +34,8 @@
 #include <libdwarf.h>
 #include <libelf.h>
 
+class DwarfCompileUnit;
+
 class DwarfResolver
 {
 private:
@@ -61,16 +63,16 @@ private:
 
 	void FillElfSymbolMap(Elf *imageElf, Elf_Scn *section);
 
-	void ProcessCompileUnit(Dwarf_Die die, FrameMap::const_iterator &fit,
+	void ProcessCompileUnit(DwarfCompileUnit &cu, FrameMap::const_iterator &fit,
 	    const FrameMap::const_iterator &end) const;
-	void SearchCompileUnit(Dwarf_Die die, FrameMap::const_iterator &fit,
+	void SearchCompileUnit(const DwarfCompileUnit &cu, FrameMap::const_iterator &fit,
 	    const FrameMap::const_iterator &end) const;
-	void TryCompileUnitRange(Dwarf_Die die, Dwarf_Unsigned low_pc,
+	void TryCompileUnitRange(const DwarfCompileUnit &cu, Dwarf_Unsigned low_pc,
 	    Dwarf_Unsigned high_pc, FrameMap::const_iterator &fit,
 	    const FrameMap::const_iterator &end) const;
-	void SearchCompileUnitRanges(Dwarf_Die die, Dwarf_Unsigned range_off,
+	void SearchCompileUnitRanges(const DwarfCompileUnit &cu, Dwarf_Unsigned range_off,
 	    FrameMap::const_iterator &fit, const FrameMap::const_iterator &end) const;
-	void SearchCompileUnitFuncs(Dwarf_Die parent, FrameMap::const_iterator &fit,
+	void SearchCompileUnitFuncs(const DwarfCompileUnit &cu, FrameMap::const_iterator &fit,
 	    const FrameMap::const_iterator &end) const;
 
 public:

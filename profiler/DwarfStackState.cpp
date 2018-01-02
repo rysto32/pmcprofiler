@@ -26,10 +26,11 @@
 #include "DwarfUtil.h"
 #include "Image.h"
 
-DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die, TargetAddr cuBase)
+DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die,
+    const DwarfCompileUnit &cu)
   : list(dwarf, die),
     iterator(list.begin()),
-    ranges(dwarf, cuBase)
+    ranges(dwarf, cu)
 {
 // 	fprintf(stderr, "Using funcInfo %p for die %lx tag %d\n",
 // 	    funcInfo.get(), GetDieOffset(die), GetDieTag(die));
@@ -37,10 +38,10 @@ DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die, TargetAddr cu
 		ranges.Reinit(*iterator);
 }
 
-DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, TargetAddr cuBase)
+DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, const DwarfCompileUnit &cu)
   : list(dwarf),
     iterator(list.end()),
-    ranges(dwarf, cuBase)
+    ranges(dwarf, cu)
 {
 }
 /*

@@ -30,6 +30,8 @@
 
 #include "ProfilerTypes.h"
 
+class DwarfCompileUnit;
+
 class DwarfDieRanges
 {
 public:
@@ -52,15 +54,17 @@ public:
 private:
 	Dwarf_Debug dwarf;
 	std::vector<Range> ranges;
-	TargetAddr cuBaseAddr;
+	const DwarfCompileUnit & compileUnit;
 	Dwarf_Die die;
 
 	void InitFromRanges(Dwarf_Die, Dwarf_Unsigned);
 	void AddRange(TargetAddr low, TargetAddr high);
 
+	int GetHighPc(Dwarf_Die, TargetAddr lopc, TargetAddr &hipc);
+
 public:
-	DwarfDieRanges(Dwarf_Debug dwarf, TargetAddr base);
-	DwarfDieRanges(Dwarf_Debug dwarf, Dwarf_Die die, TargetAddr base);
+	DwarfDieRanges(Dwarf_Debug dwarf, const DwarfCompileUnit &);
+	DwarfDieRanges(Dwarf_Debug dwarf, Dwarf_Die die, const DwarfCompileUnit &);
 
 	DwarfDieRanges(DwarfDieRanges &&) noexcept = default;
 	DwarfDieRanges & operator=(DwarfDieRanges &&) = default;

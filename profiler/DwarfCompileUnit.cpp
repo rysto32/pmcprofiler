@@ -21,91 +21,60 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef DWARFDIE_H
-#define DWARFDIE_H
+#include "DwarfCompileUnit.h"
 
-#include <libdwarf.h>
+#include "DwarfException.h"
 
-class DwarfDieList;
+#include <dwarf.h>
 
-class DwarfDie
+DwarfCompileUnit::DwarfCompileUnit(Dwarf_Debug dwarf, Dwarf_Bool is_info)
+  : dwarf(dwarf), is_info(is_info)
 {
-	Dwarf_Debug dwarf;
-	Dwarf_Die die;
-	bool ownDie;
+	AdvanceToSibling();
+}
 
+DwarfCompileUnit
+DwarfCompileUnit::GetFirstCU(Dwarf_Debug dwarf, Dwarf_Bool is_info)
+{
+	return DwarfCompileUnit(dwarf, is_info);
+}
 
-	DwarfDie(Dwarf_Debug dwarf, Dwarf_Die die) noexcept
-	  : dwarf(dwarf), die(die), ownDie(die != nullptr)
-	{
+void
+DwarfCompileUnit::AdvanceToSibling()
+{
+	int error = dwarf_next_cu_header_c(dwarf, is_info, &cu_length,
+	    &cu_version, &cu_abbrev_offset, &cu_pointer_size, &cu_offset_size,
+	    &cu_extension_size, &type_signature, &type_offset, &cu_next_offset,
+	    NULL);
+
+	if (error == DW_DLV_ERROR) {
+		throw DwarfException("dwarf_next_cu_header_c failed");
+	} else if (error == DW_DLV_NO_ENTRY) {
+		dwarf = nullptr;
+		baseAddr = 0;
+	} else {
+		die = DwarfDie::GetCuDie(dwarf);
+		InitBaseAddr();
 	}
+}
 
-	void Release()
-	{
-		if (ownDie)
-			dwarf_dealloc(dwarf, die, DW_DLA_DIE);
-	}
+void
+DwarfCompileUnit::AdvanceDie()
+{
+	die.AdvanceToSibling();
+}
 
-	friend class DwarfDieList;
+void
+DwarfCompileUnit::InitBaseAddr()
+{
+	Dwarf_Unsigned addr;
+	Dwarf_Error derr;
+	int error;
 
-public:
-	DwarfDie()
-	  : die(nullptr), ownDie(false)
-	{
-	}
+	error = dwarf_attrval_unsigned(*die, DW_AT_low_pc, &addr, &derr);
+	if (error != DW_DLV_OK)
+		baseAddr = 0;
+	else
+		baseAddr = addr;
+}
 
-	~DwarfDie()
-	{
-		Release();
-	}
-
-	DwarfDie(const DwarfDie &) = delete;
-
-	DwarfDie(DwarfDie && other) noexcept
-	  : dwarf(other.dwarf), die(other.die), ownDie(other.ownDie)
-	{
-		other.ownDie = false;
-	}
-
-	DwarfDie & operator=(const DwarfDie&) = delete;
-
-	DwarfDie & operator=(DwarfDie && other) noexcept
-	{
-		Release();
-
-		dwarf = other.dwarf;
-		die = other.die;
-		ownDie = other.ownDie;
-
-		other.ownDie = false;
-
-		return *this;
-	}
-
-	bool operator==(const DwarfDie & other) const
-	{
-		return dwarf == other.dwarf && die == other.die;
-	}
-
-	operator bool() const
-	{
-		return die != nullptr;
-	}
-
-	bool operator!() const
-	{
-		return !this->operator bool();
-	}
-
-	const Dwarf_Die &operator*() const
-	{
-		return die;
-	}
-
-	void AdvanceToSibling();
-
-	static DwarfDie OffDie(Dwarf_Debug dwarf, Dwarf_Off ref);
-	static DwarfDie GetCuDie(Dwarf_Debug dwarf);
-};
-
-#endif

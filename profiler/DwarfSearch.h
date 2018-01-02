@@ -31,6 +31,7 @@
 #include "SharedString.h"
 
 class Callframe;
+class DwarfCompileUnit;
 
 class DwarfSearch
 {
@@ -39,7 +40,7 @@ private:
 	DwarfDieStack stack;
 	DwarfSrcLinesList srcLines;
 	DwarfSrcLinesList::const_iterator srcIt;
-	Dwarf_Die cuDie;
+	const DwarfCompileUnit &cu;
 	const SymbolMap & symbols;
 
 	bool FindLeaf(const Callframe & frame, SharedString &file, int &line);
@@ -52,7 +53,8 @@ private:
 	void MapFrame(Callframe & frame, const DwarfLocationList &list);
 
 public:
-	DwarfSearch(Dwarf_Debug, Dwarf_Die, SharedString, const SymbolMap &);
+	DwarfSearch(Dwarf_Debug, const DwarfCompileUnit &, SharedString,
+	    const SymbolMap &);
 
 	DwarfSearch(const DwarfSearch &) = delete;
 	DwarfSearch(DwarfSearch &&) = delete;

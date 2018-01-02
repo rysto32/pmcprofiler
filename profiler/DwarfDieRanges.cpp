@@ -139,6 +139,10 @@ DwarfDieRanges::InitFromRanges(Dwarf_Die die, Dwarf_Unsigned rangeOff)
 			return;
 		}
 	}
+
+	// DWARF does not guaranteed that the ranges are ordered, so make sure
+	// that they are here.
+	std::sort(ranges.begin(), ranges.end());
 }
 
 bool

@@ -49,6 +49,13 @@ public:
 		{
 			return low <= a && a < high;
 		}
+
+		// It is guaranteed that no ranges in a given range list will
+		// overlap, so we don't need to compare high as well.
+		bool operator<(const Range & other) const
+		{
+			return low < other.low;
+		}
 	};
 
 private:

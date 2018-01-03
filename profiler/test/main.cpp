@@ -17,8 +17,6 @@ main(int argc, char **argv)
 	char *endp;
 	SharedString file;
 	SharedString func;
-	u_int line;
-	bool success;
 
 	if (argc < 3)
 		errx(1, "Usage: %s <filename> <addr>....\n", argv[0]);

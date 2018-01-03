@@ -301,8 +301,7 @@ DwarfResolver::TryCompileUnitRange(const DwarfCompileUnit &cu,
 		if (offset < low_pc){
 			fit->second->setUnmapped(imageFile);
 			++fit;
-		}
-		else if (offset < high_pc) {
+		} else if (offset < high_pc) {
 			SearchCompileUnitFuncs(cu, fit, end);
 		} else {
 			break;
@@ -313,7 +312,7 @@ DwarfResolver::TryCompileUnitRange(const DwarfCompileUnit &cu,
 void
 DwarfResolver::SearchCompileUnitRanges(const DwarfCompileUnit &cu,
     Dwarf_Unsigned range_off, FrameMap::const_iterator &fit,
-    const FrameMap::const_iterator &end) const
+    const FrameMap::const_iterator &fend) const
 {
 	Dwarf_Unsigned base_addr, low_pc, high_pc;
 
@@ -325,7 +324,7 @@ DwarfResolver::SearchCompileUnitRanges(const DwarfCompileUnit &cu,
 		case DW_RANGES_ENTRY:
 			low_pc = base_addr + range.dwr_addr1;
 			high_pc = base_addr + range.dwr_addr2;
-			TryCompileUnitRange(cu, low_pc, high_pc, fit, end);
+			TryCompileUnitRange(cu, low_pc, high_pc, fit, fend);
 			break;
 		case DW_RANGES_ADDRESS_SELECTION:
 			base_addr = range.dwr_addr2;

@@ -25,6 +25,7 @@
 
 #include "Callframe.h"
 #include "DwarfCompileUnit.h"
+#include "DwarfDieLookup.h"
 #include "DwarfException.h"
 #include "DwarfStackState.h"
 #include "DwarfUtil.h"
@@ -34,12 +35,13 @@
 #include <dwarf.h>
 
 DwarfDieStack::DwarfDieStack(SharedString imageFile, Dwarf_Debug dwarf,
-    const DwarfCompileUnit &cu)
+    const DwarfCompileUnit &cu, Dwarf_Die die)
   : imageFile(imageFile),
     dwarf(dwarf),
+    topDie(die),
     cu(cu)
 {
-	dieStack.emplace_back(dwarf, cu.GetDie(), cu);
+	dieStack.emplace_back(dwarf, die, cu);
 }
 
 SharedString
@@ -81,11 +83,9 @@ DwarfDieStack::GetCallLine(Dwarf_Die die)
 	return lineno;
 }
 
-bool
-DwarfDieStack::AdvanceToSubprogram(Callframe& frame)
+void
+DwarfDieStack::EnumerateSubprograms(DwarfDieLookup &map)
 {
-	TargetAddr offset = frame.getOffset();
-
 	while (1) {
 		while (!dieStack.empty() && !dieStack.back()) {
 			dieStack.pop_back();
@@ -95,22 +95,25 @@ DwarfDieStack::AdvanceToSubprogram(Callframe& frame)
 		}
 
 		if (dieStack.empty())
-			return false;
+			return;
 
 		DwarfStackState &state = dieStack.back();
-
-		if (state.HasRanges() && state.Succeeds(offset))
-			return false;
-
 		Dwarf_Die die = state.GetLeafDie();
 
 		Dwarf_Half tag = GetDieTag(die);
 		if (tag == DW_TAG_namespace) {
 			dieStack.emplace_back(dwarf, die, cu);
 			continue;
-		} else if (tag == DW_TAG_subprogram) {
-			if (state.Contains(offset))
-				return true;
+		} else if (tag == DW_TAG_subprogram && state.HasRanges()) {
+			SharedPtr<DwarfDie> diePtr =
+			    SharedPtr<DwarfDie>::make(state.TakeLeafDie());
+
+// 			LOG("Take %lx from state\n", GetDieOffset(**diePtr));
+			for (const auto & range : state.GetRanges()) {
+// 				LOG("Insert %lx at %lx-%lx\n",
+// 				    GetDieOffset(**diePtr), range.low, range.high);
+				map.insert(range.low, range.high, diePtr);
+			}
 		}
 
 		state.Skip();
@@ -118,15 +121,15 @@ DwarfDieStack::AdvanceToSubprogram(Callframe& frame)
 }
 
 void
-DwarfDieStack::AddSubprogramSymbol(DwarfLocationList &list)
+DwarfDieStack::AddSubprogramSymbol(DwarfLocationList &list, const DwarfDieRanges &ranges)
 {
-	Dwarf_Die die = dieStack.back().GetLeafDie();
+	Dwarf_Die die = topDie;
 
 	assert (GetDieTag(die) == DW_TAG_subprogram);
 
 	DwarfSubprogramInfo info(dwarf, die);
 
-	for (const auto & range : dieStack.back().GetRanges()) {
+	for (const auto & range : ranges) {
 //  		LOG("Add subprogram covering %lx-%lx\n", range.low, range.high);
 		list.insert(std::make_pair(range.low, SharedPtr<DwarfLocation>::make(
 		    range.low, range.high, info.GetFunc(), info.GetLine())));
@@ -147,24 +150,23 @@ DwarfDieStack::AddInlineSymbol(DwarfLocationList &list, Dwarf_Die die)
 }
 
 void
-DwarfDieStack::FillSubprogramSymbols(DwarfLocationList& list)
+DwarfDieStack::FillSubprogramSymbols(DwarfLocationList& list,
+    const DwarfDieRanges &ranges)
 {
-	AddSubprogramSymbol(list);
+	AddSubprogramSymbol(list, ranges);
 
 	size_t stackPos = dieStack.size();
-	Dwarf_Die subprogram = dieStack.back().GetLeafDie();
-	dieStack.emplace_back(dwarf, subprogram, cu);
 
 // 	LOG("*** Start scan for inlines in %lx\n", GetDieOffset(subprogram));
 	while (1) {
-		while (dieStack.size() > stackPos && !dieStack.back()) {
+		while (dieStack.size() >= stackPos && !dieStack.back()) {
 			dieStack.pop_back();
-			if (dieStack.size() == stackPos)
+			if (dieStack.size() < stackPos)
 				break;
 			dieStack.back().Skip();
 		}
 
-		if (dieStack.size() == stackPos)
+		if (dieStack.size() < stackPos)
 			break;
 
 		Dwarf_Die die = dieStack.back().GetLeafDie();
@@ -183,19 +185,5 @@ DwarfDieStack::FillSubprogramSymbols(DwarfLocationList& list)
 
 		dieStack.back().Skip();
 	}
-
-	assert(subprogram == dieStack.back().GetLeafDie());
 }
 
-bool
-DwarfDieStack::SubprogramContains(TargetAddr addr) const
-{
-	return dieStack.back().Contains(addr);
-}
-
-
-bool
-DwarfDieStack::SubprogramSucceeds(TargetAddr addr) const
-{
-	return dieStack.back().Succeeds(addr);
-}

@@ -68,7 +68,7 @@ DwarfDieRanges::Reinit(Dwarf_Die die)
 }
 
 int
-DwarfDieRanges::GetHighPc(Dwarf_Die die, TargetAddr low_pc, TargetAddr &high_pc)
+DwarfDieRanges::GetHighPc(Dwarf_Die die, Dwarf_Unsigned low_pc, Dwarf_Unsigned &high_pc)
 {
 	int error;
 	Dwarf_Attribute attr;

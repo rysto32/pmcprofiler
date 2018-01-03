@@ -24,6 +24,7 @@
 #include "DwarfCompileUnit.h"
 
 #include "DwarfException.h"
+#include "DwarfUtil.h"
 
 #include <dwarf.h>
 

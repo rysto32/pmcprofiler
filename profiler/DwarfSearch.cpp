@@ -25,8 +25,10 @@
 
 #include "Callframe.h"
 #include "DwarfCompileUnit.h"
+#include "DwarfDieStack.h"
 #include "DwarfLocation.h"
 #include "DwarfSrcLine.h"
+#include "DwarfSrcLinesList.h"
 #include "DwarfUtil.h"
 #include "Image.h"
 #include "MapUtil.h"
@@ -34,13 +36,14 @@
 DwarfSearch::DwarfSearch(Dwarf_Debug dwarf, const DwarfCompileUnit &cu,
     SharedString imageFile, const SymbolMap & symbols)
   : imageFile(imageFile),
-    stack(imageFile, dwarf, cu),
+    dwarf(dwarf),
     srcLines(dwarf, cu.GetDie()),
     srcIt(srcLines.begin()),
     cu(cu),
     symbols(symbols)
 {
-
+	DwarfDieStack stack(imageFile, dwarf, cu, cu.GetDie());
+	stack.EnumerateSubprograms(subprograms);
 }
 
 bool
@@ -77,24 +80,28 @@ DwarfSearch::AddLeafSymbol(DwarfLocationList &list, const DwarfSrcLine & src,
 	} else {
 		nextAddr = 0;
 	}
+
+	/* WTF LLVM? */
+	if (src.GetAddr() == nextAddr)
+		return;
 // 	LOG("Add leaf symbol covering %lx-%lx\n", src.GetAddr(), nextAddr);
 	AddDwarfSymbol(list, src.GetAddr(), nextAddr, src.GetFile(imageFile), src.GetLine(),
-	    imageFile, GetDieOffset(cu.GetDie()));
+	    "", GetDieOffset(cu.GetDie()));
 }
 
 void
-DwarfSearch::FillLeafSymbols(DwarfLocationList &list)
+DwarfSearch::FillLeafSymbols(const DwarfDieRanges & ranges, DwarfLocationList &list)
 {
 
 	LOG("*** Start scan of srclines\n");
 	while (srcIt != srcLines.end()) {
 		DwarfSrcLine src(*srcIt);
-		if (stack.SubprogramSucceeds(src.GetAddr())) {
+		if (ranges.Succeeds(src.GetAddr())) {
 			++srcIt;
 			continue;
 		}
 
-		if (!stack.SubprogramContains(src.GetAddr()))
+		if (!ranges.Contains(src.GetAddr()))
 			break;
 
 		auto nextIt = srcIt;
@@ -163,23 +170,27 @@ void
 DwarfSearch::AdvanceAndMap(FrameMap::const_iterator & fit,
     const FrameMap::const_iterator &fend)
 {
-	bool found = stack.AdvanceToSubprogram(*fit->second);
-	if (!found) {
+	auto it = subprograms.Lookup(fit->second->getOffset());
+	if (it == subprograms.end()) {
 		MapAssembly(*fit->second);
 		++fit;
 		return;
 	}
 
-	FrameMap::const_iterator last = fit;
+
+	Dwarf_Die subprogram = ***it;
+	FrameMap::const_iterator last(fit);
 	++last;
 
-	while (last != fend && stack.SubprogramContains(last->second->getOffset()))
+	DwarfDieRanges ranges(dwarf, subprogram, cu);
+	while (last != fend && ranges.Contains(last->second->getOffset()))
 		++last;
 
 	DwarfLocationList list;
 
-	stack.FillSubprogramSymbols(list);
-	FillLeafSymbols(list);
+	DwarfDieStack stack(imageFile, dwarf, cu, subprogram);
+	stack.FillSubprogramSymbols(list, ranges);
+	FillLeafSymbols(ranges, list);
 
 	while (fit != last) {
 		MapFrame(*fit->second, list);

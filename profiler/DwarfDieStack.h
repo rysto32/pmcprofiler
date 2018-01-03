@@ -34,35 +34,34 @@
 
 class Callframe;
 class DwarfCompileUnit;
+class DwarfDieLookup;
 
 class DwarfDieStack
 {
 private:
 	SharedString imageFile;
-	const Dwarf_Debug dwarf;
+	Dwarf_Debug dwarf;
+	Dwarf_Die topDie;
 	std::vector<DwarfStackState> dieStack;
 	const DwarfCompileUnit &cu;
 
 	SharedString GetCallFile(Dwarf_Die die);
 	int GetCallLine(Dwarf_Die die);
 
-	void AddSubprogramSymbol(DwarfLocationList &list);
+	void AddSubprogramSymbol(DwarfLocationList &list, const DwarfDieRanges &);
 	void AddInlineSymbol(DwarfLocationList &list, Dwarf_Die die);
 
 public:
 	DwarfDieStack(SharedString imageFile, Dwarf_Debug dwarf,
-	    const DwarfCompileUnit &cu);
+	    const DwarfCompileUnit &cu, Dwarf_Die die);
 
 	DwarfDieStack(const DwarfDieStack &) = delete;
 	DwarfDieStack(DwarfDieStack &&) = delete;
 	DwarfDieStack & operator=(const DwarfDieStack &) = delete;
 	DwarfDieStack & operator=(DwarfDieStack &&) = delete;
 
-	bool AdvanceToSubprogram(Callframe &frame);
-	void FillSubprogramSymbols(DwarfLocationList &list);
-
-	bool SubprogramContains(TargetAddr) const;
-	bool SubprogramSucceeds(TargetAddr) const;
+	void EnumerateSubprograms(DwarfDieLookup &);
+	void FillSubprogramSymbols(DwarfLocationList &, const DwarfDieRanges &);
 };
 
 #endif

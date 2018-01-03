@@ -67,7 +67,7 @@ private:
 	void InitFromRanges(Dwarf_Die, Dwarf_Unsigned);
 	void AddRange(TargetAddr low, TargetAddr high);
 
-	int GetHighPc(Dwarf_Die, TargetAddr lopc, TargetAddr &hipc);
+	int GetHighPc(Dwarf_Die, Dwarf_Unsigned lopc, Dwarf_Unsigned &hipc);
 
 public:
 	DwarfDieRanges(Dwarf_Debug dwarf, const DwarfCompileUnit &);

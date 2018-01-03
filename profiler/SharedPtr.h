@@ -42,6 +42,11 @@ private:
 		  : value(std::forward<Args>(args)...), count(1)
 		{
 		}
+
+		RefValue(T && t)
+		  : value(std::move(t)), count(1)
+		{
+		}
 	};
 
 	RefValue *value;
@@ -100,6 +105,11 @@ public:
 	static SharedPtr<T> make(Args &&... args)
 	{
 		return SharedPtr<T>(new RefValue(args...));
+	}
+
+	static SharedPtr<T> make(T && t)
+	{
+		return SharedPtr<T>(new RefValue(std::move(t)));
 	}
 
 	~SharedPtr()

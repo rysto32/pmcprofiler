@@ -192,20 +192,20 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 		const auto & frame = chain->getLeafFrame();
 
 		cumulative += chain->getSampleCount();
-		fprintf(m_outfile, "%6.2f%% %6.2f%% %s, %6u, %10s, %6zu, 0x%08lx, %s, %s, %s:%u %s\n",
+		fprintf(m_outfile, "%6.2f%% %6.2f%% %s, %6u, %10s, %6zu, 0x%08lx, %s, %s, %s:%u %s 0x%lx\n",
 			(chain->getSampleCount() * 100.0) / profiler.getSampleCount(),
 			(cumulative * 100.0) / profiler.getSampleCount(),
 			chain->isKernel() ? "kern" : "user",
 			agg.getPid(),
 			getBasename(*space.getExecutableName()).c_str(),
 			chain->getSampleCount(),
-			//chain->getAddress(),
-			frame.getOffset(),
+			chain->getAddress(),
 			chain->isMapped() ? "mapped  " : "unmapped",
 			space.getExecutableName()->c_str(),
 			frame.getFile()->c_str(),
 			frame.getCodeLine(),
-			frame.getDemangled()->c_str());
+			frame.getDemangled()->c_str(),
+			frame.getOffset());
 	}
 
 	for (auto agg : aggList) {

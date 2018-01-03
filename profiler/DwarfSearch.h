@@ -27,17 +27,21 @@
 #include <libdwarf.h>
 
 #include "DwarfSrcLinesList.h"
-#include "DwarfDieStack.h"
+#include "DwarfDieLookup.h"
+#include "DwarfLocation.h"
 #include "SharedString.h"
 
 class Callframe;
 class DwarfCompileUnit;
+class DwarfDieRanges;
+class DwarfSrcLine;
 
 class DwarfSearch
 {
 private:
 	SharedString imageFile;
-	DwarfDieStack stack;
+	Dwarf_Debug dwarf;
+	DwarfDieLookup subprograms;
 	DwarfSrcLinesList srcLines;
 	DwarfSrcLinesList::const_iterator srcIt;
 	const DwarfCompileUnit &cu;
@@ -47,10 +51,13 @@ private:
 
 	void AddLeafSymbol(DwarfLocationList &list, const DwarfSrcLine & src,
 	    const DwarfSrcLinesList::const_iterator &nextIt);
-	void FillLeafSymbols(DwarfLocationList &list);
+	void FillLeafSymbols(const DwarfDieRanges & ranges, DwarfLocationList &list);
 
 	void MapAssembly(Callframe &frame);
 	void MapFrame(Callframe & frame, const DwarfLocationList &list);
+
+	void MapSubprogram(DwarfDieLookup::const_iterator sub,
+	    FrameMap::const_iterator & fit, const FrameMap::const_iterator & end);
 
 public:
 	DwarfSearch(Dwarf_Debug, const DwarfCompileUnit &, SharedString,

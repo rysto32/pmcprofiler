@@ -56,6 +56,11 @@ public:
 		return *iterator;
 	}
 
+	DwarfDie TakeLeafDie()
+	{
+		return iterator.Take();
+	}
+
 	operator bool() const
 	{
 		return iterator != list.end();

@@ -18,12 +18,18 @@ SRCS=	\
 
 DWARFINSTALLDIR=/home/rstone/src/dwarf-20170709/libdwarf
 
-CXXFLAGS=-std=c++14 -DLOG_ENABLED
-#-I$(DWARFINSTALLDIR) -DGNU_LIBDWARF
-# -Wl,-L$(DWARFINSTALLDIR) -Wl,-rpath -Wl,$(DWARFINSTALLDIR)  $(DWARFINSTALLDIR)/libdwarf.so.1
-LDADD =  -ldwarf -lelf
+.if defined(GNU_LIBDWARF)
+LDADD=-Wl,-rpath -Wl,$(DWARFINSTALLDIR) /home/rstone/src/dwarf-20170709/libdwarf/libdwarf.so
+CXXFLAGS=-I$(DWARFINSTALLDIR) -DGNU_LIBDWARF
+.else
+LDADD=-ldwarf
+.endif
+
+CXXFLAGS+=-std=c++14 -DLOG_ENABLED
+LDADD+=-lelf
 DEBUG_FLAGS=-g -O0
 WARNS=3
+CWARNFLAGS.clang += -Wno-user-defined-literals
 
 .include <bsd.prog.mk>
 

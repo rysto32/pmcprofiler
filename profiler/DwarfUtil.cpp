@@ -25,6 +25,8 @@
 
 #include "DwarfException.h"
 
+#include <dwarf.h>
+
 DwarfDieOffset GetDieOffset(Dwarf_Die die)
 {
 	Dwarf_Error derr;
@@ -66,10 +68,49 @@ int
 dwarf_attrval_unsigned(Dwarf_Die die, Dwarf_Half tag, Dwarf_Unsigned *val, Dwarf_Error *derr)
 {
 	Dwarf_Attribute attr;
-	int error = dwarf_attr(die, tag, &attr, derr);
+	Dwarf_Half form;
+	Dwarf_Addr addr;
+	Dwarf_Off off;
+	int error;
+
+	error = dwarf_attr(die, tag, &attr, derr);
 	if (error != 0)
 		return (error);
 
-	return dwarf_formudata(attr, val, derr);
+	error = dwarf_whatform(attr, &form, derr);
+	if (error != 0)
+		return error;
+
+	switch (form) {
+	case DW_FORM_ref_addr:
+	case DW_FORM_ref_udata:
+	case DW_FORM_ref1:
+	case DW_FORM_ref2:
+	case DW_FORM_ref4:
+	case DW_FORM_ref8:
+	case DW_FORM_sec_offset:
+		error = dwarf_global_formref(attr, &off, derr);
+		if (error != 0)
+			return error;
+		*val = off;
+		return error;
+
+	case DW_FORM_udata:
+	case DW_FORM_data1:
+	case DW_FORM_data2:
+	case DW_FORM_data4:
+	case DW_FORM_data8:
+		return dwarf_formudata(attr, val, derr);
+
+	case DW_FORM_addr:
+		error = dwarf_formaddr(attr, &addr, derr);
+		if (error != 0)
+			return error;
+		*val = addr;
+		return error;
+
+	default:
+		return DW_DLV_ERROR;
+	}
 }
 #endif

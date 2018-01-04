@@ -325,6 +325,8 @@ DwarfResolver::SearchCompileUnitRanges(const DwarfCompileUnit &cu,
 			low_pc = base_addr + range.dwr_addr1;
 			high_pc = base_addr + range.dwr_addr2;
 			TryCompileUnitRange(cu, low_pc, high_pc, fit, fend);
+			if (fit == fend)
+				goto break_loop;
 			break;
 		case DW_RANGES_ADDRESS_SELECTION:
 			base_addr = range.dwr_addr2;

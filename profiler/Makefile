@@ -41,7 +41,7 @@ LDADD+=-lpmc -lelf
 CFLAGS += -I/usr/local/include
 # -I$(DWARFINSTALLDIR) -DGNU_LIBDWARF
 # -DLOG_ENABLED
-CXXFLAGS += -std=c++17
+CXXFLAGS += -std=c++17 -fno-omit-frame-pointer
 
 .include <bsd.prog.mk>
 

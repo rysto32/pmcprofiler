@@ -247,7 +247,7 @@ DwarfResolver::ProcessCompileUnit(DwarfCompileUnit &cu,
 	Dwarf_Half tag;
 
 // 	LOG("%s: process %lx\n", imageFile->c_str(),
-// 	    GetDieOffset(die));
+// 	    GetDieOffset(cu.GetDie()));
 
 	do {
 		tag = GetDieTag(cu.GetDie());
@@ -281,7 +281,7 @@ DwarfResolver::SearchCompileUnit(const DwarfCompileUnit &cu,
 	err_lo = dwarf_attrval_unsigned(cu.GetDie(), DW_AT_low_pc, &low_pc, &derr);
 	err_hi = dwarf_attrval_unsigned(cu.GetDie(), DW_AT_high_pc, &high_pc, &derr);
 	if (err_lo == DW_DLV_OK && err_hi == DW_DLV_OK) {
-// 		LOG("%lx: low/high pc = %lx/%lx\n", GetDieOffset(cu), low_pc, high_pc);
+// 		LOG("%lx: low/high pc = %lx/%lx\n", GetDieOffset(cu.GetDie()), low_pc, high_pc);
 		TryCompileUnitRange(cu, low_pc, high_pc, fit, end);
 		return;
 	}
@@ -296,8 +296,9 @@ DwarfResolver::TryCompileUnitRange(const DwarfCompileUnit &cu,
 {
 	do {
 		TargetAddr offset = fit->second->getOffset();
-// 		LOG("0x%lx: Try cu %lx [0x%lx, 0x%lx)\n",
-// 		    offset, GetDieOffset(cu), low_pc, high_pc);
+//  		LOG("0x%lx: Try cu %lx [0x%lx, 0x%lx) in %s\n",
+//  		    offset, GetDieOffset(cu.GetDie()), low_pc, high_pc,
+// 		    imageFile->c_str());
 		if (offset < low_pc){
 			fit->second->setUnmapped(imageFile);
 			++fit;

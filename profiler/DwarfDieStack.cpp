@@ -157,7 +157,7 @@ DwarfDieStack::FillSubprogramSymbols(DwarfLocationList& list,
 
 	size_t stackPos = dieStack.size();
 
-// 	LOG("*** Start scan for inlines in %lx\n", GetDieOffset(subprogram));
+// 	LOG("*** Start scan for inlines in %lx\n", GetDieOffset(topDie));
 	while (1) {
 		while (dieStack.size() >= stackPos && !dieStack.back()) {
 			dieStack.pop_back();

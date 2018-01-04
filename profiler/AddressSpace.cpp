@@ -73,7 +73,7 @@ AddressSpace::clearAddressSpaces()
 }
 
 AddressSpace::AddressSpace(pid_t pid)
-  : pid(pid)
+  : executable(NULL), pid(pid)
 {
 }
 

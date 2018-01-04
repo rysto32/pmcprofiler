@@ -127,7 +127,7 @@ DwarfSearch::MapAssembly(Callframe &frame)
 	if (it != symbols.end())
 		func = it->second;
 
-	frame.addFrame(file, func, func, line, -1, GetDieOffset(cu.GetDie()));
+	frame.addFrame(file, func, func, line, line, GetDieOffset(cu.GetDie()));
 }
 
 void

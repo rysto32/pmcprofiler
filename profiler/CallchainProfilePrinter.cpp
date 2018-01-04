@@ -142,8 +142,10 @@ PrintCallchainStrategy::printFrame(FILE *outfile, uint32_t depth, double process
 	for (uint32_t i = 0; i < depth; i++)
 		fprintf(outfile, "  ");
 
-	fprintf(outfile, "[%d] %.2f%% %.2f%%(%zd/%zd) %s", depth, parentPercent, processPercent,
-		functionLocation.getCount(), agg.getSampleCount(), functionName);
+	fprintf(outfile, "[%d] %.2f%% %.2f%%(%zd/%zd) %s %s %lx", depth, parentPercent, processPercent,
+		functionLocation.getCount(), agg.getSampleCount(), functionName,
+		functionLocation.getFrame().getImageName()->c_str(),
+		functionLocation.getFrame().getOffset());
 	printer.printLineNumbers(profiler, functionLocation.getLineLocationList());
 	fprintf(outfile, "\n");
 }

@@ -36,14 +36,16 @@ class InlineFrame
 	int codeLine;
 	int funcLine;
 	uint64_t dwarfDieOffset;
+	SharedString imageName;
 
 public:
 	InlineFrame(SharedString file, SharedString func,
 	    SharedString demangled, TargetAddr off,
-	    int codeLine, int funcLine, uint64_t dwarfDieOffset)
+	    int codeLine, int funcLine, uint64_t dwarfDieOffset,
+	    SharedString imageName)
 	  : file(file), func(func), demangledFunc(demangled),
 	    offset(off), codeLine(codeLine), funcLine(funcLine),
-	    dwarfDieOffset(dwarfDieOffset)
+	    dwarfDieOffset(dwarfDieOffset), imageName(imageName)
 	{
 	}
 
@@ -63,6 +65,11 @@ public:
 	SharedString getDemangled() const
 	{
 		return (demangledFunc);
+	}
+
+	SharedString getImageName() const
+	{
+		return imageName;
 	}
 
 	TargetAddr getOffset() const

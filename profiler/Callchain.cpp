@@ -82,7 +82,7 @@ Callchain::getSelfFrame(const InlineFrame & prototype)
 	SharedString self("[self]");
 	selfFrame = std::make_unique<InlineFrame>(prototype.getFile(),
 	    self, self, prototype.getOffset(), prototype.getCodeLine(),
-	    prototype.getFuncLine(), 0);
+	    prototype.getFuncLine(), 0, getLeafFrame().getImageName());
 
 	return selfFrame.get();
 }

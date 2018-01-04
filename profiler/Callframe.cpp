@@ -26,8 +26,8 @@
 #include "InlineFrame.h"
 #include "SharedString.h"
 
-Callframe::Callframe(TargetAddr off)
-  : offset(off), unmapped(false)
+Callframe::Callframe(TargetAddr off, SharedString imageName)
+  : offset(off), imageName(imageName), unmapped(false)
 {
 }
 
@@ -36,7 +36,7 @@ Callframe::addFrame(SharedString file, SharedString func,
      SharedString demangled, int codeLine, int funcLine, uint64_t dwarfDieOffset)
 {
 	inlineFrames.emplace_back(file, func, demangled, offset, codeLine,
-	    funcLine, dwarfDieOffset);
+	    funcLine, dwarfDieOffset, imageName);
 }
 
 
@@ -46,7 +46,7 @@ Callframe::setUnmapped(SharedString image)
 	SharedString unmapped_function("[unmapped_function]");
 	inlineFrames.clear();
 	inlineFrames.emplace_back(image, unmapped_function,
-	    unmapped_function, offset, -1, -1, 0);
+	    unmapped_function, offset, -1, -1, 0, imageName);
 
 	unmapped = true;
 }

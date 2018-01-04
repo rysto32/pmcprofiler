@@ -34,11 +34,12 @@ class SharedString;
 class Callframe
 {
 	TargetAddr offset;
+	SharedString imageName;
 	std::vector<InlineFrame> inlineFrames;
 	bool unmapped;
 
 public:
-	Callframe(TargetAddr off);
+	Callframe(TargetAddr off, SharedString imageName);
 
 	Callframe(const Callframe&) = delete;
 	Callframe& operator=(const Callframe &) = delete;

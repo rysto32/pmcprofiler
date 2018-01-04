@@ -113,7 +113,7 @@ Image::getFrame(TargetAddr offset)
 	if (it != frameMap.end())
 		return *it->second;
 
-	auto ptr = std::make_unique<Callframe>(offset);
+	auto ptr = std::make_unique<Callframe>(offset, imageFile);
 	Callframe & frame = *ptr;
 	frameMap.insert(std::make_pair(offset, std::move(ptr)));
 	if (!mapped)

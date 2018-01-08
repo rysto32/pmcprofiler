@@ -21,92 +21,48 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef DWARFDIE_H
-#define DWARFDIE_H
+#ifndef DWARFCOMPILEUNITDIE_H
+#define DWARFCOMPILEUNITDIE_H
 
-#include <libdwarf.h>
+#include "DwarfCompileUnitParams.h"
+#include "DwarfDie.h"
+#include "ProfilerTypes.h"
+#include "SharedPtr.h"
 
-class DwarfDieList;
+class Callframe;
 
-class DwarfDie
+class DwarfCompileUnitDie
 {
-	Dwarf_Debug dwarf;
-	Dwarf_Die die;
-	bool ownDie;
-
-
-	DwarfDie(Dwarf_Debug dwarf, Dwarf_Die die) noexcept
-	  : dwarf(dwarf), die(die), ownDie(die != nullptr)
-	{
-	}
-
-	void Release()
-	{
-		if (ownDie)
-			dwarf_dealloc(dwarf, die, DW_DLA_DIE);
-	}
-
-	friend class DwarfDieList;
+private:
+	DwarfDie die;
+	SharedPtr<DwarfCompileUnitParams> params;
+	TargetAddr baseAddr;
 
 public:
-	DwarfDie()
-	  : die(nullptr), ownDie(false)
+	DwarfCompileUnitDie(DwarfDie &&die, SharedPtr<DwarfCompileUnitParams> params);
+
+	DwarfCompileUnitDie(DwarfCompileUnitDie &&) = default;
+	DwarfCompileUnitDie(const DwarfCompileUnitDie &) = delete;
+
+	DwarfCompileUnitDie & operator=(DwarfCompileUnitDie &&) = default;
+	DwarfCompileUnitDie & operator=(const DwarfCompileUnitDie &) = delete;
+
+	Dwarf_Die GetDie() const
 	{
+		return *die;
 	}
 
-	~DwarfDie()
+	TargetAddr GetBaseAddr() const
 	{
-		Release();
+		return baseAddr;
 	}
 
-	DwarfDie(const DwarfDie &) = delete;
-
-	DwarfDie(DwarfDie && other) noexcept
-	  : dwarf(other.dwarf), die(other.die), ownDie(other.ownDie)
+	const DwarfCompileUnitParams & GetParams() const
 	{
-		other.ownDie = false;
+		return *params;
 	}
 
-	DwarfDie & operator=(const DwarfDie&) = delete;
-
-	DwarfDie & operator=(DwarfDie && other) noexcept
-	{
-		Release();
-
-		dwarf = other.dwarf;
-		die = other.die;
-		ownDie = other.ownDie;
-
-		other.ownDie = false;
-
-		return *this;
-	}
-
-	bool operator==(const DwarfDie & other) const
-	{
-		return dwarf == other.dwarf && die == other.die;
-	}
-
-	operator bool() const
-	{
-		return die != nullptr;
-	}
-
-	bool operator!() const
-	{
-		return !this->operator bool();
-	}
-
-	const Dwarf_Die &operator*() const
-	{
-		return die;
-	}
-
-	void AdvanceToSibling();
-	DwarfDie GetSibling() const;
-
-	static DwarfDie OffDie(Dwarf_Debug dwarf, Dwarf_Off ref);
-	static DwarfDie GetCuDie(Dwarf_Debug dwarf);
+	SharedPtr<DwarfCompileUnitDie> GetSibling() const;
 };
 
 #endif

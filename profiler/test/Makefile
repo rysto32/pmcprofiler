@@ -5,6 +5,7 @@ NO_MAN=
 SRCS=	\
 	Callframe.cpp \
 	DwarfCompileUnit.cpp \
+	DwarfCompileUnitDie.cpp \
 	DwarfDie.cpp \
 	DwarfDieRanges.cpp \
 	DwarfDieStack.cpp \
@@ -25,7 +26,7 @@ CXXFLAGS=-I$(DWARFINSTALLDIR) -DGNU_LIBDWARF
 LDADD=-ldwarf
 .endif
 
-CXXFLAGS+=-std=c++14 -DLOG_ENABLED
+CXXFLAGS+=-std=c++17 -DLOG_ENABLED
 LDADD+=-lelf
 DEBUG_FLAGS=-g -O0
 WARNS=3

@@ -24,8 +24,10 @@
 #ifndef DWARFRESOLVER_H
 #define DWARFRESOLVER_H
 
+#include "DwarfRangeLookup.h"
 #include "ProfilerTypes.h"
 #include "SharedString.h"
+#include "SharedPtr.h"
 
 #include <map>
 #include <memory>
@@ -35,6 +37,7 @@
 #include <libelf.h>
 
 class DwarfCompileUnit;
+class DwarfCompileUnitDie;
 
 class DwarfResolver
 {
@@ -47,6 +50,7 @@ private:
 	Dwarf_Debug dwarf;
 
 	SymbolMap elfSymbols;
+	DwarfRangeLookup<DwarfCompileUnitDie> cuLookup;
 
 	Elf * GetSymbolFile();
 	bool HaveSymbolFile(Elf *origElf);
@@ -57,23 +61,22 @@ private:
 	bool DwarfValid() const;
 	bool ElfValid() const;
 
-	void ResolveDwarf(const FrameMap &frames) const;
+	void ResolveDwarf(const FrameMap &frames);
 	void ResolveElf(const FrameMap &frames) const;
 	void ResolveUnmapped(const FrameMap &frames) const;
 
 	void FillElfSymbolMap(Elf *imageElf, Elf_Scn *section);
 
-	void ProcessCompileUnit(DwarfCompileUnit &cu, FrameMap::const_iterator &fit,
-	    const FrameMap::const_iterator &end) const;
-	void SearchCompileUnit(const DwarfCompileUnit &cu, FrameMap::const_iterator &fit,
-	    const FrameMap::const_iterator &end) const;
-	void TryCompileUnitRange(const DwarfCompileUnit &cu, Dwarf_Unsigned low_pc,
-	    Dwarf_Unsigned high_pc, FrameMap::const_iterator &fit,
-	    const FrameMap::const_iterator &end) const;
-	void SearchCompileUnitRanges(const DwarfCompileUnit &cu, Dwarf_Unsigned range_off,
-	    FrameMap::const_iterator &fit, const FrameMap::const_iterator &end) const;
-	void SearchCompileUnitFuncs(const DwarfCompileUnit &cu, FrameMap::const_iterator &fit,
-	    const FrameMap::const_iterator &end) const;
+	void EnumerateCompileUnits();
+	void ProcessCompileUnit(const DwarfCompileUnit & cu);
+	void SearchCompileUnit(SharedPtr<DwarfCompileUnitDie> cu);
+	void AddCompileUnitRange(SharedPtr<DwarfCompileUnitDie> cu, Dwarf_Unsigned low_pc,
+	    Dwarf_Unsigned high_pc);
+	void SearchCompileUnitRanges(SharedPtr<DwarfCompileUnitDie> cu,
+	    Dwarf_Unsigned range_off);
+
+	void MapFramesToCompileUnits(const FrameMap &frames);
+	void MapFrames();
 
 public:
 	explicit DwarfResolver(SharedString image);
@@ -84,7 +87,7 @@ public:
 	DwarfResolver & operator=(const DwarfResolver &) = delete;
 	DwarfResolver & operator=(DwarfResolver &&) = delete;
 
-	void Resolve(const FrameMap &frames) const;
+	void Resolve(const FrameMap &frames);
 };
 
 #endif

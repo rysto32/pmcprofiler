@@ -21,92 +21,32 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef DWARFDIE_H
-#define DWARFDIE_H
+#include "DwarfCompileUnitDie.h"
 
-#include <libdwarf.h>
+#include <dwarf.h>
 
-class DwarfDieList;
+#include "DwarfUtil.h"
 
-class DwarfDie
+DwarfCompileUnitDie::DwarfCompileUnitDie(DwarfDie &&die, SharedPtr<DwarfCompileUnitParams> params)
+  : die(std::move(die)), params(params)
 {
-	Dwarf_Debug dwarf;
-	Dwarf_Die die;
-	bool ownDie;
+	Dwarf_Unsigned addr;
+	Dwarf_Error derr;
+	int error;
 
+	error = dwarf_attrval_unsigned(*die, DW_AT_low_pc, &addr, &derr);
+	if (error != DW_DLV_OK)
+		baseAddr = 0;
+	else
+		baseAddr = addr;
+}
 
-	DwarfDie(Dwarf_Debug dwarf, Dwarf_Die die) noexcept
-	  : dwarf(dwarf), die(die), ownDie(die != nullptr)
-	{
-	}
+SharedPtr<DwarfCompileUnitDie>
+DwarfCompileUnitDie::GetSibling() const
+{
+	DwarfDie sibDie(die.GetSibling());
+	if (!sibDie)
+		return SharedPtr<DwarfCompileUnitDie>();
 
-	void Release()
-	{
-		if (ownDie)
-			dwarf_dealloc(dwarf, die, DW_DLA_DIE);
-	}
-
-	friend class DwarfDieList;
-
-public:
-	DwarfDie()
-	  : die(nullptr), ownDie(false)
-	{
-	}
-
-	~DwarfDie()
-	{
-		Release();
-	}
-
-	DwarfDie(const DwarfDie &) = delete;
-
-	DwarfDie(DwarfDie && other) noexcept
-	  : dwarf(other.dwarf), die(other.die), ownDie(other.ownDie)
-	{
-		other.ownDie = false;
-	}
-
-	DwarfDie & operator=(const DwarfDie&) = delete;
-
-	DwarfDie & operator=(DwarfDie && other) noexcept
-	{
-		Release();
-
-		dwarf = other.dwarf;
-		die = other.die;
-		ownDie = other.ownDie;
-
-		other.ownDie = false;
-
-		return *this;
-	}
-
-	bool operator==(const DwarfDie & other) const
-	{
-		return dwarf == other.dwarf && die == other.die;
-	}
-
-	operator bool() const
-	{
-		return die != nullptr;
-	}
-
-	bool operator!() const
-	{
-		return !this->operator bool();
-	}
-
-	const Dwarf_Die &operator*() const
-	{
-		return die;
-	}
-
-	void AdvanceToSibling();
-	DwarfDie GetSibling() const;
-
-	static DwarfDie OffDie(Dwarf_Debug dwarf, Dwarf_Off ref);
-	static DwarfDie GetCuDie(Dwarf_Debug dwarf);
-};
-
-#endif
+	return SharedPtr<DwarfCompileUnitDie>::make({std::move(sibDie), params});
+}

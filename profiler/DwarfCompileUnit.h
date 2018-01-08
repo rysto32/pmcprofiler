@@ -26,37 +26,28 @@
 
 #include <libdwarf.h>
 
+#include <memory>
+
+#include "DwarfCompileUnitParams.h"
 #include "DwarfDie.h"
 #include "ProfilerTypes.h"
+#include "SharedPtr.h"
+#include "SharedString.h"
+
+class DwarfCompileUnitDie;
 
 class DwarfCompileUnit
 {
 private:
 	Dwarf_Debug dwarf;
-	DwarfDie die;
-	TargetAddr baseAddr;
-
-	Dwarf_Unsigned cu_length;
-	Dwarf_Half cu_version;
-	Dwarf_Off cu_abbrev_offset;
-	Dwarf_Half cu_pointer_size;
-	Dwarf_Half cu_offset_size;
-	Dwarf_Half cu_extension_size;
-	Dwarf_Sig8 type_signature;
-	Dwarf_Unsigned type_offset;
-	Dwarf_Unsigned cu_next_offset;
+	SharedPtr<DwarfCompileUnitParams> params;
 	Dwarf_Bool is_info;
+	bool complete;
 
 	DwarfCompileUnit(Dwarf_Debug dwarf, Dwarf_Bool is_info);
 
-	void InitBaseAddr();
-
 public:
-	DwarfCompileUnit()
-	  : dwarf(nullptr)
-	{
-	}
-
+	DwarfCompileUnit() = delete;
 	DwarfCompileUnit(const DwarfCompileUnit &) = delete;
 	DwarfCompileUnit(DwarfCompileUnit &&) = default;
 
@@ -65,17 +56,11 @@ public:
 
 	static DwarfCompileUnit GetFirstCU(Dwarf_Debug, Dwarf_Bool is_info = 1);
 
-	void AdvanceDie();
 	void AdvanceToSibling();
-
-	bool DieValid() const
-	{
-		return die;
-	}
 
 	operator bool() const
 	{
-		return dwarf != nullptr;
+		return !complete;
 	}
 
 	bool operator!() const
@@ -83,25 +68,7 @@ public:
 		return !this->operator bool();
 	}
 
-	TargetAddr GetBaseAddr() const
-	{
-		return baseAddr;
-	}
-
-	Dwarf_Die GetDie() const
-	{
-		return *die;
-	}
-
-	Dwarf_Half GetDwarfVersion() const
-	{
-		return cu_version;
-	}
-
-	Dwarf_Half GetOffsetSize() const
-	{
-		return cu_offset_size;
-	}
+	SharedPtr<DwarfCompileUnitDie> GetDie() const;
 };
 
 #endif

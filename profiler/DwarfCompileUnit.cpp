@@ -23,13 +23,18 @@
 
 #include "DwarfCompileUnit.h"
 
+#include "DwarfCompileUnitDie.h"
+#include "DwarfDie.h"
 #include "DwarfException.h"
+#include "DwarfSearch.h"
 #include "DwarfUtil.h"
 
 #include <dwarf.h>
 
 DwarfCompileUnit::DwarfCompileUnit(Dwarf_Debug dwarf, Dwarf_Bool is_info)
-  : dwarf(dwarf), is_info(is_info)
+  : dwarf(dwarf),
+    is_info(is_info),
+    complete(false)
 {
 	AdvanceToSibling();
 }
@@ -40,42 +45,24 @@ DwarfCompileUnit::GetFirstCU(Dwarf_Debug dwarf, Dwarf_Bool is_info)
 	return DwarfCompileUnit(dwarf, is_info);
 }
 
+SharedPtr<DwarfCompileUnitDie>
+DwarfCompileUnit::GetDie() const
+{
+	return SharedPtr<DwarfCompileUnitDie>::make({DwarfDie::GetCuDie(dwarf), params});
+}
+
 void
 DwarfCompileUnit::AdvanceToSibling()
 {
-	int error = dwarf_next_cu_header_c(dwarf, is_info, &cu_length,
-	    &cu_version, &cu_abbrev_offset, &cu_pointer_size, &cu_offset_size,
-	    &cu_extension_size, &type_signature, &type_offset, &cu_next_offset,
+	params = SharedPtr<DwarfCompileUnitParams>::make();
+	int error = dwarf_next_cu_header_c(dwarf, is_info, &params->cu_length,
+	    &params->cu_version, &params->cu_abbrev_offset, &params->cu_pointer_size,
+	    &params->cu_offset_size, &params->cu_extension_size,
+	    &params->type_signature, &params->type_offset, &params->cu_next_offset,
 	    NULL);
 
-	if (error == DW_DLV_ERROR) {
+	if (error == DW_DLV_ERROR)
 		throw DwarfException("dwarf_next_cu_header_c failed");
-	} else if (error == DW_DLV_NO_ENTRY) {
-		dwarf = nullptr;
-		baseAddr = 0;
-	} else {
-		die = DwarfDie::GetCuDie(dwarf);
-		InitBaseAddr();
-	}
+	else if (error == DW_DLV_NO_ENTRY)
+		complete = true;
 }
-
-void
-DwarfCompileUnit::AdvanceDie()
-{
-	die.AdvanceToSibling();
-}
-
-void
-DwarfCompileUnit::InitBaseAddr()
-{
-	Dwarf_Unsigned addr;
-	Dwarf_Error derr;
-	int error;
-
-	error = dwarf_attrval_unsigned(*die, DW_AT_low_pc, &addr, &derr);
-	if (error != DW_DLV_OK)
-		baseAddr = 0;
-	else
-		baseAddr = addr;
-}
-

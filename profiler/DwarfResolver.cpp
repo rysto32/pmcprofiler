@@ -26,7 +26,9 @@
 
 #include "Callframe.h"
 #include "DwarfCompileUnit.h"
+#include "DwarfCompileUnitDie.h"
 #include "DwarfDieList.h"
+#include "DwarfRangeLookup.h"
 #include "DwarfException.h"
 #include "DwarfRangeList.h"
 #include "DwarfSearch.h"
@@ -72,6 +74,11 @@ DwarfResolver::DwarfResolver(SharedString image)
 DwarfResolver::~DwarfResolver()
 {
 	Dwarf_Error derr;
+
+	// Clear this manually so that we free up libdwarf memory.  Otherwise
+	// dwarf_finish() will free it and then cuLookup will be destructed,
+	// causing a double free of the libdwarf memory
+	cuLookup.clear();
 
 	if (DwarfValid())
 		dwarf_finish(dwarf, &derr);
@@ -206,7 +213,7 @@ DwarfResolver::ElfValid() const
 }
 
 void
-DwarfResolver::Resolve(const FrameMap &frameMap) const
+DwarfResolver::Resolve(const FrameMap &frameMap)
 {
 	if (DwarfValid())
 		ResolveDwarf(frameMap);
@@ -217,43 +224,89 @@ DwarfResolver::Resolve(const FrameMap &frameMap) const
 }
 
 void
-DwarfResolver::ResolveDwarf(const FrameMap &frameMap) const
+DwarfResolver::ResolveDwarf(const FrameMap &frameMap)
 {
-	auto fit = frameMap.begin();
 
 	LOG("DwarfResolve %s\n", imageFile->c_str());
 
+	EnumerateCompileUnits();
+	MapFramesToCompileUnits(frameMap);
+	MapFrames();
+}
+
+void
+DwarfResolver::EnumerateCompileUnits()
+{
+
 	try {
-		DwarfCompileUnit cu(DwarfCompileUnit::GetFirstCU(dwarf));
-		while (fit != frameMap.end() && cu) {
-			ProcessCompileUnit(cu, fit, frameMap.end());
+		auto cu(DwarfCompileUnit::GetFirstCU(dwarf));
+		while (cu) {
+			ProcessCompileUnit(cu);
 			cu.AdvanceToSibling();
 		}
 	} catch (DwarfException &)
 	{
 		// swallow non-fatal dwarf exception
 	}
+}
+
+void
+DwarfResolver::MapFramesToCompileUnits(const FrameMap &frameMap)
+{
+	auto fit = frameMap.begin();
 
 	while (fit != frameMap.end()) {
-		fit->second->setUnmapped(imageFile);
-		++fit;
+		try {
+			TargetAddr offset = fit->second->getOffset();
+			auto cit = cuLookup.Lookup(offset);
+			if (cit == cuLookup.end() || !cit->second.Contains(offset)) {
+				fit->second->setUnmapped(imageFile);
+				++fit;
+				continue;
+			}
+
+			auto & lookupVal = cit->second;
+			do {
+				lookupVal.AddFrame(fit->second.get());
+				++fit;
+			} while (fit != frameMap.end() &&
+			    lookupVal.Contains(fit->second->getOffset()));
+		} catch (DwarfException &) {
+			fit->second->setUnmapped(imageFile);
+			++fit;
+		}
 	}
 }
 
 void
-DwarfResolver::ProcessCompileUnit(DwarfCompileUnit &cu,
-    FrameMap::const_iterator &fit, const FrameMap::const_iterator &end) const
+DwarfResolver::MapFrames()
+{
+	for (auto & [addr, value] : cuLookup) {
+		if (value.GetFrames().empty())
+			continue;
+
+		try {
+			DwarfSearch search(dwarf, value.GetValue(), imageFile, elfSymbols);
+			search.MapFrames(value.GetFrames());
+		} catch (DwarfException &) {
+			for (auto frame : value.GetFrames()) {
+				frame->setUnmapped(imageFile);
+			}
+		}
+	}
+}
+
+void
+DwarfResolver::ProcessCompileUnit(const DwarfCompileUnit & cu)
 {
 	Dwarf_Half tag;
-
-// 	LOG("%s: process %lx\n", imageFile->c_str(),
-// 	    GetDieOffset(cu.GetDie()));
+	auto die = cu.GetDie();
 
 	do {
-		tag = GetDieTag(cu.GetDie());
+		tag = GetDieTag(die->GetDie());
 		if (tag == DW_TAG_compile_unit) {
 			try {
-				SearchCompileUnit(cu, fit, end);
+				SearchCompileUnit(die);
 			} catch (const DwarfException &)
 			{
 				// swallow it and continue.  libdwarf
@@ -261,28 +314,27 @@ DwarfResolver::ProcessCompileUnit(DwarfCompileUnit &cu,
 			}
 		}
 
-		cu.AdvanceDie();
-	} while (cu.DieValid() && fit != end);
+		die = die->GetSibling();
+	} while (die);
 }
 
 void
-DwarfResolver::SearchCompileUnit(const DwarfCompileUnit &cu,
-    FrameMap::const_iterator &fit, const FrameMap::const_iterator &end) const
+DwarfResolver::SearchCompileUnit(SharedPtr<DwarfCompileUnitDie> cu)
 {
 	Dwarf_Error derr;
 	Dwarf_Unsigned range_off, low_pc, high_pc;
 	int error, err_lo, err_hi;
 
-	error = dwarf_attrval_unsigned(cu.GetDie(), DW_AT_ranges, &range_off, &derr);
+	error = dwarf_attrval_unsigned(cu->GetDie(), DW_AT_ranges, &range_off, &derr);
 	if (error == DW_DLV_OK) {
-		return (SearchCompileUnitRanges(cu, range_off, fit, end));
+		return (SearchCompileUnitRanges(cu, range_off));
 	}
 
-	err_lo = dwarf_attrval_unsigned(cu.GetDie(), DW_AT_low_pc, &low_pc, &derr);
-	err_hi = dwarf_attrval_unsigned(cu.GetDie(), DW_AT_high_pc, &high_pc, &derr);
+	err_lo = dwarf_attrval_unsigned(cu->GetDie(), DW_AT_low_pc, &low_pc, &derr);
+	err_hi = dwarf_attrval_unsigned(cu->GetDie(), DW_AT_high_pc, &high_pc, &derr);
 	if (err_lo == DW_DLV_OK && err_hi == DW_DLV_OK) {
 // 		LOG("%lx: low/high pc = %lx/%lx\n", GetDieOffset(cu.GetDie()), low_pc, high_pc);
-		TryCompileUnitRange(cu, low_pc, high_pc, fit, end);
+		AddCompileUnitRange(cu, low_pc, high_pc);
 		return;
 	}
 
@@ -290,44 +342,27 @@ DwarfResolver::SearchCompileUnit(const DwarfCompileUnit &cu,
 }
 
 void
-DwarfResolver::TryCompileUnitRange(const DwarfCompileUnit &cu,
-    Dwarf_Unsigned low_pc, Dwarf_Unsigned high_pc,
-    FrameMap::const_iterator &fit, const FrameMap::const_iterator &end) const
+DwarfResolver::AddCompileUnitRange(SharedPtr<DwarfCompileUnitDie> cu,
+    Dwarf_Unsigned low_pc, Dwarf_Unsigned high_pc)
 {
-	do {
-		TargetAddr offset = fit->second->getOffset();
-//  		LOG("0x%lx: Try cu %lx [0x%lx, 0x%lx) in %s\n",
-//  		    offset, GetDieOffset(cu.GetDie()), low_pc, high_pc,
-// 		    imageFile->c_str());
-		if (offset < low_pc){
-			fit->second->setUnmapped(imageFile);
-			++fit;
-		} else if (offset < high_pc) {
-			SearchCompileUnitFuncs(cu, fit, end);
-		} else {
-			break;
-		}
-	} while (fit != end);
+	cuLookup.insert(low_pc, high_pc, cu);
 }
 
 void
-DwarfResolver::SearchCompileUnitRanges(const DwarfCompileUnit &cu,
-    Dwarf_Unsigned range_off, FrameMap::const_iterator &fit,
-    const FrameMap::const_iterator &fend) const
+DwarfResolver::SearchCompileUnitRanges(SharedPtr<DwarfCompileUnitDie> cu,
+    Dwarf_Unsigned range_off)
 {
 	Dwarf_Unsigned base_addr, low_pc, high_pc;
 
 	DwarfRangeList rangeList(dwarf, range_off);
 
-	base_addr = cu.GetBaseAddr();
+	base_addr = cu->GetBaseAddr();
 	for (auto & range : rangeList) {
 		switch (range.dwr_type) {
 		case DW_RANGES_ENTRY:
 			low_pc = base_addr + range.dwr_addr1;
 			high_pc = base_addr + range.dwr_addr2;
-			TryCompileUnitRange(cu, low_pc, high_pc, fit, fend);
-			if (fit == fend)
-				goto break_loop;
+			AddCompileUnitRange(cu, low_pc, high_pc);
 			break;
 		case DW_RANGES_ADDRESS_SELECTION:
 			base_addr = range.dwr_addr2;
@@ -339,16 +374,6 @@ DwarfResolver::SearchCompileUnitRanges(const DwarfCompileUnit &cu,
 
 break_loop:
 	return;
-}
-
-void
-DwarfResolver::SearchCompileUnitFuncs(const DwarfCompileUnit &cu,
-    FrameMap::const_iterator &fit, const FrameMap::const_iterator &fend) const
-{
-	LOG("cu is die %lx\n", GetDieOffset(cu.GetDie()));
-	DwarfSearch search(dwarf, cu, imageFile, elfSymbols);
-
-	search.AdvanceAndMap(fit, fend);
 }
 
 void

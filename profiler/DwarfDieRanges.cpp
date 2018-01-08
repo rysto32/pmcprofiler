@@ -23,19 +23,20 @@
 
 #include "DwarfDieRanges.h"
 
-#include "DwarfCompileUnit.h"
+#include "DwarfCompileUnitDie.h"
 #include "DwarfRangeList.h"
 #include "DwarfUtil.h"
 
+#include <algorithm>
 #include <dwarf.h>
 
-DwarfDieRanges::DwarfDieRanges(Dwarf_Debug dwarf, const DwarfCompileUnit & cu)
+DwarfDieRanges::DwarfDieRanges(Dwarf_Debug dwarf, const DwarfCompileUnitDie & cu)
   : dwarf(dwarf), compileUnit(cu)
 {
 }
 
 DwarfDieRanges::DwarfDieRanges(Dwarf_Debug dwarf, Dwarf_Die die,
-    const DwarfCompileUnit & cu)
+    const DwarfCompileUnitDie & cu)
   : dwarf(dwarf), compileUnit(cu)
 {
 	Reinit(die);
@@ -89,8 +90,8 @@ DwarfDieRanges::GetHighPc(Dwarf_Die die, Dwarf_Unsigned low_pc, Dwarf_Unsigned &
 	if (error != 0)
 		return error;
 
-	cls = dwarf_get_form_class(compileUnit.GetDwarfVersion(), DW_AT_high_pc,
-	    compileUnit.GetOffsetSize(), form);
+	cls = dwarf_get_form_class(compileUnit.GetParams().GetDwarfVersion(),
+	    DW_AT_high_pc, compileUnit.GetParams().GetOffsetSize(), form);
 	switch (cls) {
 	case DW_FORM_CLASS_ADDRESS:
 		high_pc = high;

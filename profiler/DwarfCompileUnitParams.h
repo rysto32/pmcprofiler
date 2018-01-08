@@ -21,92 +21,39 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef DWARFDIE_H
-#define DWARFDIE_H
+#ifndef DWARFCOMPILEUNITPARAMS_H
+#define DWARFCOMPILEUNITPARAMS_H
 
 #include <libdwarf.h>
 
-class DwarfDieList;
+class DwarfCompileUnit;
 
-class DwarfDie
+class DwarfCompileUnitParams
 {
-	Dwarf_Debug dwarf;
-	Dwarf_Die die;
-	bool ownDie;
+private:
+	Dwarf_Unsigned cu_length;
+	Dwarf_Half cu_version;
+	Dwarf_Off cu_abbrev_offset;
+	Dwarf_Half cu_pointer_size;
+	Dwarf_Half cu_offset_size;
+	Dwarf_Half cu_extension_size;
+	Dwarf_Sig8 type_signature;
+	Dwarf_Unsigned type_offset;
+	Dwarf_Unsigned cu_next_offset;
 
-
-	DwarfDie(Dwarf_Debug dwarf, Dwarf_Die die) noexcept
-	  : dwarf(dwarf), die(die), ownDie(die != nullptr)
-	{
-	}
-
-	void Release()
-	{
-		if (ownDie)
-			dwarf_dealloc(dwarf, die, DW_DLA_DIE);
-	}
-
-	friend class DwarfDieList;
+	friend class DwarfCompileUnit;
 
 public:
-	DwarfDie()
-	  : die(nullptr), ownDie(false)
+
+	Dwarf_Half GetDwarfVersion() const
 	{
+		return cu_version;
 	}
 
-	~DwarfDie()
+	Dwarf_Half GetOffsetSize() const
 	{
-		Release();
+		return cu_offset_size;
 	}
-
-	DwarfDie(const DwarfDie &) = delete;
-
-	DwarfDie(DwarfDie && other) noexcept
-	  : dwarf(other.dwarf), die(other.die), ownDie(other.ownDie)
-	{
-		other.ownDie = false;
-	}
-
-	DwarfDie & operator=(const DwarfDie&) = delete;
-
-	DwarfDie & operator=(DwarfDie && other) noexcept
-	{
-		Release();
-
-		dwarf = other.dwarf;
-		die = other.die;
-		ownDie = other.ownDie;
-
-		other.ownDie = false;
-
-		return *this;
-	}
-
-	bool operator==(const DwarfDie & other) const
-	{
-		return dwarf == other.dwarf && die == other.die;
-	}
-
-	operator bool() const
-	{
-		return die != nullptr;
-	}
-
-	bool operator!() const
-	{
-		return !this->operator bool();
-	}
-
-	const Dwarf_Die &operator*() const
-	{
-		return die;
-	}
-
-	void AdvanceToSibling();
-	DwarfDie GetSibling() const;
-
-	static DwarfDie OffDie(Dwarf_Debug dwarf, Dwarf_Off ref);
-	static DwarfDie GetCuDie(Dwarf_Debug dwarf);
 };
 
 #endif

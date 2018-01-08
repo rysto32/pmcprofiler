@@ -24,8 +24,8 @@
 #include "DwarfDieStack.h"
 
 #include "Callframe.h"
-#include "DwarfCompileUnit.h"
-#include "DwarfDieLookup.h"
+#include "DwarfCompileUnitDie.h"
+#include "DwarfRangeLookup.h"
 #include "DwarfException.h"
 #include "DwarfStackState.h"
 #include "DwarfUtil.h"
@@ -35,7 +35,7 @@
 #include <dwarf.h>
 
 DwarfDieStack::DwarfDieStack(SharedString imageFile, Dwarf_Debug dwarf,
-    const DwarfCompileUnit &cu, Dwarf_Die die)
+    const DwarfCompileUnitDie &cu, Dwarf_Die die)
   : imageFile(imageFile),
     dwarf(dwarf),
     topDie(die),
@@ -84,7 +84,7 @@ DwarfDieStack::GetCallLine(Dwarf_Die die)
 }
 
 void
-DwarfDieStack::EnumerateSubprograms(DwarfDieLookup &map)
+DwarfDieStack::EnumerateSubprograms(DwarfRangeLookup<DwarfDie> &map)
 {
 	while (1) {
 		while (!dieStack.empty() && !dieStack.back()) {

@@ -31,18 +31,24 @@
 #include "ProfilerTypes.h"
 #include "SharedPtr.h"
 
-class DwarfDieLookup
+class Callframe;
+
+template <typename T>
+class DwarfRangeLookup
 {
-private:
-	struct MapValue
+public:
+	class MapValue
 	{
+	private:
 		TargetAddr low;
 		TargetAddr high;
-		SharedPtr<DwarfDie> die;
+		SharedPtr<T> value;
+		std::vector<Callframe *> pendingFrames;
 
+	public:
 		MapValue() = delete;
-		MapValue(TargetAddr l, TargetAddr h, SharedPtr<DwarfDie> &&d)
-		  : low(l), high(h), die(d)
+		MapValue(TargetAddr l, TargetAddr h, SharedPtr<T> &&d)
+		  : low(l), high(h), value(d)
 		{
 		}
 
@@ -56,97 +62,74 @@ private:
 		{
 			return low <= a && a < high;
 		}
-	};
 
-	typedef std::map<TargetAddr, MapValue> DieMap;
-
-public:
-	class const_iterator
-	{
-	private:
-		DieMap::const_iterator it;
-
-		explicit const_iterator(DieMap::const_iterator i)
-		  : it(i)
+		void AddFrame(Callframe *frame)
 		{
+			pendingFrames.push_back(frame);
 		}
 
-		friend class DwarfDieLookup;
-
-	public:
-		const_iterator()
+		const std::vector<Callframe*> & GetFrames() const
 		{
+			return pendingFrames;
 		}
 
-		const_iterator &operator++()
+		const T & GetValue() const
 		{
-			++it;
-			return *this;
+			return *value;
 		}
 
-		SharedPtr<DwarfDie> operator*()
+		TargetAddr GetLow() const
 		{
-			return it->second.die;
+			return low;
 		}
 
-		const SharedPtr<DwarfDie> *operator->()
+		TargetAddr GetHigh() const
 		{
-			return &it->second.die;
-		}
-
-		bool operator==(const const_iterator & other) const
-		{
-			return it == other.it;
-		}
-
-		bool operator!=(const const_iterator & other) const
-		{
-			return !(*this == other);
+			return high;
 		}
 	};
+
+	typedef typename std::map<TargetAddr, MapValue> DieMap;
+	typedef typename DieMap::iterator iterator;
 
 private:
 	DieMap map;
 
 public:
-	DwarfDieLookup()
+	DwarfRangeLookup()
 	{
 	}
 
-	DwarfDieLookup(const DwarfDieLookup &) = delete;
-	DwarfDieLookup(DwarfDieLookup &&) = delete;
+	DwarfRangeLookup(const DwarfRangeLookup &) = delete;
+	DwarfRangeLookup(DwarfRangeLookup &&) = delete;
 
-	DwarfDieLookup &operator=(const DwarfDieLookup&) = delete;
-	DwarfDieLookup &operator=(DwarfDieLookup &&) = delete;
+	DwarfRangeLookup &operator=(const DwarfRangeLookup&) = delete;
+	DwarfRangeLookup &operator=(DwarfRangeLookup &&) = delete;
 
-	void insert(TargetAddr l, TargetAddr h, SharedPtr<DwarfDie> die)
+	void insert(TargetAddr l, TargetAddr h, SharedPtr<T> die)
 	{
 		map.insert(std::make_pair(l, MapValue(l, h, std::move(die))));
 	}
 
-	const_iterator Lookup(TargetAddr a) const
+	iterator Lookup(TargetAddr a)
 	{
-		return const_iterator(LastSmallerThan(map, a));
+		return LastSmallerThan(map, a);
 	}
 
-	const_iterator end() const
+	iterator begin()
 	{
-		return const_iterator(map.end());
+		return map.begin();
 	}
 
-	/*void FindRange(FrameMap::const_iterator &it, const FrameMap::const_iterator end)
+	iterator end()
 	{
-		if (map.empty())
-			return;
+		return map.end();
+	}
 
-		const MapValue & back = map.rbegin()->second;
-		while (it != end) {
-			if (!back.Contains(it->second->getOffset()))
-				return;
-
-			++it;
-		}
-	}*/
+	void clear()
+	{
+		map.clear();
+	}
 };
 
 #endif

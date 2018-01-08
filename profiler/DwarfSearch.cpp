@@ -24,7 +24,7 @@
 #include "DwarfSearch.h"
 
 #include "Callframe.h"
-#include "DwarfCompileUnit.h"
+#include "DwarfCompileUnitDie.h"
 #include "DwarfDieStack.h"
 #include "DwarfLocation.h"
 #include "DwarfSrcLine.h"
@@ -33,7 +33,7 @@
 #include "Image.h"
 #include "MapUtil.h"
 
-DwarfSearch::DwarfSearch(Dwarf_Debug dwarf, const DwarfCompileUnit &cu,
+DwarfSearch::DwarfSearch(Dwarf_Debug dwarf, const DwarfCompileUnitDie &cu,
     SharedString imageFile, const SymbolMap & symbols)
   : imageFile(imageFile),
     dwarf(dwarf),
@@ -167,33 +167,47 @@ DwarfSearch::MapFrame(Callframe & frame, const DwarfLocationList &list)
 }
 
 void
-DwarfSearch::AdvanceAndMap(FrameMap::const_iterator & fit,
-    const FrameMap::const_iterator &fend)
+DwarfSearch::MapFrames(const FrameList& frameList)
 {
-	auto it = subprograms.Lookup(fit->second->getOffset());
-	if (it == subprograms.end()) {
-		MapAssembly(*fit->second);
-		++fit;
-		return;
+	FrameList assemblyFuncs;
+	for (auto frame : frameList) {
+		auto it = subprograms.Lookup(frame->getOffset());
+		if (it == subprograms.end()) {
+			LOG("Frame %lx mapped to no subroutine (assembly?)\n",
+			    frame->getOffset());
+			assemblyFuncs.push_back(frame);
+			continue;
+		}
+
+		LOG("Frame %lx mapped to subprogram die %lx\n", frame->getOffset(),
+		    GetDieOffset(*it->second.GetValue()));
+		it->second.AddFrame(frame);
 	}
 
+	for (auto & [addr, value] : subprograms) {
+		if (value.GetFrames().empty())
+			continue;
 
-	Dwarf_Die subprogram = ***it;
-	FrameMap::const_iterator last(fit);
-	++last;
+		MapSubprogram(*value.GetValue(), value.GetFrames());
+	}
 
-	DwarfDieRanges ranges(dwarf, subprogram, cu);
-	while (last != fend && ranges.Contains(last->second->getOffset()))
-		++last;
+	srcIt = srcLines.begin();
+	for (auto frame : assemblyFuncs) {
+		MapAssembly(*frame);
+	}
+}
 
+void
+DwarfSearch::MapSubprogram(Dwarf_Die subprogram, const FrameList& frameList)
+{
 	DwarfLocationList list;
 
+	DwarfDieRanges ranges(dwarf, subprogram, cu);
 	DwarfDieStack stack(imageFile, dwarf, cu, subprogram);
 	stack.FillSubprogramSymbols(list, ranges);
 	FillLeafSymbols(ranges, list);
 
-	while (fit != last) {
-		MapFrame(*fit->second, list);
-		++fit;
+	for (auto frame : frameList) {
+		MapFrame(*frame, list);
 	}
 }

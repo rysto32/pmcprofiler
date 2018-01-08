@@ -30,6 +30,8 @@
 #include "SharedPtr.h"
 #include "SharedString.h"
 
+class DwarfCompileUnitDie;
+
 class DwarfStackState
 {
 public:
@@ -41,9 +43,9 @@ private:
 	DwarfDieRanges ranges;
 
 public:
-	DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die, const DwarfCompileUnit &cu);
+	DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die, const DwarfCompileUnitDie &cu);
 
-	DwarfStackState(Dwarf_Debug dwarf, const DwarfCompileUnit &cu);
+	DwarfStackState(Dwarf_Debug dwarf, const DwarfCompileUnitDie &cu);
 
 	DwarfStackState(DwarfStackState &&) noexcept = default;
 	DwarfStackState & operator=(DwarfStackState && other) = default;

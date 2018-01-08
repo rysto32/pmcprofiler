@@ -27,7 +27,7 @@
 #include "Image.h"
 
 DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die,
-    const DwarfCompileUnit &cu)
+    const DwarfCompileUnitDie &cu)
   : list(dwarf, die),
     iterator(list.begin()),
     ranges(dwarf, cu)
@@ -38,7 +38,7 @@ DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die,
 		ranges.Reinit(*iterator);
 }
 
-DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, const DwarfCompileUnit &cu)
+DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, const DwarfCompileUnitDie &cu)
   : list(dwarf),
     iterator(list.end()),
     ranges(dwarf, cu)

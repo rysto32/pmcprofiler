@@ -26,25 +26,29 @@
 
 #include <libdwarf.h>
 
+#include <vector>
+
 #include "DwarfSrcLinesList.h"
-#include "DwarfDieLookup.h"
+#include "DwarfRangeLookup.h"
 #include "DwarfLocation.h"
 #include "SharedString.h"
 
 class Callframe;
-class DwarfCompileUnit;
+class DwarfCompileUnitDie;
 class DwarfDieRanges;
 class DwarfSrcLine;
 
 class DwarfSearch
 {
 private:
+	typedef std::vector< Callframe* > FrameList;
+
 	SharedString imageFile;
 	Dwarf_Debug dwarf;
-	DwarfDieLookup subprograms;
+	DwarfRangeLookup<DwarfDie> subprograms;
 	DwarfSrcLinesList srcLines;
 	DwarfSrcLinesList::const_iterator srcIt;
-	const DwarfCompileUnit &cu;
+	const DwarfCompileUnitDie &cu;
 	const SymbolMap & symbols;
 
 	bool FindLeaf(const Callframe & frame, SharedString &file, int &line);
@@ -56,12 +60,11 @@ private:
 	void MapAssembly(Callframe &frame);
 	void MapFrame(Callframe & frame, const DwarfLocationList &list);
 
-	void MapSubprogram(DwarfDieLookup::const_iterator sub,
-	    FrameMap::const_iterator & fit, const FrameMap::const_iterator & end);
+	void MapSubprogram(Dwarf_Die subprogram, const FrameList& frameList);
 
 public:
-	DwarfSearch(Dwarf_Debug, const DwarfCompileUnit &, SharedString,
-	    const SymbolMap &);
+	DwarfSearch(Dwarf_Debug, const DwarfCompileUnitDie &,
+	    SharedString, const SymbolMap &);
 
 	DwarfSearch(const DwarfSearch &) = delete;
 	DwarfSearch(DwarfSearch &&) = delete;
@@ -69,7 +72,7 @@ public:
 	DwarfSearch & operator=(const DwarfSearch &) = delete;
 	DwarfSearch & operator=(DwarfSearch &&) = delete;
 
-	void AdvanceAndMap(FrameMap::const_iterator & fit, const FrameMap::const_iterator & end);
+	void MapFrames(const FrameList & frameList);
 };
 
 #endif

@@ -11,6 +11,7 @@ SRCS=	\
 	CallchainProfilePrinter.cpp \
 	Callframe.cpp \
 	DwarfCompileUnit.cpp \
+	DwarfCompileUnitDie.cpp \
 	DwarfDie.cpp \
 	DwarfDieRanges.cpp \
 	DwarfDieStack.cpp \

@@ -42,6 +42,19 @@ DwarfDie::AdvanceToSibling()
 	}
 }
 
+DwarfDie
+DwarfDie::GetSibling() const
+{
+	Dwarf_Die new_die;
+	Dwarf_Error derr;
+	int error;
+
+	error = dwarf_siblingof(dwarf, die, &new_die, &derr);
+	if (error != DW_DLV_OK)
+		return DwarfDie();
+	else
+		return DwarfDie(dwarf, new_die);
+}
 
 DwarfDie
 DwarfDie::OffDie(Dwarf_Debug dwarf, Dwarf_Off ref)

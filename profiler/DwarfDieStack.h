@@ -26,6 +26,7 @@
 
 #include "DwarfDieList.h"
 #include "DwarfLocation.h"
+#include "DwarfRangeLookup.h"
 #include "DwarfStackState.h"
 #include "ProfilerTypes.h"
 
@@ -33,8 +34,7 @@
 #include <vector>
 
 class Callframe;
-class DwarfCompileUnit;
-class DwarfDieLookup;
+class DwarfCompileUnitDie;
 
 class DwarfDieStack
 {
@@ -43,7 +43,7 @@ private:
 	Dwarf_Debug dwarf;
 	Dwarf_Die topDie;
 	std::vector<DwarfStackState> dieStack;
-	const DwarfCompileUnit &cu;
+	const DwarfCompileUnitDie &cu;
 
 	SharedString GetCallFile(Dwarf_Die die);
 	int GetCallLine(Dwarf_Die die);
@@ -53,14 +53,14 @@ private:
 
 public:
 	DwarfDieStack(SharedString imageFile, Dwarf_Debug dwarf,
-	    const DwarfCompileUnit &cu, Dwarf_Die die);
+	    const DwarfCompileUnitDie &cu, Dwarf_Die die);
 
 	DwarfDieStack(const DwarfDieStack &) = delete;
 	DwarfDieStack(DwarfDieStack &&) = delete;
 	DwarfDieStack & operator=(const DwarfDieStack &) = delete;
 	DwarfDieStack & operator=(DwarfDieStack &&) = delete;
 
-	void EnumerateSubprograms(DwarfDieLookup &);
+	void EnumerateSubprograms(DwarfRangeLookup<DwarfDie> &);
 	void FillSubprogramSymbols(DwarfLocationList &, const DwarfDieRanges &);
 };
 

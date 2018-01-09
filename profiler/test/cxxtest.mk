@@ -16,8 +16,10 @@ ${test}.testprog: ${test}.cxxtest.o ${TEST_OBJS}
 
 SRCS += ${test}.cxxtest.cpp
 
-${test}.cxxtest.cpp: ${test}.cxxtest
+${test}.cxxtest.cpp: ${test}.test
 	cxxtestgen.py --error-printer -o $@ $>
+
+CLEANFILES +=${test}.cxxtest.o ${test}.cxxtest.cpp ${test}.testprog
 
 .endfor
 
@@ -26,4 +28,6 @@ test: ${TEST_PROGS}
 	@./${test}
 .endfor
 
-CFLAGS += -I/usr/local/include
+CXXFLAGS=-I/usr/local/include -I${TOPDIR} -std=c++17
+
+.include <bsd.prog.mk>

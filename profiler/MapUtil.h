@@ -28,7 +28,7 @@
 
 #include <map>
 
-template <typename K, typename Map, typename Iterator>
+template <typename K, typename Map, typename Iterator, typename C, typename A>
 Iterator
 LastSmallerThanImpl(Map &map, K addr)
 {
@@ -40,22 +40,22 @@ LastSmallerThanImpl(Map &map, K addr)
 	return (it);
 }
 
-template <typename K, typename V>
-typename std::map<K, V>::iterator
-LastSmallerThan(std::map<K, V> &map, K addr)
+template <typename K, typename V, typename C, typename A>
+typename std::map<K, V, C, A>::iterator
+LastSmallerThan(std::map<K, V, C, A> &map, K addr)
 {
 
-	return (LastSmallerThanImpl<K, std::map<K, V>,
-	    typename std::map<K, V>::iterator>(map, addr));
+	return (LastSmallerThanImpl<K, std::map<K, V, C, A>,
+	    typename std::map<K, V, C, A>::iterator, C, A>(map, addr));
 }
 
-template <typename K, typename V>
-typename std::map<K, V>::const_iterator
-LastSmallerThan(const std::map<K, V> &map, K addr)
+template <typename K, typename V, typename C, typename A>
+typename std::map<K, V, C, A>::const_iterator
+LastSmallerThan(const std::map<K, V, C, A> &map, K addr)
 {
 
-	return (LastSmallerThanImpl<K, const std::map<K, V>,
-	    typename std::map<K, V>::const_iterator>(map, addr));
+	return (LastSmallerThanImpl<K, const std::map<K, V, C, A>,
+	    typename std::map<K, V, C, A>::const_iterator, C, A>(map, addr));
 }
 
 #endif

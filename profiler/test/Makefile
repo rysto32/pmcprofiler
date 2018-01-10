@@ -1,6 +1,7 @@
 
 TESTS= \
 	InlineFrame \
+	SharedPtr \
 	SharedString \
 
 

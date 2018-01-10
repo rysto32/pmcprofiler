@@ -21,7 +21,14 @@ ${test}.cxxtest.cpp: ${test}.test
 
 CLEANFILES +=${test}.cxxtest.o ${test}.cxxtest.cpp ${test}.testprog
 
+.PHONY: test.${test}
+
+test.${test}: ${test}.testprog
+	@./${test}.testprog
+
 .endfor
+
+.PHONY: test
 
 test: ${TEST_PROGS}
 .for test in ${TEST_PROGS}

@@ -1,4 +1,7 @@
 
-TESTS=InlineFrame
+TESTS= \
+	InlineFrame \
+	SharedString \
+
 
 .include "cxxtest.mk"

@@ -167,9 +167,8 @@ public:
 
 	bool operator==(const SharedString &other) const
 	{
-		if (value == other.value)
-			return true;
-		return value->str == other.value->str;
+		// Becase we intern strings we can do a simple pointer compare
+		return value == other.value;
 	}
 
 	SharedString &operator=(const SharedString &other)

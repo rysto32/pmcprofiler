@@ -144,9 +144,7 @@ public:
 
 	bool operator==(const SharedPtr<T> &other) const
 	{
-		if (value == other.value)
-			return true;
-		return value->value == other.value->value;
+		return value == other.value;
 	}
 
 	SharedPtr<T> &operator=(const SharedPtr<T> &other)

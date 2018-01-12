@@ -41,11 +41,11 @@ Callframe::addFrame(SharedString file, SharedString func,
 
 
 void
-Callframe::setUnmapped(SharedString image)
+Callframe::setUnmapped()
 {
 	SharedString unmapped_function("[unmapped_function]");
 	inlineFrames.clear();
-	inlineFrames.emplace_back(image, unmapped_function,
+	inlineFrames.emplace_back(imageName, unmapped_function,
 	    unmapped_function, offset, -1, -1, 0, imageName);
 
 	unmapped = true;

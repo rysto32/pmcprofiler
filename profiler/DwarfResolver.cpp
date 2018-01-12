@@ -260,7 +260,7 @@ DwarfResolver::MapFramesToCompileUnits(const FrameMap &frameMap)
 			TargetAddr offset = fit->second->getOffset();
 			auto cit = cuLookup.Lookup(offset);
 			if (cit == cuLookup.end() || !cit->second.Contains(offset)) {
-				fit->second->setUnmapped(imageFile);
+				fit->second->setUnmapped();
 				++fit;
 				continue;
 			}
@@ -272,7 +272,7 @@ DwarfResolver::MapFramesToCompileUnits(const FrameMap &frameMap)
 			} while (fit != frameMap.end() &&
 			    lookupVal.Contains(fit->second->getOffset()));
 		} catch (DwarfException &) {
-			fit->second->setUnmapped(imageFile);
+			fit->second->setUnmapped();
 			++fit;
 		}
 	}
@@ -290,7 +290,7 @@ DwarfResolver::MapFrames()
 			search.MapFrames(value.GetFrames());
 		} catch (DwarfException &) {
 			for (auto frame : value.GetFrames()) {
-				frame->setUnmapped(imageFile);
+				frame->setUnmapped();
 			}
 		}
 	}
@@ -388,7 +388,7 @@ DwarfResolver::ResolveElf(const FrameMap &frameMap) const
 	 */
 	while (fit != frameMap.end() && (sit == elfSymbols.end() ||
 	    fit->second->getOffset() < sit->first)) {
-		fit->second->setUnmapped(imageFile);
+		fit->second->setUnmapped();
 		fit++;
 	}
 
@@ -441,5 +441,5 @@ void
 DwarfResolver::ResolveUnmapped(const FrameMap &frameMap) const
 {
 	for (auto & pair : frameMap)
-		pair.second->setUnmapped(imageFile);
+		pair.second->setUnmapped();
 }

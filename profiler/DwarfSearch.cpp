@@ -118,7 +118,7 @@ DwarfSearch::MapAssembly(Callframe &frame)
 	int line;
 
 	if (!FindLeaf(frame, file, line)) {
-		frame.setUnmapped(imageFile);
+		frame.setUnmapped();
 		return;
 	}
 
@@ -143,7 +143,7 @@ DwarfSearch::MapFrame(Callframe & frame, const DwarfLocationList &list)
 	 */
 	while (!it->second->GetCaller()) {
 		if (it == list.begin()) {
-			frame.setUnmapped(imageFile);
+			frame.setUnmapped();
 			return;
 		}
 

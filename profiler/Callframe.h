@@ -47,7 +47,7 @@ public:
 	void addFrame(SharedString file, SharedString func,
 	    SharedString demangled, int codeLine, int funcLine,
 	    uint64_t dwarfDieOffset);
-	void setUnmapped(SharedString image);
+	void setUnmapped();
 
 	TargetAddr getOffset() const
 	{

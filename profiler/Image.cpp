@@ -117,7 +117,7 @@ Image::getFrame(TargetAddr offset)
 	Callframe & frame = *ptr;
 	frameMap.insert(std::make_pair(offset, std::move(ptr)));
 	if (!mapped)
-		frame.setUnmapped(getImageFile());
+		frame.setUnmapped();
 	return frame;
 }
 

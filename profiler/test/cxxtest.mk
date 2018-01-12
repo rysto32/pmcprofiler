@@ -6,7 +6,7 @@ TOPDIR=../
 .for test in ${TESTS}
 
 .undefine TEST_OBJS
-.for obj in ${TEST_${test}_OBJS}
+.for obj in ${TEST_${test:tu}_OBJS}
 TEST_OBJS+=${TOPDIR}/${obj}
 .endfor
 TEST_PROGS += ${test}.testprog

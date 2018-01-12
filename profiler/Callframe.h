@@ -28,8 +28,7 @@
 
 #include "InlineFrame.h"
 #include "ProfilerTypes.h"
-
-class SharedString;
+#include "SharedString.h"
 
 class Callframe
 {

@@ -1,0 +1,129 @@
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+// 1. Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+// OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+// HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+// OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+// SUCH DAMAGE.
+
+#include <cxxtest/TestSuite.h>
+
+#include "Callframe.h"
+
+#include "ValueTraits/SharedString.h"
+
+class CallframeTestSuite : public CxxTest::TestSuite
+{
+public:
+	void TestGetOffset()
+	{
+		Callframe fr(10, "arg");
+		TS_ASSERT_EQUALS(fr.getOffset(), 10);
+
+		Callframe fr2(0xffffffff8069d5feUL, "arg2");
+		TS_ASSERT_EQUALS(fr2.getOffset(), 0xffffffff8069d5feUL);
+	}
+
+	void TestUnmapped()
+	{
+		Callframe fr(34, "libc.so.7");
+		fr.setUnmapped();
+
+		TS_ASSERT(fr.isUnmapped());
+
+		const auto & frames = fr.getInlineFrames();
+		TS_ASSERT_EQUALS(frames.size(), 1);
+		TS_ASSERT_EQUALS(frames[0].getFile(), "libc.so.7");
+		TS_ASSERT_EQUALS(frames[0].getOffset(), 34);
+		TS_ASSERT(!frames[0].isMapped());
+	}
+
+	void TestAddSingleFrame()
+	{
+		Callframe cf(0xffffffff80cba260UL, "/boot/kernel/kernel");
+
+		cf.addFrame("netinet/tcp_input.c", "tcp_input", "tcp_input",
+		    3015, 2693, 0xa45d2);
+
+		TS_ASSERT(!cf.isUnmapped());
+
+		const auto & frames = cf.getInlineFrames();
+		TS_ASSERT_EQUALS(frames.size(), 1);
+
+		const auto & fr = frames.at(0);
+		TS_ASSERT_EQUALS(fr.getFile(), "netinet/tcp_input.c");
+		TS_ASSERT_EQUALS(fr.getFunc(), "tcp_input");
+		TS_ASSERT_EQUALS(fr.getDemangled(), "tcp_input");
+		TS_ASSERT_EQUALS(fr.getCodeLine(), 3015);
+		TS_ASSERT_EQUALS(fr.getFuncLine(), 2693);
+		TS_ASSERT_EQUALS(fr.getDieOffset(), 0xa45d2);
+		TS_ASSERT_EQUALS(fr.getOffset(), 0xffffffff80cba260UL);
+		TS_ASSERT(fr.isMapped());
+	}
+
+	void TestAddMultipleFrames()
+	{
+		Callframe cf(0xa893b, "pmcprofiler");
+
+		cf.addFrame("/usr/include/c++/map",
+		    "_ZNKSt3__116__tree_node_baseIPvE15__parent_unsafeEv",
+		    "std::__1::__tree_node_base<void*>::__parent_unsafe() const",
+		    751, 742, 0xf3a7);
+		cf.addFrame("/usr/include/c++/map",
+		    "_ZNSt3__127__tree_balance_after_insertIPNS_16__tree_node_baseIPvEEEEvT_S5_",
+		    "void std::__1::__tree_balance_after_insert<std::__1::__tree_node_base<void*>*>(std::__1::__tree_node_base<void*>*, std::__1::__tree_node_base<void*>*)",
+		    284, 279, 0x7932);
+		cf.addFrame("Image.cpp", "_ZN5Image6mapAllEv", "Image::mapAll()",
+		    230, 217, 0x68718);
+
+		TS_ASSERT(!cf.isUnmapped());
+
+		const auto & frames = cf.getInlineFrames();
+		TS_ASSERT_EQUALS(frames.size(), 3);
+
+		const auto * fr = &frames.at(0);
+		TS_ASSERT_EQUALS(fr->getFile(), "/usr/include/c++/map");
+		TS_ASSERT_EQUALS(fr->getFunc(), "_ZNKSt3__116__tree_node_baseIPvE15__parent_unsafeEv");
+		TS_ASSERT_EQUALS(fr->getDemangled(), "std::__1::__tree_node_base<void*>::__parent_unsafe() const");
+		TS_ASSERT_EQUALS(fr->getCodeLine(), 751);
+		TS_ASSERT_EQUALS(fr->getFuncLine(), 742);
+		TS_ASSERT_EQUALS(fr->getDieOffset(), 0xf3a7);
+		TS_ASSERT_EQUALS(fr->getOffset(), 0xa893b);
+		TS_ASSERT(fr->isMapped());
+
+		fr = &frames.at(1);
+		TS_ASSERT_EQUALS(fr->getFile(), "/usr/include/c++/map");
+		TS_ASSERT_EQUALS(fr->getFunc(), "_ZNSt3__127__tree_balance_after_insertIPNS_16__tree_node_baseIPvEEEEvT_S5_");
+		TS_ASSERT_EQUALS(fr->getDemangled(), "void std::__1::__tree_balance_after_insert<std::__1::__tree_node_base<void*>*>(std::__1::__tree_node_base<void*>*, std::__1::__tree_node_base<void*>*)");
+		TS_ASSERT_EQUALS(fr->getCodeLine(), 284);
+		TS_ASSERT_EQUALS(fr->getFuncLine(), 279);
+		TS_ASSERT_EQUALS(fr->getDieOffset(), 0x7932);
+		TS_ASSERT_EQUALS(fr->getOffset(), 0xa893b);
+		TS_ASSERT(fr->isMapped());
+
+		fr = &frames.at(2);
+		TS_ASSERT_EQUALS(fr->getFile(), "Image.cpp");
+		TS_ASSERT_EQUALS(fr->getFunc(), "_ZN5Image6mapAllEv");
+		TS_ASSERT_EQUALS(fr->getDemangled(), "Image::mapAll()");
+		TS_ASSERT_EQUALS(fr->getCodeLine(), 230);
+		TS_ASSERT_EQUALS(fr->getFuncLine(), 217);
+		TS_ASSERT_EQUALS(fr->getDieOffset(), 0x68718);
+		TS_ASSERT_EQUALS(fr->getOffset(), 0xa893b);
+		TS_ASSERT(fr->isMapped());
+	}
+};

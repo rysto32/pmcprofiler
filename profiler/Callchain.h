@@ -32,7 +32,6 @@
 class AddressSpace;
 class Callframe;
 class Sample;
-class SampleAggregation;
 
 class Callchain
 {
@@ -53,7 +52,6 @@ public:
 	typedef std::vector<CallchainRecord> RecordChain;
 
 public:
-	const SampleAggregation &aggregation;
 	const AddressSpace &space;
 	RecordChain callframes;
 	std::unique_ptr<InlineFrame> selfFrame;
@@ -61,7 +59,7 @@ public:
 	bool kernel;
 
 public:
-	Callchain(const SampleAggregation &, AddressSpace &, const Sample &);
+	Callchain(AddressSpace &, const Sample &);
 
 	Callchain(const Callchain&) = delete;
 	Callchain& operator=(const Callchain &) = delete;
@@ -69,11 +67,6 @@ public:
 	Callchain(Callchain&& other) noexcept = default;
 
 	void addSample();
-
-	const SampleAggregation & getAggregation() const
-	{
-		return aggregation;
-	}
 
 	const AddressSpace & getAddressSpace() const
 	{
@@ -106,7 +99,7 @@ public:
 	class SampleCountComp
 	{
 	public:
-		bool operator()(const Callchain *, const Callchain *);
+		bool operator()(const AggCallChain &, const AggCallChain &);
 	};
 };
 

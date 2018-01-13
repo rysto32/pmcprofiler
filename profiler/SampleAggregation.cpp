@@ -99,7 +99,7 @@ void
 SampleAggregation::addFrame(AddressSpace &space, const Sample & sample)
 {
 	frameMap.insert(std::make_pair(sample,
-	    std::make_unique<Callchain>(*this, space, sample)));
+	    std::make_unique<Callchain>(space, sample)));
 }
 
 void
@@ -121,7 +121,7 @@ void
 SampleAggregation::getCallchainList(CallchainList &list) const
 {
 	for (const auto & pair : frameMap) {
-		list.push_back(pair.second.get());
+		list.emplace_back(this, pair.second.get());
 	}
 }
 

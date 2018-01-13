@@ -110,9 +110,10 @@ ProfilePrinter::getFunctionLocations(const SampleAggregation &agg,
 
 	Strategy strategy;
 
-	for (auto chain : callchainList) {
+	for (auto & chainRec : callchainList) {
 		std::vector<const InlineFrame*> frameList;
 
+		auto chain = chainRec.chain;
 		const InlineFrame & leaf = chain->getLeafFrame();
 		strategy.insertSelfFrame(frameList, *chain, leaf);
 		chain->flatten(frameList);
@@ -185,9 +186,10 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 	SortCallchains(callchainList);
 
 	unsigned cumulative = 0;
-	for (auto chain : callchainList) {
+	for (const auto & chainRec : callchainList) {
 
-		const auto & agg = chain->getAggregation();
+		auto chain = chainRec.chain;
+		const auto & agg = *chainRec.agg;
 		const auto & space = chain->getAddressSpace();
 		const auto & frame = chain->getLeafFrame();
 

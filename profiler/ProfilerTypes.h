@@ -39,8 +39,19 @@ class Callframe;
 class SampleAggregation;
 class SharedString;
 
+struct AggCallChain
+{
+	const SampleAggregation *agg;
+	Callchain *chain;
+
+	AggCallChain(const SampleAggregation * a, Callchain * c)
+	  : agg(a), chain(c)
+	{
+	}
+};
+
 typedef std::vector<SampleAggregation*> AggregationList;
-typedef std::vector<Callchain*> CallchainList;
+typedef std::vector<AggCallChain> CallchainList;
 typedef std::map<TargetAddr, std::unique_ptr<Callframe> > FrameMap;
 typedef std::set<unsigned> LineLocationList;
 typedef std::map<TargetAddr, SharedString> SymbolMap;

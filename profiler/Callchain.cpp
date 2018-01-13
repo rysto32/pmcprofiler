@@ -27,9 +27,8 @@
 #include "Callframe.h"
 #include "Sample.h"
 
-Callchain::Callchain(const SampleAggregation & agg, AddressSpace & space,
-    const Sample& sample)
-  : aggregation(agg), space(space), sampleCount(1), kernel(sample.isKernel())
+Callchain::Callchain(AddressSpace & space, const Sample& sample)
+  : space(space), sampleCount(1), kernel(sample.isKernel())
 {
 	for (int i = 0; i < sample.getChainDepth(); ++i) {
 		TargetAddr addr = sample.getAddress(i);
@@ -46,9 +45,9 @@ Callchain::addSample()
 }
 
 bool
-Callchain::SampleCountComp::operator()(const Callchain * a, const Callchain * b)
+Callchain::SampleCountComp::operator()(const AggCallChain & a, const AggCallChain & b)
 {
-	return a->sampleCount < b->sampleCount;
+	return a.chain->sampleCount < b.chain->sampleCount;
 }
 
 void

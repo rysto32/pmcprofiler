@@ -67,7 +67,7 @@ class Image
 	FrameMap frameMap;
 	bool mapped;
 
-	Image(const std::string& imageName);
+	explicit Image(const std::string& imageName);
 
 	Image() = delete;
 	Image(const Image&) = delete;

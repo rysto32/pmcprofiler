@@ -24,21 +24,11 @@
 #ifndef VALUETRAITS_SHAREDSTRING_H
 #define VALUETRAITS_SHAREDSTRING_H
 
-template <>
-class CxxTest::ValueTraits<SharedString>
-{
-private:
-	const char *str;
-public:
-	ValueTraits(SharedString s)
-	  : str(s->c_str())
-	{
-	}
+#include <ostream>
 
-	const char *asString()
-	{
-		return str;
-	}
-};
+void PrintTo(const SharedString &str, ::std::ostream *os)
+{
+	*os << *str;
+}
 
 #endif

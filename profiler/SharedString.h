@@ -171,6 +171,11 @@ public:
 		return value == other.value;
 	}
 
+	bool operator!=(const SharedString &other) const
+	{
+		return !(*this == other);
+	}
+
 	SharedString &operator=(const SharedString &other)
 	{
 		Copy(other);

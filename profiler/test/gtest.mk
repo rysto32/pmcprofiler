@@ -11,15 +11,12 @@ TEST_OBJS+=${TOPDIR}/${obj}
 .endfor
 TEST_PROGS += ${test}.testprog
 
-${test}.testprog: ${test}.cxxtest.o ${TEST_OBJS}
-	${CXX} $> -o $@
+${test}.testprog: ${test}.gtest.o ${TEST_OBJS}
+	${CXX} -Wl,-L/usr/local/lib $> -lgtest -lgtest_main -lpthread -o $@
 
-SRCS += ${test}.cxxtest.cpp
+SRCS += ${test}.gtest.cpp
 
-${test}.cxxtest.cpp: ${test}.test
-	cxxtestgen.py --error-printer -o $@ $>
-
-CLEANFILES +=${test}.cxxtest.o ${test}.cxxtest.cpp ${test}.testprog
+CLEANFILES +=${test}.gtest.o ${test}.testprog
 
 .PHONY: test.${test}
 

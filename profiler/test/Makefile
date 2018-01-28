@@ -7,4 +7,4 @@ TESTS= \
 
 TEST_CALLFRAME_OBJS=Callframe.o
 
-.include "cxxtest.mk"
+.include "gtest.mk"

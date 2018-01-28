@@ -25,22 +25,12 @@
 #define VALUETRAITS_SHAREDPTR_H
 
 #include <string.h>
+#include <ostream>
 
 template <typename T>
-class CxxTest::ValueTraits<SharedPtr<T> >
+void PrintTo(const SharedPtr<T> &ptr, ::std::ostream *os)
 {
-private:
-	char str[2 + 2 * sizeof(void*) + 1];
-public:
-	ValueTraits(SharedPtr<T> s)
-	{
-		snprintf(str, sizeof(str), "%p", s.get());
-	}
-
-	const char *asString()
-	{
-		return str;
-	}
-};
+	*os << ptr.get();
+}
 
 #endif

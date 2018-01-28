@@ -5,14 +5,22 @@ TOPDIR=../
 
 .for test in ${TESTS}
 
-.undefine TEST_OBJS
+TEST_${test:tu}_OBJPATHS=
 .for obj in ${TEST_${test:tu}_OBJS}
-TEST_OBJS+=${TOPDIR}/${obj}
+TEST_${test:tu}_OBJPATHS+=${TOPDIR}/${obj}
 .endfor
+
+TEST_${test:tu}_LIBARGS=
+.for lib in ${TEST_${test:tu}_LIBS}
+TEST_${test:tu}_LIBARGS+=-l${lib}
+.endfor
+
+TEST_${test:tu}_LIBARGS+=-lgtest -lgtest_main -lpthread
+
 TEST_PROGS += ${test}.testprog
 
-${test}.testprog: ${test}.gtest.o ${TEST_OBJS}
-	${CXX} -Wl,-L/usr/local/lib $> -lgtest -lgtest_main -lpthread -o $@
+${test}.testprog: ${TEST_${test:tu}_OBJPATHS} ${test}.gtest.o
+	${CXX} -Wl,-L/usr/local/lib ${.ALLSRC} ${TEST_${test:tu}_LIBARGS} -o $@
 
 SRCS += ${test}.gtest.cpp
 

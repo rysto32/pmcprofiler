@@ -43,6 +43,8 @@ public:
 	Callframe(const Callframe&) = delete;
 	Callframe& operator=(const Callframe &) = delete;
 
+	Callframe(Callframe &&) noexcept = default;
+
 	void addFrame(SharedString file, SharedString func,
 	    SharedString demangled, int codeLine, int funcLine,
 	    uint64_t dwarfDieOffset);

@@ -25,9 +25,10 @@
 
 #include "AddressSpace.h"
 #include "Callframe.h"
+#include "CallframeMapper.h"
 #include "Sample.h"
 
-Callchain::Callchain(AddressSpace & space, const Sample& sample)
+Callchain::Callchain(CallframeMapper & space, const Sample& sample)
   : space(space), sampleCount(1), kernel(sample.isKernel())
 {
 	for (int i = 0; i < sample.getChainDepth(); ++i) {

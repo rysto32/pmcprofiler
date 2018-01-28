@@ -25,6 +25,7 @@
 #ifndef ADDRESSSPACE_H
 #define ADDRESSSPACE_H
 
+#include "CallframeMapper.h"
 #include "ProfilerTypes.h"
 
 #include <map>
@@ -40,7 +41,7 @@ class Image;
 class ProcessExec;
 class SharedString;
 
-class AddressSpace
+class AddressSpace : public CallframeMapper
 {
 private:
 	struct LoadedImage
@@ -80,6 +81,7 @@ private:
 
 public:
 	AddressSpace(pid_t);
+	virtual ~AddressSpace() = default;
 
 	AddressSpace(const AddressSpace&) = delete;
 	AddressSpace& operator=(const AddressSpace &) = delete;

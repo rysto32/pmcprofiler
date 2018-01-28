@@ -190,7 +190,7 @@ FlatProfilePrinter::printProfile(const Profiler & profiler,
 
 		auto chain = chainRec.chain;
 		const auto & agg = *chainRec.agg;
-		const auto & space = chain->getAddressSpace();
+		const auto & space = chain->getMapper();
 		const auto & frame = chain->getLeafFrame();
 
 		cumulative += chain->getSampleCount();

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Ryan Stone.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,86 +21,19 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef CALLCHAIN_H
-#define CALLCHAIN_H
-
-#include <vector>
+#ifndef CALLFRAME_MAPPER_H
+#define CALLFRAME_MAPPER_H
 
 #include "ProfilerTypes.h"
-#include "InlineFrame.h"
 
 class Callframe;
-class CallframeMapper;
-class Sample;
+class SharedString;
 
-class Callchain
+class CallframeMapper
 {
 public:
-	class CallchainRecord
-	{
-		TargetAddr addr;
-		const Callframe &frame;
-
-		CallchainRecord(TargetAddr a, const Callframe &f)
-		  : addr(a), frame(f)
-		{
-		}
-
-		friend class Callchain;
-	};
-
-	typedef std::vector<CallchainRecord> RecordChain;
-
-public:
-	const CallframeMapper &space;
-	RecordChain callframes;
-	std::unique_ptr<InlineFrame> selfFrame;
-	size_t sampleCount;
-	bool kernel;
-
-public:
-	Callchain(CallframeMapper &, const Sample &);
-
-	Callchain(const Callchain&) = delete;
-	Callchain& operator=(const Callchain &) = delete;
-
-	Callchain(Callchain&& other) noexcept = default;
-
-	void addSample();
-
-	const CallframeMapper & getMapper() const
-	{
-		return space;
-	}
-
-	size_t getSampleCount() const
-	{
-		return sampleCount;
-	}
-
-	TargetAddr getAddress() const
-	{
-		return callframes.front().addr;
-	}
-
-	bool isKernel() const
-	{
-		return kernel;
-	}
-
-	const InlineFrame * getSelfFrame(const InlineFrame &);
-
-	bool isMapped() const;
-
-	const InlineFrame & getLeafFrame() const;
-
-	void flatten(std::vector<const InlineFrame*> &) const;
-
-	class SampleCountComp
-	{
-	public:
-		bool operator()(const AggCallChain &, const AggCallChain &);
-	};
+	virtual const Callframe & mapFrame(TargetAddr addr) = 0;
+	virtual SharedString getExecutableName() const = 0;
 };
 
 #endif

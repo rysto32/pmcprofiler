@@ -79,6 +79,8 @@ private:
 
 	static TargetAddr getLoadAddr(const std::string &executable);
 
+	Image &getImage(TargetAddr addr, TargetAddr & loadOffset) const;
+
 public:
 	AddressSpace(pid_t);
 	virtual ~AddressSpace() = default;
@@ -91,8 +93,6 @@ public:
 	static AddressSpace &getKernelAddressSpace();
 	static AddressSpace &getProcessAddressSpace(pid_t);
 	static void processExec(const ProcessExec& ev);
-
-	Image &getImage(TargetAddr addr, TargetAddr & loadOffset) const;
 
 	void mapIn(TargetAddr start, const char * imagePath);
 	void findAndMap(TargetAddr start, const std::vector<std::string> path,

@@ -125,12 +125,6 @@ SampleAggregation::getCallchainList(CallchainList &list) const
 	}
 }
 
-void
-SortCallchains(CallchainList & list)
-{
-	std::sort(list.rbegin(), list.rend(), Callchain::SampleCountComp());
-}
-
 bool
 SampleAggregation::NumSampleComp::operator()(const SampleAggregation* l, const SampleAggregation* r)
 {

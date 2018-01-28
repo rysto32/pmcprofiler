@@ -65,6 +65,12 @@ public:
 private:
 	void insertFuncLoc(FuncLocMap &, const InlineFrame &, const Callchain &);
 
+	class SampleCountComp
+	{
+	public:
+		bool operator()(const AggCallChain &, const AggCallChain &);
+	};
+
 protected:
 
 	typedef std::vector<FunctionLocation> FunctionLocationList;
@@ -81,6 +87,8 @@ protected:
 	    FuncLocPtrList & functions);
 
 	static std::string getBasename(const std::string &);
+
+	static void SortCallchains(CallchainList & list);
 
 public:
 

@@ -61,8 +61,6 @@ private:
 	static SampleAggregation &createAggregation(pid_t pid, const char *path);
 	static SampleAggregation &addAggregation(pid_t, const std::string &);
 
-
-
 public:
 	SampleAggregation(const std::string & name, pid_t);
 
@@ -103,7 +101,5 @@ public:
 		bool operator()(const SampleAggregation *, const SampleAggregation *);
 	};
 };
-
-void SortCallchains(CallchainList & list);
 
 #endif

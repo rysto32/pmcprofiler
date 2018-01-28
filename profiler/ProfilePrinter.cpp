@@ -173,6 +173,18 @@ ProfilePrinter::getCallers(const StringChainMap & map, const StringChain & chain
 	return total_samples;
 }
 
+bool
+ProfilePrinter::SampleCountComp::operator()(const AggCallChain & a, const AggCallChain & b)
+{
+	return a.chain->getSampleCount() < b.chain->getSampleCount();
+}
+
+void
+ProfilePrinter::SortCallchains(CallchainList & list)
+{
+	std::sort(list.rbegin(), list.rend(), SampleCountComp());
+}
+
 void
 FlatProfilePrinter::printProfile(const Profiler & profiler,
 				 const AggregationList & aggList)

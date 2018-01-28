@@ -45,12 +45,6 @@ Callchain::addSample()
 	sampleCount++;
 }
 
-bool
-Callchain::SampleCountComp::operator()(const AggCallChain & a, const AggCallChain & b)
-{
-	return a.chain->sampleCount < b.chain->sampleCount;
-}
-
 void
 Callchain::flatten(std::vector<const InlineFrame*> &frameList) const
 {

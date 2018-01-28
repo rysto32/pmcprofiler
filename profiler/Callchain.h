@@ -51,7 +51,7 @@ public:
 
 	typedef std::vector<CallchainRecord> RecordChain;
 
-public:
+private:
 	const CallframeMapper &space;
 	RecordChain callframes;
 	std::unique_ptr<InlineFrame> selfFrame;
@@ -95,12 +95,6 @@ public:
 	const InlineFrame & getLeafFrame() const;
 
 	void flatten(std::vector<const InlineFrame*> &) const;
-
-	class SampleCountComp
-	{
-	public:
-		bool operator()(const AggCallChain &, const AggCallChain &);
-	};
 };
 
 #endif

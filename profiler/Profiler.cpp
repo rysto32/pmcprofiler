@@ -100,7 +100,7 @@ Profiler::processEvent(const Sample& sample)
 }
 
 void
-Profiler::processMapIn(pid_t pid, uintptr_t map_start, const char * image)
+Profiler::processMapIn(pid_t pid, TargetAddr map_start, const char * image)
 {
 	/* a pid of -1 indicates that this is for the kernel */
 	if (pid == -1) {

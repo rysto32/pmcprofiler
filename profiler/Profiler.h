@@ -32,6 +32,8 @@
 
 #include <unordered_set>
 
+#include "ProfilerTypes.h"
+
 class AddressSpace;
 class AddressSpaceFactory;
 class ImageFactory;
@@ -92,9 +94,8 @@ public:
 	void createProfile(ProfilePrinter & printer);
 
 	void processEvent(const ProcessExec& processExec);
-	void processEvent(const ProcessExit& processExit);
 	void processEvent(const Sample& sample);
-	void processMapIn(pid_t pid, uintptr_t map_start, const char * image);
+	void processMapIn(pid_t pid, TargetAddr map_start, const char * image);
 };
 
 #endif // #if !defined(PROFILER_H)

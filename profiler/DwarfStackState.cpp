@@ -24,7 +24,6 @@
 #include "DwarfStackState.h"
 
 #include "DwarfUtil.h"
-#include "Image.h"
 
 DwarfStackState::DwarfStackState(Dwarf_Debug dwarf, Dwarf_Die die,
     const DwarfCompileUnitDie &cu)

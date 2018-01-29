@@ -13,6 +13,7 @@ SRCS=	\
 	DefaultAddressSpaceFactory.cpp \
 	DefaultImageFactory.cpp \
 	DefaultSampleAggregationFactory.cpp \
+	Demangle.cpp \
 	DwarfCompileUnit.cpp \
 	DwarfCompileUnitDie.cpp \
 	DwarfDie.cpp \

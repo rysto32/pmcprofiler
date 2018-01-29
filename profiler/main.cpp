@@ -27,13 +27,13 @@ __FBSDID("$FreeBSD$");
 #include "DefaultAddressSpaceFactory.h"
 #include "DefaultImageFactory.h"
 #include "DefaultSampleAggregationFactory.h"
-#include "Image.h"
 #include "Profiler.h"
 #include "ProfilePrinter.h"
 #include "CallchainProfilePrinter.h"
 #include "SharedString.h"
 
 #include <err.h>
+#include <libelf.h>
 #include <sys/param.h>
 #include <pmclog.h>
 #include <stdlib.h>

@@ -25,7 +25,7 @@
 #include "DwarfDie.h"
 #include "DwarfUtil.h"
 
-#include "Image.h"
+#include <dwarf.h>
 
 void
 DwarfSubprogramInfo::CheckInitialized()

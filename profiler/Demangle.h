@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,66 +21,11 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(IMAGE_H)
-#define IMAGE_H
+#ifndef DEMANGLE_H
+#define DEMANGLE_H
 
-#include "DwarfResolver.h"
-#include "ProfilerTypes.h"
 #include "SharedString.h"
 
-#include <string>
-#include <algorithm>
-#include <functional>
-#include <vector>
-#include <map>
-#include <memory>
-#include <set>
-#include <unordered_map>
+SharedString Demangle(SharedString name);
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-
-class Callframe;
-class ProcessExec;
-class FunctionLocation;
-class ImageFactory;
-class Location;
-class SharedString;
-
-class Image
-{
-private:
-	SharedString imageFile;
-	FrameMap frameMap;
-	bool mapped;
-
-	explicit Image(SharedString imageName);
-
-	Image() = delete;
-	Image(const Image&) = delete;
-	Image(Image&&) = delete;
-	Image& operator=(const Image &) = delete;
-	Image& operator=(Image &&) = delete;
-
-	friend class ImageFactory;
-
-public:
-	~Image();
-
-	bool isMapped() const
-	{
-		return mapped;
-	}
-
-	const SharedString & getImageFile() const
-	{
-		return imageFile;
-	}
-
-	const Callframe & getFrame(TargetAddr offset);
-	void mapAllFrames();
-};
-
-#endif // #if !defined(IMAGE_H)
+#endif

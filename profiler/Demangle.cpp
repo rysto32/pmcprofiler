@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,66 +21,58 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(IMAGE_H)
-#define IMAGE_H
+#include "Demangle.h"
 
-#include "DwarfResolver.h"
 #include "ProfilerTypes.h"
-#include "SharedString.h"
 
-#include <string>
-#include <algorithm>
-#include <functional>
-#include <vector>
-#include <map>
-#include <memory>
-#include <set>
-#include <unordered_map>
+#include <cxxabi.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-
-class Callframe;
-class ProcessExec;
-class FunctionLocation;
-class ImageFactory;
-class Location;
-class SharedString;
-
-class Image
+SharedString
+Demangle(SharedString name)
 {
-private:
-	SharedString imageFile;
-	FrameMap frameMap;
-	bool mapped;
+	char *demangled;
+	char *dst, *src;
+	int angle_count;
+	size_t len;
+	int status;
 
-	explicit Image(SharedString imageName);
+	/*
+	 * abi::__cxa_demangle doesn't work on all non-mangled symbol names,
+	 * so do a hacky test for a mangled name before trying to demangle it.
+	 */
+	if (name->substr(0, 2) != "_Z")
+		return (name);
 
-	Image() = delete;
-	Image(const Image&) = delete;
-	Image(Image&&) = delete;
-	Image& operator=(const Image &) = delete;
-	Image& operator=(Image &&) = delete;
+	len = 0;
+	demangled = (abi::__cxa_demangle(name->c_str(), NULL, &len, &status));
 
-	friend class ImageFactory;
+	if (demangled == NULL)
+		return (name);
 
-public:
-	~Image();
-
-	bool isMapped() const
-	{
-		return mapped;
+	// If template arguments are included in the output, it tends to be
+	// so long that functions are unreadable.  By default, filter out
+	// the template arguments.
+	if (!g_includeTemplates) {
+		dst = demangled;
+		src = demangled;
+		angle_count = 0;
+		while (*src != '\0') {
+			if (*src == '<')
+				angle_count++;
+			else if (*src == '>')
+				angle_count--;
+			else if (angle_count == 0) {
+				if (dst != src)
+					*dst = *src;
+				dst++;
+			}
+			src++;
+		}
+		*dst = '\0';
 	}
 
-	const SharedString & getImageFile() const
-	{
-		return imageFile;
-	}
+	SharedString shared(demangled);
+	free(demangled);
 
-	const Callframe & getFrame(TargetAddr offset);
-	void mapAllFrames();
-};
-
-#endif // #if !defined(IMAGE_H)
+	return (shared);
+}

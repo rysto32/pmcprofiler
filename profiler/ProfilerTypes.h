@@ -34,6 +34,9 @@
 
 typedef uintptr_t TargetAddr;
 
+extern bool g_includeTemplates;
+extern bool g_quitOnError;
+
 class Callchain;
 class Callframe;
 class SampleAggregation;

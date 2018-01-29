@@ -24,13 +24,13 @@
 #include "DwarfSearch.h"
 
 #include "Callframe.h"
+#include "Demangle.h"
 #include "DwarfCompileUnitDie.h"
 #include "DwarfDieStack.h"
 #include "DwarfLocation.h"
 #include "DwarfSrcLine.h"
 #include "DwarfSrcLinesList.h"
 #include "DwarfUtil.h"
-#include "Image.h"
 #include "MapUtil.h"
 
 DwarfSearch::DwarfSearch(Dwarf_Debug dwarf, const DwarfCompileUnitDie &cu,
@@ -158,7 +158,7 @@ DwarfSearch::MapFrame(Callframe & frame, const DwarfLocationList &list)
 			break;
 
 		SharedString func = next->GetCallee();
-		SharedString demangled = Image::demangle(func);
+		SharedString demangled = Demangle(func);
 		frame.addFrame(ptr->GetFile(), func, demangled,
 			ptr->GetCodeLine(), ptr->GetFuncLine(),
 			ptr->GetDwarfDieOffset());

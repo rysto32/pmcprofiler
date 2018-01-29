@@ -58,10 +58,10 @@ typedef std::vector<std::vector<Location> > LocationList;
 
 class Image
 {
+private:
 	typedef std::unordered_map<std::string, std::unique_ptr<Image> > ImageMap;
 
 	static ImageMap imageMap;
-	static const std::string TEXT_SECTION_NAME;
 
 	SharedString imageFile;
 	FrameMap frameMap;

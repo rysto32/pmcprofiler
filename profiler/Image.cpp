@@ -32,7 +32,6 @@ __FBSDID("$FreeBSD$");
 
 #include <cxxabi.h>
 
-const std::string Image::TEXT_SECTION_NAME(".text");
 Image::ImageMap Image::imageMap;
 
 Image Image::unmappedImage("");

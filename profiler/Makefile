@@ -11,6 +11,7 @@ SRCS=	\
 	CallchainProfilePrinter.cpp \
 	Callframe.cpp \
 	DefaultAddressSpaceFactory.cpp \
+	DefaultImageFactory.cpp \
 	DefaultSampleAggregationFactory.cpp \
 	DwarfCompileUnit.cpp \
 	DwarfCompileUnitDie.cpp \

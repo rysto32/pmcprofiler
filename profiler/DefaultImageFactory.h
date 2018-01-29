@@ -21,35 +21,31 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef DEFAULT_ADDRESS_SPACE_FACTORY_H
-#define DEFAULT_ADDRESS_SPACE_FACTORY_H
+#ifndef DEFAULT_IMAGE_FACTORY_H
+#define DEFAULT_IMAGE_FACTORY_H
 
-#include "AddressSpaceFactory.h"
-#include "AddressSpace.h"
+#include "ImageFactory.h"
+#include "SharedString.h"
 
+#include <memory>
 #include <unordered_map>
-#include <vector>
 
-class ImageFactory;
-
-class DefaultAddressSpaceFactory : public AddressSpaceFactory
+class DefaultImageFactory : public ImageFactory
 {
 private:
-	typedef std::unordered_map<pid_t, AddressSpace*> AddressSpaceMap;
-	typedef std::vector<std::unique_ptr<AddressSpace> > AddressSpaceList;
+	typedef std::unordered_map<SharedString, std::unique_ptr<Image>> ImageMap;
 
-	ImageFactory &imgFactory;
-	AddressSpaceMap addressSpaceMap;
-	AddressSpaceList addressSpaceList;
-
-	AddressSpace kernelAddressSpace;
+	ImageMap imageMap;
+	std::unique_ptr<Image> unmappedImage;
 
 public:
-	DefaultAddressSpaceFactory(ImageFactory &);
+	// Explicitly define these to prevent consumers from depending on Image.h
+	DefaultImageFactory();
+	~DefaultImageFactory();
 
-	virtual AddressSpace &GetKernelAddressSpace();
-	virtual AddressSpace &GetProcessAddressSpace(pid_t);
-	virtual AddressSpace &ReplaceAddressSpace(pid_t pid);
+	virtual Image *GetImage(SharedString name);
+	virtual Image &GetUnmappedImage();
+	virtual void MapAll();
 };
 
 #endif

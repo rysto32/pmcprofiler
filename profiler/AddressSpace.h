@@ -38,6 +38,7 @@
 
 class Callframe;
 class Image;
+class ImageFactory;
 class ProcessExec;
 class SharedString;
 
@@ -57,6 +58,7 @@ private:
 
 	typedef std::map<TargetAddr, LoadedImage> LoadableImageMap;
 
+	ImageFactory &imgFactory;
 	LoadableImageMap loadableImageMap;
 	Image *executable;
 
@@ -67,7 +69,7 @@ private:
 	Image &getImage(TargetAddr addr, TargetAddr & loadOffset) const;
 
 public:
-	AddressSpace();
+	AddressSpace(ImageFactory &imgFactory);
 	virtual ~AddressSpace() = default;
 
 	AddressSpace(const AddressSpace&) = delete;

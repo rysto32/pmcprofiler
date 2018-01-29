@@ -23,8 +23,8 @@
 
 #include "DefaultAddressSpaceFactory.h"
 
-DefaultAddressSpaceFactory::DefaultAddressSpaceFactory()
-  : kernelAddressSpace()
+DefaultAddressSpaceFactory::DefaultAddressSpaceFactory(ImageFactory & imgFactory)
+  : imgFactory(imgFactory), kernelAddressSpace(imgFactory)
 {
 }
 
@@ -41,7 +41,7 @@ DefaultAddressSpaceFactory::GetProcessAddressSpace(pid_t pid)
 	if (it != addressSpaceMap.end())
 		return *it->second;
 
-	auto space = std::make_unique<AddressSpace>();
+	auto space = std::make_unique<AddressSpace>(imgFactory);
 	auto inserted = addressSpaceMap.insert(std::make_pair(pid, space.get()));
 	addressSpaceList.push_back(std::move(space));
 	return *inserted.first->second;

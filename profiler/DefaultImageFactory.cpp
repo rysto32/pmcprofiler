@@ -21,35 +21,50 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef DEFAULT_ADDRESS_SPACE_FACTORY_H
-#define DEFAULT_ADDRESS_SPACE_FACTORY_H
+#include "DefaultImageFactory.h"
 
-#include "AddressSpaceFactory.h"
-#include "AddressSpace.h"
+#include "Image.h"
 
-#include <unordered_map>
-#include <vector>
-
-class ImageFactory;
-
-class DefaultAddressSpaceFactory : public AddressSpaceFactory
+DefaultImageFactory::DefaultImageFactory()
+  : unmappedImage(AllocImage(""))
 {
-private:
-	typedef std::unordered_map<pid_t, AddressSpace*> AddressSpaceMap;
-	typedef std::vector<std::unique_ptr<AddressSpace> > AddressSpaceList;
 
-	ImageFactory &imgFactory;
-	AddressSpaceMap addressSpaceMap;
-	AddressSpaceList addressSpaceList;
+}
 
-	AddressSpace kernelAddressSpace;
+DefaultImageFactory::~DefaultImageFactory()
+{
 
-public:
-	DefaultAddressSpaceFactory(ImageFactory &);
+}
 
-	virtual AddressSpace &GetKernelAddressSpace();
-	virtual AddressSpace &GetProcessAddressSpace(pid_t);
-	virtual AddressSpace &ReplaceAddressSpace(pid_t pid);
-};
+std::unique_ptr<Image>
+ImageFactory::AllocImage(SharedString name)
+{
+	return std::unique_ptr<Image>(new Image(name));
+}
 
-#endif
+Image*
+DefaultImageFactory::GetImage(SharedString name)
+{
+	ImageMap::iterator it = imageMap.find(name);
+	if (it == imageMap.end()) {
+		auto ptr = AllocImage(name);
+		Image *image = ptr.get();
+		imageMap.insert(std::make_pair(name, std::move(ptr)));
+		return image;
+	}
+
+	return it->second.get();
+}
+
+Image&
+DefaultImageFactory::GetUnmappedImage()
+{
+	return *unmappedImage;
+}
+
+void
+DefaultImageFactory::MapAll()
+{
+	for (auto & [name, image] : imageMap)
+		image->mapAllFrames();
+}

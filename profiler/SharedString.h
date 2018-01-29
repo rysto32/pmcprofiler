@@ -25,6 +25,7 @@
 #define SHARED_STRING_H
 
 #include <assert.h>
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -190,5 +191,17 @@ public:
 		return *this;
 	}
 };
+
+namespace std
+{
+	template <>
+	struct hash<SharedString>
+	{
+		size_t operator()(const SharedString & str) const
+		{
+			return std::hash<std::string>()(*str);
+		}
+	};
+}
 
 #endif

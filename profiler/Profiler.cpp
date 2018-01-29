@@ -29,7 +29,7 @@ __FBSDID("$FreeBSD$");
 #include "AddressSpace.h"
 #include "AddressSpaceFactory.h"
 #include "EventFactory.h"
-#include "Image.h"
+#include "ImageFactory.h"
 #include "ProcessState.h"
 #include "Sample.h"
 #include "ProfilePrinter.h"
@@ -46,12 +46,13 @@ __FBSDID("$FreeBSD$");
 
 Profiler::Profiler(const std::string& dataFile, bool showlines,
     const char* modulePathStr, AddressSpaceFactory & asFactory,
-    SampleAggregationFactory & aggFactory)
+    SampleAggregationFactory & aggFactory, ImageFactory & imgFactory)
   : m_sampleCount(0),
     m_dataFile(dataFile),
     m_showlines(showlines),
     asFactory(asFactory),
-    aggFactory(aggFactory)
+    aggFactory(aggFactory),
+    imgFactory(imgFactory)
 {
 	if (modulePathStr != NULL)
 		overrideModulePath(modulePathStr);
@@ -65,7 +66,7 @@ Profiler::MapSamples(uint32_t maxDepth)
 	m_sampleCount = 0;
 
 	EventFactory::createEvents(*this, maxDepth);
-	Image::mapAll();
+	imgFactory.MapAll();
 }
 
 void

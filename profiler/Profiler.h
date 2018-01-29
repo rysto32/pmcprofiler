@@ -34,6 +34,7 @@
 
 class AddressSpace;
 class AddressSpaceFactory;
+class ImageFactory;
 class Process;
 class ProcessExit;
 class ProcessExec;
@@ -55,6 +56,7 @@ private:
 	std::vector<std::string> modulePath;
 	AddressSpaceFactory &asFactory;
 	SampleAggregationFactory &aggFactory;
+	ImageFactory &imgFactory;
 
 	void parseModulePath(char * path_buf, std::vector<std::string> & vec);
 	void getLocalModulePath();
@@ -66,7 +68,7 @@ public:
 
 	Profiler(const std::string& dataFile, bool showlines,
 	    const char *modulePathStr, AddressSpaceFactory &,
-	    SampleAggregationFactory &);
+	    SampleAggregationFactory &, ImageFactory &);
 
 	Profiler(const Profiler&) = delete;
 	Profiler& operator=(const Profiler &) = delete;

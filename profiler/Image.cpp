@@ -32,27 +32,14 @@ __FBSDID("$FreeBSD$");
 
 #include <cxxabi.h>
 
-Image::ImageMap Image::imageMap;
-
-Image Image::unmappedImage("");
-
-Image *
-Image::getImage(const char *name)
+Image::Image(SharedString imageName)
+  : imageFile(imageName), mapped(!imageName->empty())
 {
-	ImageMap::iterator it = imageMap.find(name);
-	if (it == imageMap.end()) {
-		auto ptr = std::unique_ptr<Image>(new Image(name));
-		Image *image = ptr.get();
-		imageMap.insert(std::make_pair(std::string(name), std::move(ptr)));
-		return image;
-	}
-
-	return it->second.get();
 }
 
-Image::Image(const std::string& imageName)
-  : imageFile(imageName), mapped(!imageName.empty())
+Image::~Image()
 {
+
 }
 
 SharedString
@@ -128,13 +115,4 @@ Image::mapAllFrames()
 
 	DwarfResolver resolver(imageFile);
 	resolver.Resolve(frameMap);
-}
-
-void
-Image::mapAll()
-{
-	for (ImageMap::iterator it = imageMap.begin();
-	    it != imageMap.end(); ++it) {
-		it->second->mapAllFrames();
-	}
 }

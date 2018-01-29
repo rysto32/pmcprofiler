@@ -25,6 +25,7 @@
 __FBSDID("$FreeBSD$");
 
 #include "DefaultAddressSpaceFactory.h"
+#include "DefaultImageFactory.h"
 #include "DefaultSampleAggregationFactory.h"
 #include "Image.h"
 #include "Profiler.h"
@@ -172,9 +173,11 @@ main(int argc, char *argv[])
 	configedDepth = std::max(configedDepth, minDepth);
 	maxDepth = std::min(preferredDepth, configedDepth);
 
-	DefaultAddressSpaceFactory asFactory;
+	DefaultImageFactory imgFactory;
+	DefaultAddressSpaceFactory asFactory(imgFactory);
 	DefaultSampleAggregationFactory aggFactory;
-	Profiler profiler(samplefile, showlines, modulePath, asFactory, aggFactory);
+	Profiler profiler(samplefile, showlines, modulePath, asFactory,
+	    aggFactory, imgFactory);
 
 	profiler.MapSamples(maxDepth);
 	for (const auto & printer : printers)

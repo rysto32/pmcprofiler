@@ -49,6 +49,7 @@ extern bool g_includeTemplates;
 class Callframe;
 class ProcessExec;
 class FunctionLocation;
+class ImageFactory;
 class Location;
 class SharedString;
 
@@ -59,15 +60,11 @@ typedef std::vector<std::vector<Location> > LocationList;
 class Image
 {
 private:
-	typedef std::unordered_map<std::string, std::unique_ptr<Image> > ImageMap;
-
-	static ImageMap imageMap;
-
 	SharedString imageFile;
 	FrameMap frameMap;
 	bool mapped;
 
-	explicit Image(const std::string& imageName);
+	explicit Image(SharedString imageName);
 
 	Image() = delete;
 	Image(const Image&) = delete;
@@ -75,11 +72,12 @@ private:
 	Image& operator=(const Image &) = delete;
 	Image& operator=(Image &&) = delete;
 
-public:
-	static SharedString demangle(SharedString name);
+	friend class ImageFactory;
 
-	static Image unmappedImage;
-	static Image *getImage(const char *name);
+public:
+	~Image();
+
+	static SharedString demangle(SharedString name);
 
 	bool isMapped() const
 	{
@@ -93,8 +91,6 @@ public:
 
 	const Callframe & getFrame(TargetAddr offset);
 	void mapAllFrames();
-
-	static void mapAll();
 };
 
 #endif // #if !defined(IMAGE_H)

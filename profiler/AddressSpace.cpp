@@ -26,6 +26,7 @@
 
 #include "Callframe.h"
 #include "Image.h"
+#include "ImageFactory.h"
 #include "MapUtil.h"
 #include "ProcessState.h"
 
@@ -34,8 +35,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-AddressSpace::AddressSpace()
-  : executable(NULL)
+AddressSpace::AddressSpace(ImageFactory &imgFactory)
+  : imgFactory(imgFactory), executable(NULL)
 {
 }
 
@@ -103,7 +104,7 @@ AddressSpace::getImage(TargetAddr addr, TargetAddr & loadOffset) const
 	auto it = LastSmallerThan(loadableImageMap, addr);
 	if (it == loadableImageMap.end()) {
 		loadOffset = 0;
-		return Image::unmappedImage;
+		return imgFactory.GetUnmappedImage();
 	}
 
 	loadOffset = it->second.loadOffset;
@@ -113,7 +114,7 @@ AddressSpace::getImage(TargetAddr addr, TargetAddr & loadOffset) const
 void
 AddressSpace::mapIn(TargetAddr start, const char * imagePath)
 {
-	Image *image = Image::getImage(imagePath);
+	Image *image = imgFactory.GetImage(imagePath);
 	TargetAddr loadOffset;
 
 	/*

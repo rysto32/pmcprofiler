@@ -34,46 +34,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-AddressSpace::AddressSpaceMap AddressSpace::addressSpaceMap;
-AddressSpace::AddressSpaceList AddressSpace::addressSpaceList;
-
-AddressSpace AddressSpace::kernelAddressSpace(KERNEL_PID);
-
-AddressSpace& AddressSpace::getKernelAddressSpace()
-{
-	return kernelAddressSpace;
-}
-
-AddressSpace& AddressSpace::getProcessAddressSpace(pid_t pid)
-{
-	AddressSpaceMap::iterator it = addressSpaceMap.find(pid);
-	if (it != addressSpaceMap.end())
-		return *it->second;
-
-	auto space = std::make_unique<AddressSpace>(pid);
-	auto inserted = addressSpaceMap.insert(std::make_pair(pid, space.get()));
-	addressSpaceList.push_back(std::move(space));
-	return *inserted.first->second;
-}
-
-AddressSpace &
-AddressSpace::getAddressSpace(bool kernel, pid_t pid)
-{
-	if (kernel)
-		return getKernelAddressSpace();
-	else
-		return getProcessAddressSpace(pid);
-}
-
-void
-AddressSpace::clearAddressSpaces()
-{
-	addressSpaceMap.clear();
-	kernelAddressSpace.reset();
-}
-
-AddressSpace::AddressSpace(pid_t pid)
-  : executable(NULL), pid(pid)
+AddressSpace::AddressSpace()
+  : executable(NULL)
 {
 }
 
@@ -131,15 +93,8 @@ cleanup:
 void
 AddressSpace::processExec(const ProcessExec& ev)
 {
-
-	/* Destroy the address space for the pre-exec process */
-	addressSpaceMap.erase(ev.getProcessID());
-
-	/* Create a new address space and map in the executable */
-	auto & sp = getProcessAddressSpace(ev.getProcessID());
-
 	TargetAddr loadAddr = getLoadAddr(ev.getProcessName());
-	sp.mapIn(loadAddr, ev.getProcessName().c_str());
+	mapIn(loadAddr, ev.getProcessName().c_str());
 }
 
 Image &

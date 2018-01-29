@@ -10,6 +10,7 @@ SRCS=	\
 	Callchain.cpp \
 	CallchainProfilePrinter.cpp \
 	Callframe.cpp \
+	DefaultAddressSpaceFactory.cpp \
 	DwarfCompileUnit.cpp \
 	DwarfCompileUnitDie.cpp \
 	DwarfDie.cpp \

@@ -32,6 +32,8 @@
 
 #include <unordered_set>
 
+class AddressSpace;
+class AddressSpaceFactory;
 class Process;
 class ProcessExit;
 class ProcessExec;
@@ -50,14 +52,18 @@ private:
 
 	std::string kernelFile;
 	std::vector<std::string> modulePath;
+	AddressSpaceFactory &asFactory;
 
 	void parseModulePath(char * path_buf, std::vector<std::string> & vec);
 	void getLocalModulePath();
 	void overrideModulePath(const char *modulePathStr);
 
+	AddressSpace & GetAddressSpace(bool kernel, pid_t pid);
+
 public:
 
-	Profiler(const std::string& dataFile, bool showlines, const char *modulePathStr);
+	Profiler(const std::string& dataFile, bool showlines,
+	    const char *modulePathStr, AddressSpaceFactory &);
 
 	Profiler(const Profiler&) = delete;
 	Profiler& operator=(const Profiler &) = delete;

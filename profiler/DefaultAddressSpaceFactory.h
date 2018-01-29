@@ -1,5 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
-// Copyright (c) 2017 Ryan Stone.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -22,65 +21,32 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef ADDRESSSPACE_H
-#define ADDRESSSPACE_H
+#ifndef DEFAULT_ADDRESS_SPACE_FACTORY_H
+#define DEFAULT_ADDRESS_SPACE_FACTORY_H
 
-#include "CallframeMapper.h"
-#include "ProfilerTypes.h"
+#include "AddressSpaceFactory.h"
+#include "AddressSpace.h"
 
-#include <map>
-#include <memory>
-#include <string>
 #include <unordered_map>
 #include <vector>
 
-#include <sys/types.h>
-
-class Callframe;
-class Image;
-class ProcessExec;
-class SharedString;
-
-class AddressSpace : public CallframeMapper
+class DefaultAddressSpaceFactory : public AddressSpaceFactory
 {
 private:
-	struct LoadedImage
-	{
-		Image *image;
-		TargetAddr loadOffset;
+	typedef std::unordered_map<pid_t, AddressSpace*> AddressSpaceMap;
+	typedef std::vector<std::unique_ptr<AddressSpace> > AddressSpaceList;
 
-		LoadedImage(Image *i, TargetAddr off)
-		  : image(i), loadOffset(off)
-		{
-		}
-	};
+	AddressSpaceMap addressSpaceMap;
+	AddressSpaceList addressSpaceList;
 
-	typedef std::map<TargetAddr, LoadedImage> LoadableImageMap;
-
-	LoadableImageMap loadableImageMap;
-	Image *executable;
-
-	void reset();
-
-	static TargetAddr getLoadAddr(const std::string &executable);
-
-	Image &getImage(TargetAddr addr, TargetAddr & loadOffset) const;
+	AddressSpace kernelAddressSpace;
 
 public:
-	AddressSpace();
-	virtual ~AddressSpace() = default;
+	DefaultAddressSpaceFactory();
 
-	AddressSpace(const AddressSpace&) = delete;
-	AddressSpace& operator=(const AddressSpace &) = delete;
-
-	void mapIn(TargetAddr start, const char * imagePath);
-	void findAndMap(TargetAddr start, const std::vector<std::string> path,
-	    const char *name);
-
-	const Callframe & mapFrame(TargetAddr addr);
-	void processExec(const ProcessExec& ev);
-
-	SharedString getExecutableName() const;
+	virtual AddressSpace &GetKernelAddressSpace();
+	virtual AddressSpace &GetProcessAddressSpace(pid_t);
+	virtual AddressSpace &ReplaceAddressSpace(pid_t pid);
 };
 
 #endif

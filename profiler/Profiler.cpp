@@ -27,6 +27,7 @@ __FBSDID("$FreeBSD$");
 #include "Profiler.h"
 
 #include "AddressSpace.h"
+#include "AddressSpaceFactory.h"
 #include "EventFactory.h"
 #include "Image.h"
 #include "ProcessState.h"
@@ -43,10 +44,11 @@ __FBSDID("$FreeBSD$");
 #include <sys/sysctl.h>
 
 Profiler::Profiler(const std::string& dataFile, bool showlines,
-    const char* modulePathStr)
+    const char* modulePathStr, AddressSpaceFactory & asFactory)
   : m_sampleCount(0),
     m_dataFile(dataFile),
-    m_showlines(showlines)
+    m_showlines(showlines),
+    asFactory(asFactory)
 {
 	if (modulePathStr != NULL)
 		overrideModulePath(modulePathStr);
@@ -58,7 +60,6 @@ void
 Profiler::MapSamples(uint32_t maxDepth)
 {
 	m_sampleCount = 0;
-	AddressSpace::clearAddressSpaces();
 	SampleAggregation::clearAggregations();
 
 	EventFactory::createEvents(*this, maxDepth);
@@ -78,7 +79,8 @@ void
 Profiler::processEvent(const ProcessExec& processExec)
 {
 	SampleAggregation::processExec(processExec);
-	AddressSpace::processExec(processExec);
+	auto & space = asFactory.ReplaceAddressSpace(processExec.getProcessID());
+	space.processExec(processExec);
 }
 
 void
@@ -88,8 +90,7 @@ Profiler::processEvent(const Sample& sample)
 		return;
 
 	bool kernel = sample.isKernel();
-	AddressSpace &space = AddressSpace::getAddressSpace(kernel,
-	    sample.getProcessID());
+	AddressSpace &space = GetAddressSpace(kernel, sample.getProcessID());
 
 	SampleAggregation::getAggregation(sample).addSample(space, sample);
 	m_sampleCount++;
@@ -100,10 +101,10 @@ Profiler::processMapIn(pid_t pid, uintptr_t map_start, const char * image)
 {
 	/* a pid of -1 indicates that this is for the kernel */
 	if (pid == -1) {
-		AddressSpace &space = AddressSpace::getKernelAddressSpace();
+		AddressSpace &space = asFactory.GetKernelAddressSpace();
 		space.findAndMap(map_start, modulePath, image);
 	} else {
-		AddressSpace &space = AddressSpace::getProcessAddressSpace(pid);
+		AddressSpace &space = asFactory.GetProcessAddressSpace(pid);
 		space.mapIn(map_start, image);
 	}
 
@@ -149,4 +150,13 @@ Profiler::overrideModulePath(const char* modulePathStr)
 	memcpy(pathBuf.get(), modulePathStr, len);
 
 	parseModulePath(pathBuf.get(), modulePath);
+}
+
+AddressSpace &
+Profiler::GetAddressSpace(bool kernel, pid_t pid)
+{
+	if (kernel)
+		return asFactory.GetKernelAddressSpace();
+	else
+		return asFactory.GetProcessAddressSpace(pid);
 }

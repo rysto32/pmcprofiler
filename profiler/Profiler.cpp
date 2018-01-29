@@ -34,6 +34,7 @@ __FBSDID("$FreeBSD$");
 #include "Sample.h"
 #include "ProfilePrinter.h"
 #include "SampleAggregation.h"
+#include "SampleAggregationFactory.h"
 
 #include <cassert>
 #include <cstring>
@@ -44,11 +45,13 @@ __FBSDID("$FreeBSD$");
 #include <sys/sysctl.h>
 
 Profiler::Profiler(const std::string& dataFile, bool showlines,
-    const char* modulePathStr, AddressSpaceFactory & asFactory)
+    const char* modulePathStr, AddressSpaceFactory & asFactory,
+    SampleAggregationFactory & aggFactory)
   : m_sampleCount(0),
     m_dataFile(dataFile),
     m_showlines(showlines),
-    asFactory(asFactory)
+    asFactory(asFactory),
+    aggFactory(aggFactory)
 {
 	if (modulePathStr != NULL)
 		overrideModulePath(modulePathStr);
@@ -60,7 +63,6 @@ void
 Profiler::MapSamples(uint32_t maxDepth)
 {
 	m_sampleCount = 0;
-	SampleAggregation::clearAggregations();
 
 	EventFactory::createEvents(*this, maxDepth);
 	Image::mapAll();
@@ -70,7 +72,7 @@ void
 Profiler::createProfile(ProfilePrinter & printer)
 {
 	AggregationList aggregations;
-	SampleAggregation::getAggregationList(aggregations);
+	aggFactory.GetAggregationList(aggregations);
 
 	printer.printProfile(*this, aggregations);
 }
@@ -78,7 +80,7 @@ Profiler::createProfile(ProfilePrinter & printer)
 void
 Profiler::processEvent(const ProcessExec& processExec)
 {
-	SampleAggregation::processExec(processExec);
+	aggFactory.HandleExec(processExec);
 	auto & space = asFactory.ReplaceAddressSpace(processExec.getProcessID());
 	space.processExec(processExec);
 }
@@ -92,7 +94,7 @@ Profiler::processEvent(const Sample& sample)
 	bool kernel = sample.isKernel();
 	AddressSpace &space = GetAddressSpace(kernel, sample.getProcessID());
 
-	SampleAggregation::getAggregation(sample).addSample(space, sample);
+	aggFactory.GetAggregation(sample).addSample(space, sample);
 	m_sampleCount++;
 }
 
@@ -108,7 +110,7 @@ Profiler::processMapIn(pid_t pid, uintptr_t map_start, const char * image)
 		space.mapIn(map_start, image);
 	}
 
-	SampleAggregation::processMapIn(pid, image);
+	aggFactory.HandleMapIn(pid, image);
 }
 
 void

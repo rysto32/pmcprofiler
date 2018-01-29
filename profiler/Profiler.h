@@ -38,6 +38,7 @@ class Process;
 class ProcessExit;
 class ProcessExec;
 class Sample;
+class SampleAggregationFactory;
 class ProfilePrinter;
 
 extern std::unordered_set<pid_t> pid_filter;
@@ -53,6 +54,7 @@ private:
 	std::string kernelFile;
 	std::vector<std::string> modulePath;
 	AddressSpaceFactory &asFactory;
+	SampleAggregationFactory &aggFactory;
 
 	void parseModulePath(char * path_buf, std::vector<std::string> & vec);
 	void getLocalModulePath();
@@ -63,7 +65,8 @@ private:
 public:
 
 	Profiler(const std::string& dataFile, bool showlines,
-	    const char *modulePathStr, AddressSpaceFactory &);
+	    const char *modulePathStr, AddressSpaceFactory &,
+	    SampleAggregationFactory &);
 
 	Profiler(const Profiler&) = delete;
 	Profiler& operator=(const Profiler &) = delete;

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Ryan Stone.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,74 +21,26 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef SAMPLEAGGREGATION_H
-#define SAMPLEAGGREGATION_H
+#ifndef SAMPLE_AGGREGATION_FACTORY_H
+#define SAMPLE_AGGREGATION_FACTORY_H
 
 #include "ProfilerTypes.h"
-#include "Sample.h"
 
 #include <sys/types.h>
 
-#include <sstream>
-#include <vector>
-#include <memory>
-#include <unordered_map>
-
-class AddressSpace;
-class Callchain;
 class ProcessExec;
+class Sample;
+class SampleAggregation;
 
-class SampleAggregation
+class SampleAggregationFactory
 {
-private:
-	typedef std::unordered_map<Sample, std::unique_ptr<Callchain>, Sample::hash> FrameMap;
-
-	FrameMap frameMap;
-	std::string executableName;
-	mutable std::string baseName;
-	mutable std::string displayName;
-	pid_t pid;
-	size_t sampleCount;
-	size_t userlandSampleCount;
-
-	void addFrame(AddressSpace &space, const Sample &);
-
 public:
-	SampleAggregation(const std::string & name, pid_t);
+	virtual ~SampleAggregationFactory() = default;
 
-	// Prevent consumers from getting a dependency on ~Callchain
-	~SampleAggregation();
-
-	SampleAggregation(const SampleAggregation&) = delete;
-	SampleAggregation& operator=(const SampleAggregation &) = delete;
-
-	void addSample(AddressSpace &, const Sample &);
-
-	void getCallchainList(CallchainList &) const;
-
-	const std::string & getExecutable() const
-	{
-		return executableName;
-	}
-
-	const std::string & getDisplayName() const;
-	const std::string & getBaseName() const;
-
-	pid_t getPid() const
-	{
-		return pid;
-	}
-
-	size_t getSampleCount() const
-	{
-		return sampleCount;
-	}
-
-	class NumSampleComp
-	{
-	public:
-		bool operator()(const SampleAggregation *, const SampleAggregation *);
-	};
+	virtual SampleAggregation &GetAggregation(const Sample &) = 0;
+	virtual void GetAggregationList(AggregationList &) = 0;
+	virtual void HandleExec(const ProcessExec &) = 0;
+	virtual void HandleMapIn(pid_t pid, const char *path) = 0;
 };
 
 #endif

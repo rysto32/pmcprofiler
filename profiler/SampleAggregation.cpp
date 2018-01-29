@@ -32,67 +32,14 @@
 #include <memory>
 #include <sstream>
 
-SampleAggregation::AggregationMap SampleAggregation::aggregationMap;
-SampleAggregation::AggregationOwnerList SampleAggregation::aggregationOwnerList;
-
-SampleAggregation &
-SampleAggregation::getAggregation(const Sample &sample)
-{
-	auto it = aggregationMap.find(sample.getProcessID());
-	if (it != aggregationMap.end())
-		return *it->second;
-
-	return addAggregation(sample.getProcessID(), "");
-}
-
-SampleAggregation &
-SampleAggregation::addAggregation(pid_t pid, const std::string &name)
-{
-	auto ptr = std::make_unique<SampleAggregation>(name, pid);
-	SampleAggregation & agg = *ptr;
-	aggregationMap[pid] = ptr.get();
-	aggregationOwnerList.push_back(std::move(ptr));
-
-	return agg;
-}
-
-void
-SampleAggregation::processMapIn(pid_t pid, const char *path)
-{
-	if (aggregationMap.count(pid) != 0)
-		return;
-
-	addAggregation(pid, path);
-}
-
-void
-SampleAggregation::processExec(const ProcessExec & exec)
-{
-	addAggregation(exec.getProcessID(), exec.getProcessName());
-}
-
-void
-SampleAggregation::clearAggregations()
-{
-	aggregationMap.clear();
-	aggregationOwnerList.clear();
-}
-
 SampleAggregation::SampleAggregation(const std::string &name, pid_t pid)
  : executableName(name), pid(pid), sampleCount(0), userlandSampleCount(0)
 {
 }
 
-void
-SampleAggregation::getAggregationList(AggregationList &list)
+SampleAggregation::~SampleAggregation()
 {
-	for (const auto & agg : aggregationOwnerList) {
-		if (agg->sampleCount == 0)
-			continue;
-		list.push_back(agg.get());
-	}
 
-	std::sort(list.rbegin(), list.rend(), SampleAggregation::NumSampleComp());
 }
 
 void

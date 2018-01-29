@@ -6,9 +6,26 @@ TOPDIR=../
 .for test in ${TESTS}
 
 TEST_${test:tu}_OBJPATHS=
+.ifdef TEST_${test:tu}_WRAPFUNCS
+
+TEST_${test:tu}_REDEFINE_SYMS=
+.for sym in ${TEST_${test:tu}_WRAPFUNCS}
+TEST_${test:tu}_REDEFINE_SYMS += --redefine-sym ${sym}
+.endfor
+
+.for obj in ${TEST_${test:tu}_OBJS}
+TEST_${test:tu}_OBJPATHS+=${obj:R}.${test}.test.o
+
+${obj:R}.${test}.test.o: ${TOPDIR}/${obj}
+	objcopy ${TEST_${test:tu}_REDEFINE_SYMS} $> $@
+.endfor
+
+CLEANFILES += ${TEST_${test:tu}_OBJPATHS}
+.else
 .for obj in ${TEST_${test:tu}_OBJS}
 TEST_${test:tu}_OBJPATHS+=${TOPDIR}/${obj}
 .endfor
+.endif
 
 TEST_${test:tu}_LIBARGS=
 .for lib in ${TEST_${test:tu}_LIBS}

@@ -252,6 +252,34 @@ AddMapInExpectation(void * cookie, pid_t pid, TargetAddr start, const char * fil
 }
 
 static void
+AddExecExpectation(void * cookie, pid_t pid, std::string execname, TargetAddr start)
+{
+	pmclog_ev event = {
+		.pl_state = PMCLOG_OK,
+		.pl_type = PMCLOG_TYPE_PROCEXEC,
+		.pl_u.pl_x = {
+			.pl_pid = pid,
+			.pl_entryaddr = start,
+		}
+	};
+
+	strlcpy(event.pl_u.pl_x.pl_pathname, execname.c_str(), sizeof(event.pl_u.pl_x.pl_pathname));
+
+	EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
+	    .Times(1)
+	    .WillOnce(DoAll(
+	        SetArgPointee<1>(event),
+	        Return(0)
+	    )
+	);
+
+	EXPECT_CALL(*profilerMock, processExec(AllOf(
+	    Property(&ProcessExec::getProcessID, pid),
+	    Property(&ProcessExec::getProcessName, execname),
+	    Property(&ProcessExec::getEntryAddr, start))));
+}
+
+static void
 AddUnhandledTypeExpectation(void * cookie, pmclog_type type)
 {
 	pmclog_ev event = {
@@ -445,7 +473,39 @@ TEST_F(EventFactoryTestSuite, TestMapIn)
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
 
-		AddMapInExpectation(&max_depth, 231, 0xfffe9398, "/lib/libthr.so.3");
+		AddMapInExpectation(cookie, 231, 0xfffe9398, "/lib/libthr.so.3");
+
+		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
+		    .Times(1).WillOnce(Return(-1));
+
+		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
+		    .Times(1);
+		MockOpen::ExpectClose(fd, 0);
+	}
+
+	EventFactory::createEvents(profiler, max_depth);
+}
+
+TEST_F(EventFactoryTestSuite, TestExec)
+{
+	Profiler profiler("./output/callchains", false, "", asFactory, aggFactory,
+	    imgFactory);
+
+	uint32_t max_depth = 3;
+
+	{
+		InSequence dummy;
+		const int fd = INT_MAX - 1;
+
+		// Use an arbitrary address for the cookie -- it's opaque
+		// to the user
+		void *cookie = &max_depth;
+
+		MockOpen::ExpectOpen("./output/callchains", O_RDONLY, fd);
+		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
+		    .Times(1).WillOnce(Return(cookie));
+
+		AddExecExpectation(cookie, 1654, "/usr/bin/c++", 0xfed0);
 
 		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
 		    .Times(1).WillOnce(Return(-1));

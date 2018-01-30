@@ -28,25 +28,49 @@
 
 #include <gmock/gmock.h>
 
-class OpenMocker
+class MockOpen
 {
 public:
 	MOCK_METHOD2(Open, int(std::string name, int flags));
 	MOCK_METHOD1(Close, int(int fd));
+
+	static std::unique_ptr<testing::StrictMock<MockOpen>> openMock;
+
+	static void SetUp()
+	{
+		openMock = std::make_unique<testing::StrictMock<MockOpen>>();
+	}
+
+	static void TearDown()
+	{
+		openMock.reset();
+	}
+
+	static void ExpectOpen(const std::string & n, int flags, int fd)
+	{
+		EXPECT_CALL(*openMock, Open(n, flags))
+		    .Times(1).WillOnce(testing::Return(fd));
+	}
+
+	static void ExpectClose(int fd, int ret)
+	{
+		EXPECT_CALL(*openMock, Close(fd))
+		    .Times(1).WillOnce(testing::Return(ret));
+	}
 };
 
-std::unique_ptr<testing::StrictMock<OpenMocker>> openMock;
+std::unique_ptr<testing::StrictMock<MockOpen>> MockOpen::openMock;
 
 extern "C" int
 mock_open(const char * file, int flags)
 {
-	return openMock->Open(file, flags);
+	return MockOpen::openMock->Open(file, flags);
 }
 
 extern "C" int
 mock_close(int fd)
 {
-	return openMock->Close(fd);
+	return MockOpen::openMock->Close(fd);
 }
 
 #endif

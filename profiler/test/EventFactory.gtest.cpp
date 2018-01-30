@@ -273,7 +273,7 @@ public:
 
 	void SetUp()
 	{
-		openMock = std::make_unique<StrictMock<OpenMocker>>();
+		MockOpen::SetUp();
 		profilerMock = std::make_unique<StrictMock<ProfilerMocker>>();
 		libpmcMock = std::make_unique<StrictMock<LibpmcMocker>>();
 
@@ -284,7 +284,7 @@ public:
 
 	void TearDown()
 	{
-		openMock.reset();
+		MockOpen::TearDown();
 		profilerMock.reset();
 		libpmcMock.reset();
 	}
@@ -304,8 +304,7 @@ TEST_F(EventFactoryTestSuite, TestEmptyPmclog)
 		void * cookie = &cookie_val;
 
 		const int fd = 12625;
-		EXPECT_CALL(*openMock, Open("/tmp/samples.out", O_RDONLY))
-		    .Times(1).WillOnce(Return(fd));
+		MockOpen::ExpectOpen("/tmp/samples.out", O_RDONLY, fd);
 
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
@@ -315,8 +314,7 @@ TEST_F(EventFactoryTestSuite, TestEmptyPmclog)
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
-		EXPECT_CALL(*openMock, Close(fd))
-		    .Times(1).WillOnce(Return(0));
+		MockOpen::ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, 1);
@@ -336,8 +334,7 @@ TEST_F(EventFactoryTestSuite, TestSingleSample)
 		void * cookie = &cookie_val;
 
 		const int fd = 9628;
-		EXPECT_CALL(*openMock, Open("/root/pmc.log", O_RDONLY))
-		    .Times(1).WillOnce(Return(fd));
+		MockOpen::ExpectOpen("/root/pmc.log", O_RDONLY, fd);
 
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
@@ -349,8 +346,7 @@ TEST_F(EventFactoryTestSuite, TestSingleSample)
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
-		EXPECT_CALL(*openMock, Close(fd))
-		    .Times(1).WillOnce(Return(0));
+		MockOpen::ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, 1);
@@ -369,11 +365,10 @@ TEST_F(EventFactoryTestSuite, TestSingleCallchain)
 
 		// Use an arbitrary address for the cookie -- it's opaque
 		// to the user
-		void * cookie = openMock.get();
+		void * cookie = &dummy;
 
 		const int fd = 1750;
-		EXPECT_CALL(*openMock, Open("pmcstat.bin", O_RDONLY))
-		    .Times(1).WillOnce(Return(fd));
+		MockOpen::ExpectOpen("pmcstat.bin", O_RDONLY, fd);
 
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
@@ -385,8 +380,7 @@ TEST_F(EventFactoryTestSuite, TestSingleCallchain)
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
-		EXPECT_CALL(*openMock, Close(fd))
-		    .Times(1).WillOnce(Return(0));
+		MockOpen::ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, max_depth);
@@ -409,8 +403,7 @@ TEST_F(EventFactoryTestSuite, TestMaxDepth)
 		void * cookie = &cookie_val;
 
 		const int fd = INT_MAX;
-		EXPECT_CALL(*openMock, Open("pmcstat.bin", O_RDONLY))
-		    .Times(1).WillOnce(Return(fd));
+		MockOpen::ExpectOpen("pmcstat.bin", O_RDONLY, fd);
 
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
@@ -423,8 +416,7 @@ TEST_F(EventFactoryTestSuite, TestMaxDepth)
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
-		EXPECT_CALL(*openMock, Close(fd))
-		    .Times(1).WillOnce(Return(0));
+		MockOpen::ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, max_depth);
@@ -446,8 +438,7 @@ TEST_F(EventFactoryTestSuite, TestMapIn)
 		// to the user
 		void *cookie = &max_depth;
 
-		EXPECT_CALL(*openMock, Open("./output/callchains", O_RDONLY))
-		    .Times(1).WillOnce(Return(fd));
+		MockOpen::ExpectOpen("./output/callchains", O_RDONLY, fd);
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
 
@@ -458,8 +449,7 @@ TEST_F(EventFactoryTestSuite, TestMapIn)
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
-		EXPECT_CALL(*openMock, Close(fd))
-		    .Times(1).WillOnce(Return(0));
+		MockOpen::ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, max_depth);
@@ -470,8 +460,7 @@ TEST_F(EventFactoryTestSuite, TestOpenFail)
 {
 	Profiler profiler("./output/callchains", false, "", asFactory, aggFactory,
 	    imgFactory);
-	EXPECT_CALL(*openMock, Open("./output/callchains", O_RDONLY))
-	    .Times(1).WillOnce(Return(-1));
+	MockOpen::ExpectOpen("./output/callchains", O_RDONLY, -1);
 
 	EventFactory::createEvents(profiler, 32);
 }
@@ -486,12 +475,10 @@ TEST_F(EventFactoryTestSuite, TestLogOpenFail)
 	{
 		InSequence dummy;
 		const int fd = 4841;
-		EXPECT_CALL(*openMock, Open("./output/callchains", O_RDONLY))
-		    .Times(1).WillOnce(Return(fd));
+		MockOpen::ExpectOpen("./output/callchains", O_RDONLY, fd);
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(NULL));
-		EXPECT_CALL(*openMock, Close(fd))
-		    .Times(1).WillOnce(Return(0));
+		MockOpen::ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, 32);
@@ -511,8 +498,7 @@ TEST_F(EventFactoryTestSuite, TestUnhandledEvents)
 	{
 		InSequence dummy;
 		const int fd = INT_MAX - 1;
-		EXPECT_CALL(*openMock, Open("./output/callchains", O_RDONLY))
-		    .Times(1).WillOnce(Return(fd));
+		MockOpen::ExpectOpen("./output/callchains", O_RDONLY, fd);
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
 
@@ -537,8 +523,7 @@ TEST_F(EventFactoryTestSuite, TestUnhandledEvents)
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
-		EXPECT_CALL(*openMock, Close(fd))
-		    .Times(1).WillOnce(Return(0));
+		MockOpen::ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, max_depth);

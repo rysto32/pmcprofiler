@@ -73,9 +73,9 @@ public:
 	AddressSpace(const AddressSpace&) = delete;
 	AddressSpace& operator=(const AddressSpace &) = delete;
 
-	void mapIn(TargetAddr start, const char * imagePath);
+	void mapIn(TargetAddr start, SharedString imagePath);
 	void findAndMap(TargetAddr start, const std::vector<std::string> path,
-	    const char *name);
+	    SharedString name);
 
 	const Callframe & mapFrame(TargetAddr addr);
 	void processExec(const ProcessExec& ev);

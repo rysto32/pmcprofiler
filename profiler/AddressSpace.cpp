@@ -112,7 +112,7 @@ AddressSpace::getImage(TargetAddr addr, TargetAddr & loadOffset) const
 }
 
 void
-AddressSpace::mapIn(TargetAddr start, const char * imagePath)
+AddressSpace::mapIn(TargetAddr start, SharedString imagePath)
 {
 	Image *image = imgFactory.GetImage(imagePath);
 	TargetAddr loadOffset;
@@ -136,12 +136,12 @@ AddressSpace::mapIn(TargetAddr start, const char * imagePath)
 
 void
 AddressSpace::findAndMap(TargetAddr start, const std::vector<std::string> path,
-    const char* name)
+    SharedString name)
 {
 	for (const auto & pathComp : path) {
 		std::string path(pathComp);
 		path += '/';
-		path += name;
+		path += *name;
 
 		int fd = open(path.c_str(), O_RDONLY);
 		if (fd >= 0) {
@@ -152,7 +152,7 @@ AddressSpace::findAndMap(TargetAddr start, const std::vector<std::string> path,
 	}
 
 	fprintf(stderr, "%s: unable to find file %s\n",
-		g_quitOnError ? "error" : "warning", name);
+		g_quitOnError ? "error" : "warning", name->c_str());
 	if (g_quitOnError)
 		exit(5);
 }

@@ -233,3 +233,17 @@ TEST(SharedStringTestSuite, TestMoveAssignment)
 	ASSERT_EQ(first, second);
 	ASSERT_TRUE(IsAllocated(data));
 }
+
+TEST(SharedStringTestSuite, TestHasher)
+{
+	const char *cStr = "frist";
+	std::string second("second");
+	std::string empty;
+
+	std::hash<SharedString> sharedHash;
+	std::hash<std::string> strHash;
+
+	ASSERT_EQ(sharedHash(cStr), strHash(cStr));
+	ASSERT_EQ(sharedHash(second), strHash(second));
+	ASSERT_EQ(sharedHash(empty), strHash(empty));
+}

@@ -65,6 +65,7 @@ private:
 	static TargetAddr getLoadAddr(const std::string &executable);
 
 	Image &getImage(TargetAddr addr, TargetAddr & loadOffset) const;
+	void mapImage(TargetAddr addr, Image *image);
 
 public:
 	AddressSpace(ImageFactory &imgFactory);

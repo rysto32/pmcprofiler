@@ -115,6 +115,12 @@ void
 AddressSpace::mapIn(TargetAddr start, SharedString imagePath)
 {
 	Image *image = imgFactory.GetImage(imagePath);
+	mapImage(start, image);
+}
+
+void
+AddressSpace::mapImage(TargetAddr start, Image* image)
+{
 	TargetAddr loadOffset;
 
 	/*
@@ -155,6 +161,8 @@ AddressSpace::findAndMap(TargetAddr start, const std::vector<std::string> path,
 		g_quitOnError ? "error" : "warning", name->c_str());
 	if (g_quitOnError)
 		exit(5);
+
+	mapImage(start, &imgFactory.GetUnmappedImage());
 }
 
 

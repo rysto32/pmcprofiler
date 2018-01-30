@@ -26,6 +26,7 @@ SRCS=	\
 	DwarfUtil.cpp \
 	EventFactory.cpp \
 	Image.cpp \
+	ImageFactory.cpp \
 	main.cpp \
 	Profiler.cpp \
 	ProfilePrinter.cpp \

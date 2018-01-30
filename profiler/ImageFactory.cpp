@@ -21,44 +21,12 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include "DefaultImageFactory.h"
+#include "ImageFactory.h"
 
 #include "Image.h"
 
-DefaultImageFactory::DefaultImageFactory()
-  : unmappedImage(AllocImage(""))
+std::unique_ptr<Image>
+ImageFactory::AllocImage(SharedString name)
 {
-
-}
-
-DefaultImageFactory::~DefaultImageFactory()
-{
-
-}
-
-Image*
-DefaultImageFactory::GetImage(SharedString name)
-{
-	ImageMap::iterator it = imageMap.find(name);
-	if (it == imageMap.end()) {
-		auto ptr = AllocImage(name);
-		Image *image = ptr.get();
-		imageMap.insert(std::make_pair(name, std::move(ptr)));
-		return image;
-	}
-
-	return it->second.get();
-}
-
-Image&
-DefaultImageFactory::GetUnmappedImage()
-{
-	return *unmappedImage;
-}
-
-void
-DefaultImageFactory::MapAll()
-{
-	for (auto & [name, image] : imageMap)
-		image->mapAllFrames();
+	return std::unique_ptr<Image>(new Image(name));
 }

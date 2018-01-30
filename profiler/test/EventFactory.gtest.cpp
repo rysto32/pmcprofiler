@@ -591,3 +591,57 @@ TEST_F(EventFactoryTestSuite, TestUnhandledEvents)
 
 	EventFactory::createEvents(profiler, max_depth);
 }
+
+TEST_F(EventFactoryTestSuite, TestMultipleCallchains)
+{
+	Profiler profiler("./output/callchains", false, "", asFactory, aggFactory,
+	    imgFactory);
+
+	uint32_t max_depth = 32;
+
+	// Use an arbitrary address for the cookie -- it's opaque
+	// to the user
+	void * cookie = libpmcMock.get();
+
+	{
+		InSequence dummy;
+		const int fd = 25;
+		MockOpen::ExpectOpen("./output/callchains", O_RDONLY, fd);
+		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
+		    .Times(1).WillOnce(Return(cookie));
+
+
+		AddMapInExpectation(cookie, -1, 0xfffe9398, "/boot/kernel/kernel");
+		AddMapInExpectation(cookie, -1, 0xffff1040, "/boot/kernel/hwpmc.ko");
+		AddMapInExpectation(cookie, 1, 0x1000, "/sbin/init");
+		AddMapInExpectation(cookie, 2, 0x5540, "/bin/sh");
+		AddMapInExpectation(cookie, 2, 0x100000, "/lib/libc.so.7");
+
+		AddCallchainExpectation(cookie, true, 2, max_depth,
+		    {0xfffe7838, 0xffff2300, 0xfffe8632});
+		AddCallchainExpectation(cookie, false, 2, max_depth,
+		    {1, 2, 3, 4});
+		AddCallchainExpectation(cookie, false, 1, max_depth,
+		    {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+		     17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32});
+		AddCallchainExpectation(cookie, true, 1, max_depth,
+		    {0xfffe0001, 4, 2, 5, 2});
+		AddExecExpectation(cookie, 3, "/bin/dd", 0x9000);
+		AddCallchainExpectation(cookie, true, 3, max_depth,
+		    {454, 1564, 1478, 18794, 1684, 154, 14});
+		AddCallchainExpectation(cookie, true, 3, max_depth,
+		    {454, 1564, 1478, 18794, 1684, 154, 14});
+		AddCallchainExpectation(cookie, false, 1, max_depth,
+		    {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+		     17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32});
+
+		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
+		    .Times(1).WillOnce(Return(-1));
+
+		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
+		    .Times(1);
+		MockOpen::ExpectClose(fd, 0);
+	}
+
+	EventFactory::createEvents(profiler, max_depth);
+}

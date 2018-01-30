@@ -28,7 +28,10 @@
 
 #include "mock/MockImageFactory.h"
 
+#include <Callframe.h>
 #include "Image.h"
+
+typedef std::vector<std::unique_ptr<Callframe>> CallframeList;
 
 class MockImage
 {
@@ -47,11 +50,12 @@ public:
 		mockImage.reset();
 	}
 
-	static void ExpectGetFrame(Image *image, TargetAddr offset, const Callframe & cf)
+	static void ExpectGetFrame(Image *image, TargetAddr offset, CallframeList & frameList)
 	{
+		frameList.emplace_back(std::make_unique<Callframe>(offset, image->getImageFile()));
 		EXPECT_CALL(*mockImage, getFrame(image, offset))
 		  .Times(1)
-		  .WillOnce(testing::ReturnRef(cf));
+		  .WillOnce(testing::ReturnRef(*frameList.back()));
 	}
 };
 

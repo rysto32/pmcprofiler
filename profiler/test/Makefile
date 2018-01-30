@@ -10,6 +10,7 @@ TESTS= \
 
 TEST_ADDRESSSPACE_OBJS= \
 	AddressSpace.o \
+	Callframe.o \
 	ImageFactory.o \
 	SharedString.o \
 

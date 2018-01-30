@@ -47,47 +47,13 @@ class SharedString
 
 	typedef std::unordered_map<std::string, StringValue*> InternMap;
 
-	// To avoid static initialization/deinitialization issues, we make the
-	// intern_map a pointer that is allocated on first use and never
-	// deallocated.
-	static InternMap *GetInternMap()
-	{
-		static InternMap *intern_map;
-
-		if (intern_map == NULL)
-			intern_map = new InternMap;
-		return intern_map;
-	}
-
-	static StringValue *Intern(const char *str)
-	{
-		InternMap::iterator it = GetInternMap()->find(str);
-
-		if (it != GetInternMap()->end()) {
-			//printf("String '%s' interned\n", str);
-			it->second->count++;
-			return it->second;
-		}
-
-		StringValue *val = new StringValue(str);
-		GetInternMap()->insert(std::make_pair(val->str, val));
-		//printf("String '%s' create\n", str);
-		return val;
-	}
-
-	static void Destroy(StringValue *str)
-	{
-		GetInternMap()->erase(str->str);
-		//printf("String '%s' destroy\n", str->str.c_str());
-		delete str;
-	}
+	static InternMap *GetInternMap();
+	static StringValue *Intern(const char *str);
+	static void Destroy(StringValue *str);
 
 	void Init(const char *str)
 	{
-		Drop();
 		value = Intern(str);
-// 		fprintf(stderr, "%p: Init SharedString for '%s'; count=%d\n",
-// 			value, str, value->count);
 	}
 
 	void Copy(const SharedString &other)
@@ -97,8 +63,6 @@ class SharedString
 		value = other.value;
 		assert(value->count > 0);
 		++value->count;
-// 		fprintf(stderr, "%p: Add ref; count=%d\n",
-// 			value, value->count);
 	}
 
 	void Drop()
@@ -106,8 +70,6 @@ class SharedString
 		if (value == NULL)
 			return;
 
-// 		fprintf(stderr, "%p: Drop ref; count=%d\n",
-// 			value, value->count);
 		assert(value->count > 0);
 		--value->count;
 		if (value->count == 0)

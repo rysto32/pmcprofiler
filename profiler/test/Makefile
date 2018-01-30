@@ -10,14 +10,18 @@ TESTS= \
 TEST_CALLCHAIN_OBJS= \
 	Callchain.o \
 	Callframe.o \
+	SharedString.o \
 
 TEST_CALLCHAIN_LIBS= \
 	gmock
 
-TEST_CALLFRAME_OBJS=Callframe.o
+TEST_CALLFRAME_OBJS= \
+	Callframe.o \
+	SharedString.o \
 
 TEST_EVENTFACTORY_OBJS= \
-	EventFactory.o
+	EventFactory.o \
+	SharedString.o \
 
 TEST_EVENTFACTORY_WRAPFUNCS= \
 	open=mock_open \
@@ -26,5 +30,10 @@ TEST_EVENTFACTORY_WRAPFUNCS= \
 TEST_EVENTFACTORY_LIBS= \
 	gmock
 
+TEST_INLINEFRAME_OBJS= \
+	SharedString.o \
+
+TEST_SHAREDSTRING_OBJS= \
+	SharedString.o \
 
 .include "gtest.mk"

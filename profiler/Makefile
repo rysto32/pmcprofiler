@@ -29,7 +29,8 @@ SRCS=	\
 	main.cpp \
 	Profiler.cpp \
 	ProfilePrinter.cpp \
-	SampleAggregation.cpp
+	SampleAggregation.cpp \
+	SharedString.cpp \
 
 DWARFINSTALLDIR=/home/rstone/src/dwarf-20170709/libdwarf
 

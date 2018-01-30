@@ -1,11 +1,26 @@
 
 TESTS= \
+	AddressSpace \
 	Callchain \
 	Callframe \
 	EventFactory \
 	InlineFrame \
 	SharedPtr \
 	SharedString \
+
+TEST_ADDRESSSPACE_OBJS= \
+	AddressSpace.o \
+	ImageFactory.o \
+	SharedString.o \
+
+TEST_ADDRESSSPACE_WRAPFUNCS= \
+	close=mock_close \
+	exit=mock_exit \
+	fprintf=mock_fprintf \
+	open=mock_open \
+
+TEST_ADDRESSSPACE_LIBS= \
+	gmock \
 
 TEST_CALLCHAIN_OBJS= \
 	Callchain.o \

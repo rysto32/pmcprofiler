@@ -21,56 +21,52 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef MOCK_MOCK_OPEN_H
-#define MOCK_MOCK_OPEN_H
-
-#include <memory>
+#ifndef MOCK_MOCK_IMAGE_H
+#define MOCK_MOCK_IMAGE_H
 
 #include <gmock/gmock.h>
 
-class MockOpen
+#include "mock/MockImageFactory.h"
+
+#include "Image.h"
+
+class MockImage
 {
 public:
-	MOCK_METHOD2(Open, int(std::string name, int flags));
-	MOCK_METHOD1(Close, int(int fd));
+	MOCK_METHOD2(getFrame, const Callframe & (Image *, TargetAddr offset));
 
-	static std::unique_ptr<testing::StrictMock<MockOpen>> openMock;
+	static std::unique_ptr<testing::StrictMock<MockImage>> mockImage;
 
 	static void SetUp()
 	{
-		openMock = std::make_unique<testing::StrictMock<MockOpen>>();
+		mockImage = std::make_unique<testing::StrictMock<MockImage>>();
 	}
 
 	static void TearDown()
 	{
-		openMock.reset();
+		mockImage.reset();
 	}
 
-	static void ExpectOpen(const std::string & n, int flags, int fd)
+	static void ExpectGetFrame(Image *image, TargetAddr offset, const Callframe & cf)
 	{
-		EXPECT_CALL(*openMock, Open(n, flags))
-		    .Times(1).WillOnce(testing::Return(fd));
-	}
-
-	static void ExpectClose(int fd, int ret = 0)
-	{
-		EXPECT_CALL(*openMock, Close(fd))
-		    .Times(1).WillOnce(testing::Return(ret));
+		EXPECT_CALL(*mockImage, getFrame(image, offset))
+		  .Times(1)
+		  .WillOnce(testing::ReturnRef(cf));
 	}
 };
 
-std::unique_ptr<testing::StrictMock<MockOpen>> MockOpen::openMock;
+std::unique_ptr<testing::StrictMock<MockImage>> MockImage::mockImage;
 
-extern "C" int
-mock_open(const char * file, int flags)
+const Callframe &
+Image::getFrame(TargetAddr offset)
 {
-	return MockOpen::openMock->Open(file, flags);
+	return MockImage::mockImage->getFrame(this, offset);
 }
 
-extern "C" int
-mock_close(int fd)
-{
-	return MockOpen::openMock->Close(fd);
-}
+Image::Image(SharedString n)
+  : imageFile(n)
+{}
+
+Image::~Image() {}
 
 #endif

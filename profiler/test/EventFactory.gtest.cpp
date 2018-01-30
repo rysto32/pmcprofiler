@@ -23,6 +23,7 @@
 
 #include "EventFactory.h"
 
+#include "Callframe.h"
 #include "ProcessState.h"
 #include "Profiler.h"
 #include "ProfilerTypes.h"
@@ -104,6 +105,8 @@ pmclog_close(void * cookie)
 // Stubs
 void usage() {}
 void warn(const char *, ...) {}
+Image::Image(SharedString) {}
+Image::~Image() {}
 
 Profiler::Profiler(const std::string& dataFile, bool showlines,
     const char* modulePathStr, AddressSpaceFactory & asFactory,

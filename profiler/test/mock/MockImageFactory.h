@@ -33,10 +33,27 @@
 
 class MockImageFactory : public ImageFactory
 {
+private:
+	std::vector<std::unique_ptr<Image>> imageList;
+
 public:
 	MOCK_METHOD1(GetImage, Image *(SharedString name));
 	MOCK_METHOD0(GetUnmappedImage, Image &());
 	MOCK_METHOD0(MapAll, void ());
+
+	Image * ExpectGetImage(SharedString name)
+	{
+		auto img = AllocImage(name);
+		auto * imgPtr = img.get();
+
+		EXPECT_CALL(*this, GetImage(name))
+		    .Times(1)
+		    .WillOnce(testing::Return(imgPtr));
+
+		imageList.push_back(std::move(img));
+
+		return imgPtr;
+	}
 };
 
 #endif

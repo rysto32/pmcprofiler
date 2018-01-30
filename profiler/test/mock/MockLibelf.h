@@ -21,56 +21,46 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef MOCK_MOCK_OPEN_H
-#define MOCK_MOCK_OPEN_H
-
-#include <memory>
+#ifndef MOCK_MOCK_LIBELF_H
+#define MOCK_MOCK_LIBELF_H
 
 #include <gmock/gmock.h>
+#include <gelf.h>
+#include <libelf.h>
 
-class MockOpen
+class MockLibelf
 {
 public:
-	MOCK_METHOD2(Open, int(std::string name, int flags));
-	MOCK_METHOD1(Close, int(int fd));
-
-	static std::unique_ptr<testing::StrictMock<MockOpen>> openMock;
-
-	static void SetUp()
-	{
-		openMock = std::make_unique<testing::StrictMock<MockOpen>>();
-	}
-
-	static void TearDown()
-	{
-		openMock.reset();
-	}
-
-	static void ExpectOpen(const std::string & n, int flags, int fd)
-	{
-		EXPECT_CALL(*openMock, Open(n, flags))
-		    .Times(1).WillOnce(testing::Return(fd));
-	}
-
-	static void ExpectClose(int fd, int ret = 0)
-	{
-		EXPECT_CALL(*openMock, Close(fd))
-		    .Times(1).WillOnce(testing::Return(ret));
-	}
+	MOCK_METHOD3(elf_begin, Elf *(int, Elf_Cmd, Elf *));
+	MOCK_METHOD2(elf_getphdrnum, int(Elf *, size_t *));
+	MOCK_METHOD3(gelf_getphdr, GElf_Phdr *(Elf *, int, GElf_Phdr*));
+	MOCK_METHOD1(elf_end, int (Elf *));
 };
 
-std::unique_ptr<testing::StrictMock<MockOpen>> MockOpen::openMock;
+testing::StrictMock<MockLibelf> libelf;
 
-extern "C" int
-mock_open(const char * file, int flags)
+Elf *
+elf_begin(int fd, Elf_Cmd cmd, Elf *ar)
 {
-	return MockOpen::openMock->Open(file, flags);
+	return libelf.elf_begin(fd, cmd, ar);
 }
 
-extern "C" int
-mock_close(int fd)
+int
+elf_getphdrnum(Elf *elf, size_t *phnum)
 {
-	return MockOpen::openMock->Close(fd);
+	return libelf.elf_getphdrnum(elf, phnum);
+}
+
+GElf_Phdr *
+gelf_getphdr(Elf *elf, int index, GElf_Phdr *dst)
+{
+	return libelf.gelf_getphdr(elf, index, dst);
+}
+
+int
+elf_end(Elf *elf)
+{
+	return libelf.elf_end(elf);
 }
 
 #endif

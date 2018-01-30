@@ -62,8 +62,6 @@ private:
 	LoadableImageMap loadableImageMap;
 	Image *executable;
 
-	void reset();
-
 	static TargetAddr getLoadAddr(const std::string &executable);
 
 	Image &getImage(TargetAddr addr, TargetAddr & loadOffset) const;

@@ -170,12 +170,6 @@ AddressSpace::mapFrame(TargetAddr addr)
 	return image.getFrame(imageOffset);
 }
 
-void
-AddressSpace::reset()
-{
-	loadableImageMap.clear();
-}
-
 SharedString
 AddressSpace::getExecutableName() const
 {

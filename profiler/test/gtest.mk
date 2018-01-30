@@ -57,6 +57,6 @@ test: ${TEST_PROGS}
 	@./${test}
 .endfor
 
-CXXFLAGS=-I/usr/local/include -I${TOPDIR} -std=c++17
+CXXFLAGS=-I/usr/local/include -I${TOPDIR} -I${PWD} -std=c++17
 
 .include <bsd.prog.mk>

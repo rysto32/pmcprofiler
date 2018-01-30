@@ -495,7 +495,7 @@ TEST_F(EventFactoryTestSuite, TestExec)
 
 	{
 		InSequence dummy;
-		const int fd = INT_MAX - 1;
+		const int fd = 0;
 
 		// Use an arbitrary address for the cookie -- it's opaque
 		// to the user

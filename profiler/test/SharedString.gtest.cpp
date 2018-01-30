@@ -28,67 +28,36 @@
 #include "MapUtil.h"
 #include "TestPrinter/SharedString.h"
 
-#include <stdlib.h>
 #include <new>
 #include <map>
 
-template <typename T>
-struct MallocAllocator
+typedef std::map<const void *, size_t> AllocMap;
+static AllocMap ranges;
+
+extern "C" void * mock_new(size_t sz)
 {
-	typedef T value_type;
-	MallocAllocator() = default;
-
-	T* allocate(size_t n)
-	{
-		auto p = calloc(n, sizeof(T));
-		if (p == NULL)
-			throw std::bad_alloc();
-
-		return static_cast<T*>(p);
-	}
-
-	void deallocate(T* p, size_t) noexcept
-	{
-		free(p);
-	}
-};
-
-typedef std::map<const void *, size_t, std::less<const void *>, MallocAllocator<std::pair<const void * const, size_t>>> AllocMap;
-
-// Ugly workaround for static initialization issues.
-AllocMap & GetRanges()
-{
-	static AllocMap ranges;
-	return ranges;
-}
-
-void * operator new(size_t sz)
-{
-	void * ptr = malloc(sz);
-	if (ptr == NULL)
-		throw std::bad_alloc();
+	void * ptr = operator new(sz);;
 
 	try {
-		GetRanges().insert(std::make_pair(ptr, sz));
+		ranges.insert(std::make_pair(ptr, sz));
 	} catch (...) {
-		free(ptr);
+		::operator delete(ptr);
 		throw std::bad_alloc();
 	}
 
 	return ptr;
 }
 
-void operator delete(void * ptr) noexcept
+extern "C" void mock_delete(void * ptr)
 {
-	GetRanges().erase(ptr);
-	free(ptr);
+	ranges.erase(ptr);
+	::operator delete(ptr);
 }
 
 template<typename T>
 bool IsAllocated(T * t)
 {
 	auto ptr = static_cast<const void*>(t);
-	const auto & ranges = GetRanges();
 	auto it = LastSmallerThan(ranges, ptr);
 	if (it == ranges.end())
 		return false;

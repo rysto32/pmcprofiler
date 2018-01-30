@@ -28,9 +28,9 @@
 #include "ProfilerTypes.h"
 #include "Sample.h"
 
-
 #include "mock/MockAddressSpaceFactory.h"
 #include "mock/MockImageFactory.h"
+#include "mock/MockOpen.h"
 #include "mock/MockSampleAggregationFactory.h"
 
 #include <err.h>
@@ -45,27 +45,6 @@
 
 using namespace testing;
 
-class OpenMocker
-{
-public:
-	MOCK_METHOD2(Open, int(std::string name, int flags));
-	MOCK_METHOD1(Close, int(int fd));
-};
-
-static std::unique_ptr<OpenMocker> openMock;
-
-extern "C" int
-mock_open(const char * file, int flags)
-{
-	return openMock->Open(file, flags);
-}
-
-extern "C" int
-mock_close(int fd)
-{
-	return openMock->Close(fd);
-}
-
 class ProfilerMocker
 {
 public:
@@ -74,7 +53,7 @@ public:
 	MOCK_METHOD1(processExec, void (const ProcessExec &));
 };
 
-static std::unique_ptr<ProfilerMocker> profilerMock;
+static std::unique_ptr<StrictMock<ProfilerMocker>> profilerMock;
 
 void
 Profiler::processEvent(const ProcessExec& processExec)
@@ -102,7 +81,7 @@ public:
 	MOCK_METHOD1(pmclog_close, void (void *));
 };
 
-static std::unique_ptr<LibpmcMocker> libpmcMock;
+static std::unique_ptr<StrictMock<LibpmcMocker>> libpmcMock;
 
 void *
 pmclog_open(int fd)
@@ -294,9 +273,9 @@ public:
 
 	void SetUp()
 	{
-		openMock = std::make_unique<OpenMocker>();
-		profilerMock = std::make_unique<ProfilerMocker>();
-		libpmcMock = std::make_unique<LibpmcMocker>();
+		openMock = std::make_unique<StrictMock<OpenMocker>>();
+		profilerMock = std::make_unique<StrictMock<ProfilerMocker>>();
+		libpmcMock = std::make_unique<StrictMock<LibpmcMocker>>();
 
 		// Ensure that the test doesn't get stuck in an infinite loop
 		// if it calls us with something we don't expect.

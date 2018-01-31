@@ -29,6 +29,7 @@
 #include "ProfilerTypes.h"
 #include "Sample.h"
 
+#include "mock/GlobalMock.h"
 #include "mock/MockAddressSpaceFactory.h"
 #include "mock/MockImageFactory.h"
 #include "mock/MockOpen.h"
@@ -46,7 +47,7 @@
 
 using namespace testing;
 
-class ProfilerMocker
+class ProfilerMocker : public GlobalMockBase<ProfilerMocker>
 {
 public:
 	MOCK_METHOD1(processSample, void (const Sample &));
@@ -54,27 +55,25 @@ public:
 	MOCK_METHOD1(processExec, void (const ProcessExec &));
 };
 
-static std::unique_ptr<StrictMock<ProfilerMocker>> profilerMock;
-
 void
 Profiler::processEvent(const ProcessExec& processExec)
 {
-	profilerMock->processExec(processExec);
+	ProfilerMocker::MockObj().processExec(processExec);
 }
 
 void
 Profiler::processEvent(const Sample& sample)
 {
-	profilerMock->processSample(sample);
+	ProfilerMocker::MockObj().processSample(sample);
 }
 
 void
 Profiler::processMapIn(pid_t pid, TargetAddr map_start, const char * image)
 {
-	profilerMock->processMapIn(pid, map_start, image);
+	ProfilerMocker::MockObj().processMapIn(pid, map_start, image);
 }
 
-class LibpmcMocker
+class LibpmcMocker : public GlobalMockBase<LibpmcMocker>
 {
 public:
 	MOCK_METHOD1(pmclog_open, void *(int));
@@ -82,24 +81,33 @@ public:
 	MOCK_METHOD1(pmclog_close, void (void *));
 };
 
-static std::unique_ptr<StrictMock<LibpmcMocker>> libpmcMock;
+class GlobalLibpmcMock : public GlobalMock<LibpmcMocker>
+{
+public:
+	GlobalLibpmcMock()
+	{
+		// Ensure that the test doesn't get stuck in an infinite loop
+		// if it calls us with something we don't expect.
+		ON_CALL(**this, pmclog_read(_, _)).WillByDefault(Return(-1));
+	}
+};
 
 void *
 pmclog_open(int fd)
 {
-	return libpmcMock->pmclog_open(fd);
+	return LibpmcMocker::MockObj().pmclog_open(fd);
 }
 
 int
 pmclog_read(void *cookie, pmclog_ev *ev)
 {
-	return libpmcMock->pmclog_read(cookie, ev);
+	return LibpmcMocker::MockObj().pmclog_read(cookie, ev);
 }
 
 void
 pmclog_close(void * cookie)
 {
-	return libpmcMock->pmclog_close(cookie);
+	return LibpmcMocker::MockObj().pmclog_close(cookie);
 }
 
 // Stubs
@@ -157,167 +165,151 @@ public:
 	}
 };
 
-static void
-AddSampleExpectation(void * cookie, bool usermode, pid_t pid, TargetAddr pc)
-{
-	pmclog_ev event = {
-		.pl_state = PMCLOG_OK,
-		.pl_type = PMCLOG_TYPE_PCSAMPLE,
-		.pl_u.pl_s = {
-			.pl_usermode = usermode,
-			.pl_pid = pid,
-			.pl_pc = pc + 1,
-		},
-	};
-	EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
-	    .Times(1)
-	    .WillOnce(DoAll(
-	        SetArgPointee<1>(event),
-	        Return(0)
-	    )
-	);
-
-	EXPECT_CALL(*profilerMock, processSample(AllOf(
-		Property(&Sample::getProcessID, pid),
-		Property(&Sample::getChainDepth, 1),
-		Property(&Sample::isKernel, !usermode),
-		ResultOf(SampleAddress<0>(), pc)
-	)));
-
-}
-
-static void
-AddCallchainExpectation(void * cookie, bool usermode, pid_t pid,
-    size_t max_depth, std::vector<TargetAddr> chain)
-{
-	pmclog_ev event = {
-		.pl_state = PMCLOG_OK,
-		.pl_type = PMCLOG_TYPE_CALLCHAIN,
-		.pl_u.pl_cc = {
-			.pl_cpuflags = usermode ? PMC_CC_F_USERSPACE : 0u,
-			.pl_pid = static_cast<uint32_t>(pid),
-			.pl_npc = static_cast<uint32_t>(chain.size()),
-		},
-	};
-
-	int i = 0;
-	for (TargetAddr pc : chain) {
-		event.pl_u.pl_cc.pl_pc[i] = pc + 1;
-		i++;
-	}
-
-	EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
-	    .Times(1)
-	    .WillOnce(DoAll(
-	        SetArgPointee<1>(event),
-	        Return(0)
-	    )
-	);
-
-	int depth = std::min(max_depth, chain.size());
-	chain.resize(depth);
-
-	EXPECT_CALL(*profilerMock, processSample(AllOf(
-		Property(&Sample::getProcessID, pid),
-		Property(&Sample::getChainDepth, depth),
-		Property(&Sample::isKernel, !usermode),
-		ResultOf(SampleCallchainMatcher(chain), true)
-	)));
-
-}
-
-static void
-AddMapInExpectation(void * cookie, pid_t pid, TargetAddr start, const char * file)
-{
-	pmclog_ev event = {
-		.pl_state = PMCLOG_OK,
-		.pl_type = PMCLOG_TYPE_MAP_IN,
-		.pl_u.pl_mi = {
-			.pl_pid = pid,
-			.pl_start = start,
-		}
-	};
-
-	strlcpy(event.pl_u.pl_mi.pl_pathname, file, sizeof(event.pl_u.pl_mi.pl_pathname));
-
-	EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
-	    .Times(1)
-	    .WillOnce(DoAll(
-	        SetArgPointee<1>(event),
-	        Return(0)
-	    )
-	);
-
-	EXPECT_CALL(*profilerMock, processMapIn(pid, start, StrEq(file)));
-}
-
-static void
-AddExecExpectation(void * cookie, pid_t pid, std::string execname, TargetAddr start)
-{
-	pmclog_ev event = {
-		.pl_state = PMCLOG_OK,
-		.pl_type = PMCLOG_TYPE_PROCEXEC,
-		.pl_u.pl_x = {
-			.pl_pid = pid,
-			.pl_entryaddr = start,
-		}
-	};
-
-	strlcpy(event.pl_u.pl_x.pl_pathname, execname.c_str(), sizeof(event.pl_u.pl_x.pl_pathname));
-
-	EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
-	    .Times(1)
-	    .WillOnce(DoAll(
-	        SetArgPointee<1>(event),
-	        Return(0)
-	    )
-	);
-
-	EXPECT_CALL(*profilerMock, processExec(AllOf(
-	    Property(&ProcessExec::getProcessID, pid),
-	    Property(&ProcessExec::getProcessName, execname),
-	    Property(&ProcessExec::getEntryAddr, start))));
-}
-
-static void
-AddUnhandledTypeExpectation(void * cookie, pmclog_type type)
-{
-	pmclog_ev event = {
-		.pl_state = PMCLOG_OK,
-		.pl_type = type,
-	};
-
-	EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
-	    .Times(1)
-	    .WillOnce(DoAll(
-	        SetArgPointee<1>(event),
-	        Return(0)
-	    ));
-}
-
 class EventFactoryTestSuite : public ::testing::Test
 {
 public:
 	MockImageFactory imgFactory;
 	MockAddressSpaceFactory asFactory;
 	MockSampleAggregationFactory aggFactory;
+	GlobalLibpmcMock libpmcMock;
+	GlobalMock<ProfilerMocker> profilerMock;
 
-	void SetUp()
+	void
+	AddSampleExpectation(void * cookie, bool usermode, pid_t pid, TargetAddr pc)
 	{
-		MockOpen::SetUp();
-		profilerMock = std::make_unique<StrictMock<ProfilerMocker>>();
-		libpmcMock = std::make_unique<StrictMock<LibpmcMocker>>();
+		pmclog_ev event = {
+			.pl_state = PMCLOG_OK,
+			.pl_type = PMCLOG_TYPE_PCSAMPLE,
+			.pl_u.pl_s = {
+				.pl_usermode = usermode,
+				.pl_pid = pid,
+				.pl_pc = pc + 1,
+			},
+		};
+		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
+		    .Times(1)
+		    .WillOnce(DoAll(
+		        SetArgPointee<1>(event),
+		        Return(0)
+		    )
+		);
 
-		// Ensure that the test doesn't get stuck in an infinite loop
-		// if it calls us with something we don't expect.
-		ON_CALL(*libpmcMock, pmclog_read(_, _)).WillByDefault(Return(-1));
+		EXPECT_CALL(*profilerMock, processSample(AllOf(
+			Property(&Sample::getProcessID, pid),
+			Property(&Sample::getChainDepth, 1),
+			Property(&Sample::isKernel, !usermode),
+			ResultOf(SampleAddress<0>(), pc)
+		)));
+
 	}
 
-	void TearDown()
+	void
+	AddCallchainExpectation(void * cookie, bool usermode,
+	    pid_t pid, size_t max_depth, std::vector<TargetAddr> chain)
 	{
-		MockOpen::TearDown();
-		profilerMock.reset();
-		libpmcMock.reset();
+		pmclog_ev event = {
+			.pl_state = PMCLOG_OK,
+			.pl_type = PMCLOG_TYPE_CALLCHAIN,
+			.pl_u.pl_cc = {
+				.pl_cpuflags = usermode ? PMC_CC_F_USERSPACE : 0u,
+				.pl_pid = static_cast<uint32_t>(pid),
+				.pl_npc = static_cast<uint32_t>(chain.size()),
+			},
+		};
+
+		int i = 0;
+		for (TargetAddr pc : chain) {
+			event.pl_u.pl_cc.pl_pc[i] = pc + 1;
+			i++;
+		}
+
+		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
+		    .Times(1)
+		    .WillOnce(DoAll(
+		        SetArgPointee<1>(event),
+		        Return(0)
+		    )
+		);
+
+		int depth = std::min(max_depth, chain.size());
+		chain.resize(depth);
+
+		EXPECT_CALL(*profilerMock, processSample(AllOf(
+			Property(&Sample::getProcessID, pid),
+			Property(&Sample::getChainDepth, depth),
+			Property(&Sample::isKernel, !usermode),
+			ResultOf(SampleCallchainMatcher(chain), true)
+		)));
+
+	}
+
+	void
+	AddMapInExpectation(void * cookie, pid_t pid, TargetAddr start, const char * file)
+	{
+		pmclog_ev event = {
+			.pl_state = PMCLOG_OK,
+			.pl_type = PMCLOG_TYPE_MAP_IN,
+			.pl_u.pl_mi = {
+				.pl_pid = pid,
+				.pl_start = start,
+			}
+		};
+
+		strlcpy(event.pl_u.pl_mi.pl_pathname, file, sizeof(event.pl_u.pl_mi.pl_pathname));
+
+		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
+		    .Times(1)
+		    .WillOnce(DoAll(
+		        SetArgPointee<1>(event),
+		        Return(0)
+		    )
+		);
+
+		EXPECT_CALL(*profilerMock, processMapIn(pid, start, StrEq(file)));
+	}
+
+	void
+	AddExecExpectation(void * cookie, pid_t pid, std::string execname, TargetAddr start)
+	{
+		pmclog_ev event = {
+			.pl_state = PMCLOG_OK,
+			.pl_type = PMCLOG_TYPE_PROCEXEC,
+			.pl_u.pl_x = {
+				.pl_pid = pid,
+				.pl_entryaddr = start,
+			}
+		};
+
+		strlcpy(event.pl_u.pl_x.pl_pathname, execname.c_str(), sizeof(event.pl_u.pl_x.pl_pathname));
+
+		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
+		    .Times(1)
+		    .WillOnce(DoAll(
+		        SetArgPointee<1>(event),
+		        Return(0)
+		    )
+		);
+
+		EXPECT_CALL(*profilerMock, processExec(AllOf(
+		    Property(&ProcessExec::getProcessID, pid),
+		    Property(&ProcessExec::getProcessName, execname),
+		    Property(&ProcessExec::getEntryAddr, start))));
+	}
+
+	void
+	AddUnhandledTypeExpectation(void * cookie, pmclog_type type)
+	{
+		pmclog_ev event = {
+			.pl_state = PMCLOG_OK,
+			.pl_type = type,
+		};
+
+		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
+		    .Times(1)
+		    .WillOnce(DoAll(
+		        SetArgPointee<1>(event),
+		        Return(0)
+		    ));
 	}
 };
 
@@ -325,6 +317,7 @@ TEST_F(EventFactoryTestSuite, TestEmptyPmclog)
 {
 	Profiler profiler("/tmp/samples.out", false, "", asFactory, aggFactory,
 	    imgFactory);
+	GlobalMockOpen mockOpen;
 
 	char cookie_val;
 	{
@@ -335,7 +328,7 @@ TEST_F(EventFactoryTestSuite, TestEmptyPmclog)
 		void * cookie = &cookie_val;
 
 		const int fd = 12625;
-		MockOpen::ExpectOpen("/tmp/samples.out", O_RDONLY, fd);
+		mockOpen.ExpectOpen("/tmp/samples.out", O_RDONLY, fd);
 
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
@@ -345,7 +338,7 @@ TEST_F(EventFactoryTestSuite, TestEmptyPmclog)
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
-		MockOpen::ExpectClose(fd, 0);
+		mockOpen.ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, 1);
@@ -355,6 +348,7 @@ TEST_F(EventFactoryTestSuite, TestSingleSample)
 {
 	Profiler profiler("/root/pmc.log", false, "", asFactory, aggFactory,
 	    imgFactory);
+	GlobalMockOpen mockOpen;
 
 	{
 		InSequence dummy;
@@ -365,7 +359,7 @@ TEST_F(EventFactoryTestSuite, TestSingleSample)
 		void * cookie = &cookie_val;
 
 		const int fd = 9628;
-		MockOpen::ExpectOpen("/root/pmc.log", O_RDONLY, fd);
+		mockOpen.ExpectOpen("/root/pmc.log", O_RDONLY, fd);
 
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
@@ -377,7 +371,7 @@ TEST_F(EventFactoryTestSuite, TestSingleSample)
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
-		MockOpen::ExpectClose(fd, 0);
+		mockOpen.ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, 1);
@@ -388,6 +382,7 @@ TEST_F(EventFactoryTestSuite, TestSingleCallchain)
 {
 	Profiler profiler("pmcstat.bin", false, "", asFactory, aggFactory,
 	    imgFactory);
+	GlobalMockOpen mockOpen;
 
 	uint32_t max_depth = 32;
 
@@ -399,7 +394,7 @@ TEST_F(EventFactoryTestSuite, TestSingleCallchain)
 		void * cookie = &dummy;
 
 		const int fd = 1750;
-		MockOpen::ExpectOpen("pmcstat.bin", O_RDONLY, fd);
+		mockOpen.ExpectOpen("pmcstat.bin", O_RDONLY, fd);
 
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
@@ -411,7 +406,7 @@ TEST_F(EventFactoryTestSuite, TestSingleCallchain)
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
-		MockOpen::ExpectClose(fd, 0);
+		mockOpen.ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, max_depth);
@@ -422,6 +417,7 @@ TEST_F(EventFactoryTestSuite, TestMaxDepth)
 {
 	Profiler profiler("pmcstat.bin", false, "", asFactory, aggFactory,
 	    imgFactory);
+	GlobalMockOpen mockOpen;
 
 	uint32_t max_depth = 3;
 
@@ -434,7 +430,7 @@ TEST_F(EventFactoryTestSuite, TestMaxDepth)
 		void * cookie = &cookie_val;
 
 		const int fd = INT_MAX;
-		MockOpen::ExpectOpen("pmcstat.bin", O_RDONLY, fd);
+		mockOpen.ExpectOpen("pmcstat.bin", O_RDONLY, fd);
 
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
@@ -447,7 +443,7 @@ TEST_F(EventFactoryTestSuite, TestMaxDepth)
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
-		MockOpen::ExpectClose(fd, 0);
+		mockOpen.ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, max_depth);
@@ -458,6 +454,7 @@ TEST_F(EventFactoryTestSuite, TestMapIn)
 {
 	Profiler profiler("./output/callchains", false, "", asFactory, aggFactory,
 	    imgFactory);
+	GlobalMockOpen mockOpen;
 
 	uint32_t max_depth = 3;
 
@@ -469,7 +466,7 @@ TEST_F(EventFactoryTestSuite, TestMapIn)
 		// to the user
 		void *cookie = &max_depth;
 
-		MockOpen::ExpectOpen("./output/callchains", O_RDONLY, fd);
+		mockOpen.ExpectOpen("./output/callchains", O_RDONLY, fd);
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
 
@@ -480,7 +477,7 @@ TEST_F(EventFactoryTestSuite, TestMapIn)
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
-		MockOpen::ExpectClose(fd, 0);
+		mockOpen.ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, max_depth);
@@ -490,6 +487,7 @@ TEST_F(EventFactoryTestSuite, TestExec)
 {
 	Profiler profiler("./output/callchains", false, "", asFactory, aggFactory,
 	    imgFactory);
+	GlobalMockOpen mockOpen;
 
 	uint32_t max_depth = 3;
 
@@ -501,7 +499,7 @@ TEST_F(EventFactoryTestSuite, TestExec)
 		// to the user
 		void *cookie = &max_depth;
 
-		MockOpen::ExpectOpen("./output/callchains", O_RDONLY, fd);
+		mockOpen.ExpectOpen("./output/callchains", O_RDONLY, fd);
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
 
@@ -512,7 +510,7 @@ TEST_F(EventFactoryTestSuite, TestExec)
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
-		MockOpen::ExpectClose(fd, 0);
+		mockOpen.ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, max_depth);
@@ -523,7 +521,9 @@ TEST_F(EventFactoryTestSuite, TestOpenFail)
 {
 	Profiler profiler("./output/callchains", false, "", asFactory, aggFactory,
 	    imgFactory);
-	MockOpen::ExpectOpen("./output/callchains", O_RDONLY, -1);
+	GlobalMockOpen mockOpen;
+
+	mockOpen.ExpectOpen("./output/callchains", O_RDONLY, -1);
 
 	EventFactory::createEvents(profiler, 32);
 }
@@ -532,16 +532,17 @@ TEST_F(EventFactoryTestSuite, TestLogOpenFail)
 {
 	Profiler profiler("./output/callchains", false, "", asFactory, aggFactory,
 	    imgFactory);
+	GlobalMockOpen mockOpen;
 
 	uint32_t max_depth = 3;
 
 	{
 		InSequence dummy;
 		const int fd = 4841;
-		MockOpen::ExpectOpen("./output/callchains", O_RDONLY, fd);
+		mockOpen.ExpectOpen("./output/callchains", O_RDONLY, fd);
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(NULL));
-		MockOpen::ExpectClose(fd, 0);
+		mockOpen.ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, 32);
@@ -551,6 +552,7 @@ TEST_F(EventFactoryTestSuite, TestUnhandledEvents)
 {
 	Profiler profiler("./output/callchains", false, "", asFactory, aggFactory,
 	    imgFactory);
+	GlobalMockOpen mockOpen;
 
 	uint32_t max_depth = 3;
 
@@ -561,7 +563,7 @@ TEST_F(EventFactoryTestSuite, TestUnhandledEvents)
 	{
 		InSequence dummy;
 		const int fd = INT_MAX - 1;
-		MockOpen::ExpectOpen("./output/callchains", O_RDONLY, fd);
+		mockOpen.ExpectOpen("./output/callchains", O_RDONLY, fd);
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
 
@@ -586,7 +588,7 @@ TEST_F(EventFactoryTestSuite, TestUnhandledEvents)
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
-		MockOpen::ExpectClose(fd, 0);
+		mockOpen.ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, max_depth);
@@ -596,17 +598,18 @@ TEST_F(EventFactoryTestSuite, TestMultipleCallchains)
 {
 	Profiler profiler("./output/callchains", false, "", asFactory, aggFactory,
 	    imgFactory);
+	GlobalMockOpen mockOpen;
 
 	uint32_t max_depth = 32;
 
 	// Use an arbitrary address for the cookie -- it's opaque
 	// to the user
-	void * cookie = libpmcMock.get();
+	void * cookie = this;
 
 	{
 		InSequence dummy;
 		const int fd = 25;
-		MockOpen::ExpectOpen("./output/callchains", O_RDONLY, fd);
+		mockOpen.ExpectOpen("./output/callchains", O_RDONLY, fd);
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
 
@@ -640,7 +643,7 @@ TEST_F(EventFactoryTestSuite, TestMultipleCallchains)
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
-		MockOpen::ExpectClose(fd, 0);
+		mockOpen.ExpectClose(fd, 0);
 	}
 
 	EventFactory::createEvents(profiler, max_depth);

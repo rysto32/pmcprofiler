@@ -28,7 +28,11 @@
 #include <gelf.h>
 #include <libelf.h>
 
-class MockLibelf
+#include <memory>
+
+#include "mock/GlobalMock.h"
+
+class MockLibelf : public GlobalMockBase<MockLibelf>
 {
 public:
 	MOCK_METHOD3(elf_begin, Elf *(int, Elf_Cmd, Elf *));
@@ -37,30 +41,28 @@ public:
 	MOCK_METHOD1(elf_end, int (Elf *));
 };
 
-testing::StrictMock<MockLibelf> libelf;
-
 Elf *
 elf_begin(int fd, Elf_Cmd cmd, Elf *ar)
 {
-	return libelf.elf_begin(fd, cmd, ar);
+	return MockLibelf::MockObj().elf_begin(fd, cmd, ar);
 }
 
 int
 elf_getphdrnum(Elf *elf, size_t *phnum)
 {
-	return libelf.elf_getphdrnum(elf, phnum);
+	return MockLibelf::MockObj().elf_getphdrnum(elf, phnum);
 }
 
 GElf_Phdr *
 gelf_getphdr(Elf *elf, int index, GElf_Phdr *dst)
 {
-	return libelf.gelf_getphdr(elf, index, dst);
+	return MockLibelf::MockObj().gelf_getphdr(elf, index, dst);
 }
 
 int
 elf_end(Elf *elf)
 {
-	return libelf.elf_end(elf);
+	return MockLibelf::MockObj().elf_end(elf);
 }
 
 #endif

@@ -21,46 +21,62 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef MOCK_MOCK_IMAGE_H
-#define MOCK_MOCK_IMAGE_H
+#ifndef MOCK_GLOBAL_MOCK_H
+#define MOCK_GLOBAL_MOCK_H
 
 #include <gmock/gmock.h>
 
-#include "mock/GlobalMock.h"
+#include <memory>
 
-#include "Callframe.h"
-#include "Image.h"
-
-typedef std::vector<std::unique_ptr<Callframe>> CallframeList;
-
-class MockImage : public GlobalMockBase<MockImage>
+template <typename Mock>
+class GlobalMock
 {
 public:
-	MOCK_METHOD2(getFrame, const Callframe & (Image *, TargetAddr offset));
-};
-
-class GlobalMockImage : public GlobalMock<MockImage>
-{
-public:
-	void ExpectGetFrame(Image *image, TargetAddr offset, CallframeList & frameList)
+	GlobalMock()
 	{
-		frameList.emplace_back(std::make_unique<Callframe>(offset, image->getImageFile()));
-		EXPECT_CALL(**this, getFrame(image, offset))
-		  .Times(1)
-		  .WillOnce(testing::ReturnRef(*frameList.back()));
+		Mock::SetUp();
+	}
+
+	~GlobalMock()
+	{
+		Mock::TearDown();
+	}
+
+	auto & operator*()
+	{
+		return Mock::MockObj();
 	}
 };
 
-const Callframe &
-Image::getFrame(TargetAddr offset)
+template <typename Derived>
+class GlobalMockBase
 {
-	return MockImage::MockObj().getFrame(this, offset);
-}
+private:
+	typedef std::unique_ptr<testing::StrictMock<Derived>> MockPtr;
+	static MockPtr mockobj;
 
-Image::Image(SharedString n)
-  : imageFile(n)
-{}
+	static void SetUp()
+	{
+		mockobj = std::make_unique<testing::StrictMock<Derived>>();
+	}
 
-Image::~Image() {}
+	static void TearDown()
+	{
+		mockobj.reset();
+	}
+
+	friend class GlobalMock<Derived>;
+
+public:
+
+	static auto & MockObj()
+	{
+		return *mockobj;
+	}
+
+};
+
+template <typename T>
+typename GlobalMockBase<T>::MockPtr GlobalMockBase<T>::mockobj;
 
 #endif

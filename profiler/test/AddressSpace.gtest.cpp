@@ -23,6 +23,7 @@
 
 #include "AddressSpace.h"
 
+#include "mock/GlobalMock.h"
 #include "mock/MockImage.h"
 #include "mock/MockImageFactory.h"
 #include "mock/MockLibelf.h"
@@ -40,23 +41,21 @@ using namespace testing;
 
 bool g_quitOnError;
 
-class MockSyscalls
+class MockSyscalls : public GlobalMockBase<MockSyscalls>
 {
 public:
 	MOCK_METHOD1(exit, void (int));
 	MOCK_METHOD1(fprintf, int (FILE *));
 };
 
-static std::unique_ptr<StrictMock<MockSyscalls>> mockSyscalls;
-
 extern "C" void mock_exit(int code )
 {
-	mockSyscalls->exit(code);
+	MockSyscalls::MockObj().exit(code);
 }
 
 extern "C" int mock_fprintf(FILE *f, const char *, ...)
 {
-	return mockSyscalls->fprintf(f);
+	return MockSyscalls::MockObj().fprintf(f);
 }
 
 class AddressSpaceTestSuite : public ::testing::Test
@@ -66,16 +65,10 @@ public:
 	void SetUp()
 	{
 		g_quitOnError = false;
-		mockSyscalls = std::make_unique<StrictMock<MockSyscalls>>();
-		MockOpen::SetUp();
-		MockImage::SetUp();
 	}
 
 	void TearDown()
 	{
-		MockImage::TearDown();
-		MockOpen::TearDown();
-		mockSyscalls.reset();
 	}
 };
 
@@ -83,9 +76,10 @@ TEST_F(AddressSpaceTestSuite, TestUnknownName)
 {
 	MockImageFactory factory;
 	CallframeList frameList;
+	GlobalMockImage mockImage;
 
 	auto * unmapImg = factory.ExpectGetUnmappedImage();
-	MockImage::ExpectGetFrame(unmapImg, 0x586, frameList);
+	mockImage.ExpectGetFrame(unmapImg, 0x586, frameList);
 
 	AddressSpace space(factory);
 
@@ -98,9 +92,10 @@ TEST_F(AddressSpaceTestSuite, TestSingleMapIn)
 	SharedString executable("/bin/init");
 	MockImageFactory factory;
 	CallframeList frameList;
+	GlobalMockImage mockImage;
 
 	auto * exeImg = factory.ExpectGetImage(executable);
-	MockImage::ExpectGetFrame(exeImg, 0x5000, frameList);
+	mockImage.ExpectGetFrame(exeImg, 0x5000, frameList);
 
 	AddressSpace space(factory);
 	space.mapIn(0x1000, executable);
@@ -125,6 +120,7 @@ TEST_F(AddressSpaceTestSuite, TestMultiMapIn)
 	const TargetAddr lib3Load = 0x154a;
 
 	CallframeList frameList;
+	GlobalMockImage mockImage;
 
 	{
 		InSequence dummy;
@@ -132,31 +128,31 @@ TEST_F(AddressSpaceTestSuite, TestMultiMapIn)
 		auto * lib1Img = factory.ExpectGetImage(lib1Name);
 		auto * lib2Img = factory.ExpectGetImage(lib2Name);
 
-		MockImage::ExpectGetFrame(exeImg, 0x1040, frameList);
-		MockImage::ExpectGetFrame(lib2Img, 0x1955, frameList);
-		MockImage::ExpectGetFrame(lib1Img, 0x293, frameList);
+		mockImage.ExpectGetFrame(exeImg, 0x1040, frameList);
+		mockImage.ExpectGetFrame(lib2Img, 0x1955, frameList);
+		mockImage.ExpectGetFrame(lib1Img, 0x293, frameList);
 
 		// Mapping from lib3's load offset before it is loaded should
 		// get a frame from the previous image (exeImg)
-		MockImage::ExpectGetFrame(exeImg, lib3Load + 0x96, frameList);
+		mockImage.ExpectGetFrame(exeImg, lib3Load + 0x96, frameList);
 
 		auto * lib3Img = factory.ExpectGetImage(lib3Name);
 
-		MockImage::ExpectGetFrame(lib3Img, 0xab, frameList);
+		mockImage.ExpectGetFrame(lib3Img, 0xab, frameList);
 
 		// Test mapping frames from the boundaries between images
 		// An address 1 before an image's load address should be mapped
 		// out of the previous image
-		MockImage::ExpectGetFrame(exeImg, lib3Load - 1, frameList);
-		MockImage::ExpectGetFrame(lib3Img, 0, frameList);
+		mockImage.ExpectGetFrame(exeImg, lib3Load - 1, frameList);
+		mockImage.ExpectGetFrame(lib3Img, 0, frameList);
 
 		// Map frames from before all images and they should be mapped
 		// from the unmapped image
 		auto * unmapImg = factory.ExpectGetUnmappedImage();
-		MockImage::ExpectGetFrame(unmapImg, 0x123, frameList);
+		mockImage.ExpectGetFrame(unmapImg, 0x123, frameList);
 
 		factory.ExpectGetUnmappedImage();
-		MockImage::ExpectGetFrame(unmapImg, 0x321, frameList);
+		mockImage.ExpectGetFrame(unmapImg, 0x321, frameList);
 	}
 
 	AddressSpace space(factory);
@@ -194,6 +190,8 @@ TEST_F(AddressSpaceTestSuite, TestFindAndMapEmptyPath)
 	SharedString kldName("hwpmc.ko");
 	std::vector<std::string> modulePath;
 	CallframeList frameList;
+	GlobalMockImage mockImage;
+	GlobalMock<MockSyscalls> mockSyscalls;
 
 	const TargetAddr kldAddr = 0x1942;
 
@@ -205,9 +203,9 @@ TEST_F(AddressSpaceTestSuite, TestFindAndMapEmptyPath)
 		    .WillOnce(Return(0));
 
 		auto * unmapImg = factory.ExpectGetUnmappedImage();
-		MockImage::ExpectGetFrame(kernImg, 0x100, frameList);
-		MockImage::ExpectGetFrame(unmapImg, 0, frameList);
-		MockImage::ExpectGetFrame(unmapImg, 0x200, frameList);
+		mockImage.ExpectGetFrame(kernImg, 0x100, frameList);
+		mockImage.ExpectGetFrame(unmapImg, 0, frameList);
+		mockImage.ExpectGetFrame(unmapImg, 0x200, frameList);
 	}
 
 	AddressSpace space(factory);
@@ -221,13 +219,18 @@ TEST_F(AddressSpaceTestSuite, TestFindAndMapEmptyPath)
 
 TEST_F(AddressSpaceTestSuite, TestFindAndMap)
 {
-	MockImageFactory factory;
 	SharedString kernelName("kernel");
 	SharedString kldName1("dtrace.ko");
 	SharedString kldName2("if_em.ko");
 	SharedString kldName3("vendor_module.ko");
 	SharedString kldName4("unknown_module.ko");
 	std::vector<std::string> modulePath({"/boot/STOCK", "/boot/modules", "/boot/kernel"});
+
+	MockImageFactory factory;
+	GlobalMockImage mockImage;
+	GlobalMockOpen mockOpen;
+	GlobalMock<MockSyscalls> mockSyscalls;
+
 	CallframeList frameList;
 
 	const TargetAddr kldAddr1 = 0xf800250;
@@ -239,44 +242,44 @@ TEST_F(AddressSpaceTestSuite, TestFindAndMap)
 		InSequence dummy;
 
 		int fd = 4587;
-		MockOpen::ExpectOpen("/boot/STOCK/kernel", O_RDONLY, fd);
-		MockOpen::ExpectClose(fd);
+		mockOpen.ExpectOpen("/boot/STOCK/kernel", O_RDONLY, fd);
+		mockOpen.ExpectClose(fd);
 		auto * kernImg = factory.ExpectGetImage("/boot/STOCK/kernel");
 
 		fd = 85;
-		MockOpen::ExpectOpen("/boot/STOCK/dtrace.ko", O_RDONLY, fd);
-		MockOpen::ExpectClose(fd);
+		mockOpen.ExpectOpen("/boot/STOCK/dtrace.ko", O_RDONLY, fd);
+		mockOpen.ExpectClose(fd);
 		auto * kldImg1 = factory.ExpectGetImage("/boot/STOCK/dtrace.ko");
 
 		fd = 0;
-		MockOpen::ExpectOpen("/boot/STOCK/if_em.ko", O_RDONLY, -1);
-		MockOpen::ExpectOpen("/boot/modules/if_em.ko", O_RDONLY, -1);
-		MockOpen::ExpectOpen("/boot/kernel/if_em.ko", O_RDONLY, fd);
-		MockOpen::ExpectClose(fd);
+		mockOpen.ExpectOpen("/boot/STOCK/if_em.ko", O_RDONLY, -1);
+		mockOpen.ExpectOpen("/boot/modules/if_em.ko", O_RDONLY, -1);
+		mockOpen.ExpectOpen("/boot/kernel/if_em.ko", O_RDONLY, fd);
+		mockOpen.ExpectClose(fd);
 		auto * kldImg2 = factory.ExpectGetImage("/boot/kernel/if_em.ko");
 
 		fd = INT_MAX;
-		MockOpen::ExpectOpen("/boot/STOCK/vendor_module.ko", O_RDONLY, -1);
-		MockOpen::ExpectOpen("/boot/modules/vendor_module.ko", O_RDONLY, fd);
-		MockOpen::ExpectClose(fd);
+		mockOpen.ExpectOpen("/boot/STOCK/vendor_module.ko", O_RDONLY, -1);
+		mockOpen.ExpectOpen("/boot/modules/vendor_module.ko", O_RDONLY, fd);
+		mockOpen.ExpectClose(fd);
 		auto * kldImg3 = factory.ExpectGetImage("/boot/modules/vendor_module.ko");
 
-		MockImage::ExpectGetFrame(kldImg1, 0x10, frameList);
-		MockImage::ExpectGetFrame(kernImg, 0x30030, frameList);
-		MockImage::ExpectGetFrame(kldImg3, 0x100, frameList);
-		MockImage::ExpectGetFrame(kldImg1, 0x587, frameList);
-		MockImage::ExpectGetFrame(kldImg2, 0, frameList);
+		mockImage.ExpectGetFrame(kldImg1, 0x10, frameList);
+		mockImage.ExpectGetFrame(kernImg, 0x30030, frameList);
+		mockImage.ExpectGetFrame(kldImg3, 0x100, frameList);
+		mockImage.ExpectGetFrame(kldImg1, 0x587, frameList);
+		mockImage.ExpectGetFrame(kldImg2, 0, frameList);
 
-		MockOpen::ExpectOpen("/boot/STOCK/unknown_module.ko", O_RDONLY, -1);
-		MockOpen::ExpectOpen("/boot/modules/unknown_module.ko", O_RDONLY, -1);
-		MockOpen::ExpectOpen("/boot/kernel/unknown_module.ko", O_RDONLY, -1);
+		mockOpen.ExpectOpen("/boot/STOCK/unknown_module.ko", O_RDONLY, -1);
+		mockOpen.ExpectOpen("/boot/modules/unknown_module.ko", O_RDONLY, -1);
+		mockOpen.ExpectOpen("/boot/kernel/unknown_module.ko", O_RDONLY, -1);
 		EXPECT_CALL(*mockSyscalls, fprintf(stderr))
 		    .Times(1)
 		    .WillOnce(Return(0));
 		auto * unmapImg = factory.ExpectGetUnmappedImage();
 
-		MockImage::ExpectGetFrame(kldImg3, 0x56, frameList);
-		MockImage::ExpectGetFrame(unmapImg, 0x87, frameList);
+		mockImage.ExpectGetFrame(kldImg3, 0x56, frameList);
+		mockImage.ExpectGetFrame(unmapImg, 0x87, frameList);
 	}
 
 	AddressSpace space(factory);

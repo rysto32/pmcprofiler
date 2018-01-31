@@ -36,7 +36,7 @@ class ProcessState
 	const std::string& m_processName;
 
 protected:
-	ProcessState(pid_t& processID, const std::string& processName)
+	ProcessState(pid_t processID, const std::string& processName)
 	  : m_processID(processID),
 	    m_processName(processName)
 	{
@@ -63,7 +63,7 @@ private:
 	TargetAddr entryAddr;
 
 public:
-	ProcessExec(pid_t& processID, const std::string& processName, TargetAddr addr)
+	ProcessExec(pid_t processID, const std::string& processName, TargetAddr addr)
 	  : ProcessState(processID, processName), entryAddr(addr)
 	{
 	}

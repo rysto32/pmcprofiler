@@ -198,8 +198,8 @@ public:
 			Property(&Sample::getProcessID, pid),
 			Property(&Sample::getChainDepth, 1),
 			Property(&Sample::isKernel, !usermode),
-			ResultOf(SampleAddress<0>(), pc)
-		)));
+			ResultOf(SampleAddress<0>(), pc))))
+		    .Times(1);
 
 	}
 
@@ -238,8 +238,8 @@ public:
 			Property(&Sample::getProcessID, pid),
 			Property(&Sample::getChainDepth, depth),
 			Property(&Sample::isKernel, !usermode),
-			ResultOf(SampleCallchainMatcher(chain), true)
-		)));
+			ResultOf(SampleCallchainMatcher(chain), true))))
+		    .Times(1);
 
 	}
 

@@ -115,6 +115,7 @@ void usage() {}
 void warn(const char *, ...) {}
 Image::Image(SharedString) {}
 Image::~Image() {}
+Callframe::~Callframe() {}
 
 Profiler::Profiler(const std::string& dataFile, bool showlines,
     const char* modulePathStr, AddressSpaceFactory & asFactory,

@@ -31,6 +31,12 @@ Callframe::Callframe(TargetAddr off, SharedString imageName)
 {
 }
 
+// This is defined for the benefit of a unit test that wants to intercept
+// calls to ~Callframe() to track Callframe lifecycles
+Callframe::~Callframe()
+{
+}
+
 void
 Callframe::addFrame(SharedString file, SharedString func,
      SharedString demangled, int codeLine, int funcLine, uint64_t dwarfDieOffset)

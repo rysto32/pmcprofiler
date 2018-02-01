@@ -39,6 +39,7 @@ class Callframe
 
 public:
 	Callframe(TargetAddr off, SharedString imageName);
+	~Callframe();
 
 	Callframe(const Callframe&) = delete;
 	Callframe& operator=(const Callframe &) = delete;

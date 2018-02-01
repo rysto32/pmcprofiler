@@ -4,6 +4,7 @@ TESTS= \
 	Callchain \
 	Callframe \
 	EventFactory \
+	Image \
 	InlineFrame \
 	SharedPtr \
 	SharedString \
@@ -44,6 +45,15 @@ TEST_EVENTFACTORY_WRAPFUNCS= \
 	close=mock_close \
 
 TEST_EVENTFACTORY_LIBS= \
+	gmock
+
+TEST_IMAGE_OBJS= \
+	DefaultImageFactory.o \
+	Image.o \
+	ImageFactory.o \
+	SharedString.o \
+
+TEST_IMAGE_LIBS= \
 	gmock
 
 TEST_INLINEFRAME_OBJS= \

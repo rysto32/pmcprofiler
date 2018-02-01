@@ -30,6 +30,7 @@
 #include "mock/MockOpen.h"
 
 #include "Callframe.h"
+#include "ProcessState.h"
 #include "ProfilerTypes.h"
 
 #include "TestPrinter/SharedString.h"
@@ -298,4 +299,360 @@ TEST_F(AddressSpaceTestSuite, TestFindAndMap)
 
 	EXPECT_EQ(&space.mapFrame(kldAddr3 + 0x56), frameList.at(5).get());
 	EXPECT_EQ(&space.mapFrame(kldAddr4 + 0x87), frameList.at(6).get());
+}
+
+TEST_F(AddressSpaceTestSuite, TestProcessExecFileNotFound)
+{
+	MockImageFactory factory;
+	ProcessExec exec(123, "/usr/bin/top", 0x53523);
+	CallframeList frameList;
+	GlobalMockImage mockImage;
+	GlobalMockOpen mockOpen;
+	const TargetAddr libLoadAddr = 0x70000;
+
+	mockOpen.ExpectOpen("/usr/bin/top", O_RDONLY, -1);
+	auto * img = factory.ExpectGetImage("/usr/bin/top");
+	auto * lib = factory.ExpectGetImage("/lib/libc.so.7");
+	mockImage.ExpectGetFrame(img, libLoadAddr - 1, frameList);
+	mockImage.ExpectGetFrame(img, 0, frameList);
+	mockImage.ExpectGetFrame(lib, 0, frameList);
+
+	AddressSpace space(factory);
+	space.processExec(exec);
+	space.mapIn(libLoadAddr, "/lib/libc.so.7");
+	EXPECT_EQ(&space.mapFrame(libLoadAddr - 1), frameList.at(0).get());
+	EXPECT_EQ(&space.mapFrame(0), frameList.at(1).get());
+	EXPECT_EQ(&space.mapFrame(libLoadAddr), frameList.at(2).get());
+}
+
+TEST_F(AddressSpaceTestSuite, TestProcessExecElfBeginFailed)
+{
+	MockImageFactory factory;
+	ProcessExec exec(123, "/usr/bin/top", 0x53523);
+	CallframeList frameList;
+	GlobalMockImage mockImage;
+	GlobalMock<MockLibelf> libelf;
+	GlobalMockOpen mockOpen;
+	const TargetAddr libLoadAddr = 0x15645;
+
+	{
+		InSequence seq;
+
+		const int fd = 128;
+		mockOpen.ExpectOpen("/usr/bin/top", O_RDONLY, 128);
+		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, NULL))
+		  .Times(1)
+		  .WillOnce(Return(NULL));
+		EXPECT_CALL(*libelf, elf_end(NULL))
+		  .Times(1);
+
+		auto * img = factory.ExpectGetImage("/usr/bin/top");
+		auto * lib = factory.ExpectGetImage("/lib/libc.so.7");
+		mockImage.ExpectGetFrame(img, libLoadAddr - 1, frameList);
+		mockImage.ExpectGetFrame(img, 0, frameList);
+		mockImage.ExpectGetFrame(lib, 0, frameList);
+	}
+
+	AddressSpace space(factory);
+	space.processExec(exec);
+	space.mapIn(libLoadAddr, "/lib/libc.so.7");
+	EXPECT_EQ(&space.mapFrame(libLoadAddr - 1), frameList.at(0).get());
+	EXPECT_EQ(&space.mapFrame(0), frameList.at(1).get());
+	EXPECT_EQ(&space.mapFrame(libLoadAddr), frameList.at(2).get());
+
+}
+
+TEST_F(AddressSpaceTestSuite, TestProcessExecGetPhdrnumFailed)
+{
+	MockImageFactory factory;
+	ProcessExec exec(123, "/usr/bin/top", 0x53523);
+	CallframeList frameList;
+	GlobalMockImage mockImage;
+	GlobalMock<MockLibelf> libelf;
+	GlobalMockOpen mockOpen;
+	const TargetAddr libLoadAddr = 0x10;
+
+	// Use an arbitrary address for the Elf cookie as it's opaque to the
+	// libelf consumer.
+	Elf * elf = reinterpret_cast<Elf*>(&libelf);
+
+
+	{
+		InSequence seq;
+		const int fd = 128;
+		mockOpen.ExpectOpen("/usr/bin/top", O_RDONLY, 128);
+		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, NULL))
+		  .Times(1)
+		  .WillOnce(Return(elf));
+		EXPECT_CALL(*libelf, elf_getphdrnum(elf, _))
+		  .Times(1)
+		  .WillOnce(Return(EINVAL));
+		EXPECT_CALL(*libelf, elf_end(elf))
+		  .Times(1);
+
+		auto * img = factory.ExpectGetImage("/usr/bin/top");
+		auto * lib = factory.ExpectGetImage("/lib/libc.so.7");
+		mockImage.ExpectGetFrame(img, libLoadAddr - 1, frameList);
+		mockImage.ExpectGetFrame(img, 0, frameList);
+		mockImage.ExpectGetFrame(lib, 0, frameList);
+	}
+
+	AddressSpace space(factory);
+	space.processExec(exec);
+	space.mapIn(libLoadAddr, "/lib/libc.so.7");
+	EXPECT_EQ(&space.mapFrame(libLoadAddr - 1), frameList.at(0).get());
+	EXPECT_EQ(&space.mapFrame(0), frameList.at(1).get());
+	EXPECT_EQ(&space.mapFrame(libLoadAddr), frameList.at(2).get());
+
+}
+
+TEST_F(AddressSpaceTestSuite, TestProcessExecZeroPhdrs)
+{
+	MockImageFactory factory;
+	ProcessExec exec(123, "/usr/bin/top", 0x53523);
+	CallframeList frameList;
+	GlobalMockImage mockImage;
+	GlobalMock<MockLibelf> libelf;
+	GlobalMockOpen mockOpen;
+	const TargetAddr libLoadAddr = std::numeric_limits<TargetAddr>::max() - 0x888;
+
+	// Use an arbitrary address for the Elf cookie as it's opaque to the
+	// libelf consumer.
+	Elf * elf = reinterpret_cast<Elf*>(&libelf);
+
+
+	{
+		InSequence seq;
+		const int fd = 128;
+		mockOpen.ExpectOpen("/usr/bin/top", O_RDONLY, 128);
+		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, NULL))
+		  .Times(1)
+		  .WillOnce(Return(elf));
+		EXPECT_CALL(*libelf, elf_getphdrnum(elf, _))
+		  .Times(1)
+		  .WillOnce(DoAll(SetArgPointee<1>(size_t(0)), Return(0)));
+		EXPECT_CALL(*libelf, elf_end(elf))
+		  .Times(1);
+
+		auto * img = factory.ExpectGetImage("/usr/bin/top");
+		auto * lib = factory.ExpectGetImage("/lib/libc.so.7");
+		mockImage.ExpectGetFrame(img, libLoadAddr - 1, frameList);
+		mockImage.ExpectGetFrame(img, 0, frameList);
+		mockImage.ExpectGetFrame(lib, 0, frameList);
+	}
+
+	AddressSpace space(factory);
+	space.processExec(exec);
+	space.mapIn(libLoadAddr, "/lib/libc.so.7");
+	EXPECT_EQ(&space.mapFrame(libLoadAddr - 1), frameList.at(0).get());
+	EXPECT_EQ(&space.mapFrame(0), frameList.at(1).get());
+	EXPECT_EQ(&space.mapFrame(libLoadAddr), frameList.at(2).get());
+
+}
+
+TEST_F(AddressSpaceTestSuite, TestProcessExecGetPhdrFailed)
+{
+	MockImageFactory factory;
+	ProcessExec exec(123, "/usr/bin/top", 0x53523);
+	CallframeList frameList;
+	GlobalMockImage mockImage;
+	GlobalMock<MockLibelf> libelf;
+	GlobalMockOpen mockOpen;
+	const TargetAddr libLoadAddr = std::numeric_limits<TargetAddr>::min() + 0x9876;
+
+	// Use an arbitrary address for the Elf cookie as it's opaque to the
+	// libelf consumer.
+	Elf * elf = reinterpret_cast<Elf*>(&libelf);
+
+
+	{
+		InSequence seq;
+		const int fd = 128;
+		mockOpen.ExpectOpen("/usr/bin/top", O_RDONLY, 128);
+		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, NULL))
+		  .Times(1)
+		  .WillOnce(Return(elf));
+		EXPECT_CALL(*libelf, elf_getphdrnum(elf, _))
+		  .Times(1)
+		  .WillOnce(DoAll(SetArgPointee<1>(size_t(3)), Return(0)));
+		EXPECT_CALL(*libelf, gelf_getphdr(elf, 0, _))
+		  .Times(1)
+		  .WillOnce(Return(NULL));
+		EXPECT_CALL(*libelf, elf_end(elf))
+		  .Times(1);
+
+		auto * img = factory.ExpectGetImage("/usr/bin/top");
+		auto * lib = factory.ExpectGetImage("/lib/libc.so.7");
+		mockImage.ExpectGetFrame(img, libLoadAddr - 1, frameList);
+		mockImage.ExpectGetFrame(img, 0, frameList);
+		mockImage.ExpectGetFrame(lib, 0, frameList);
+	}
+
+	AddressSpace space(factory);
+	space.processExec(exec);
+	space.mapIn(libLoadAddr, "/lib/libc.so.7");
+	EXPECT_EQ(&space.mapFrame(libLoadAddr - 1), frameList.at(0).get());
+	EXPECT_EQ(&space.mapFrame(0), frameList.at(1).get());
+	EXPECT_EQ(&space.mapFrame(libLoadAddr), frameList.at(2).get());
+
+}
+
+TEST_F(AddressSpaceTestSuite, TestProcessExecNoTextHdr)
+{
+	MockImageFactory factory;
+	ProcessExec exec(123, "/usr/bin/top", 0x53523);
+	CallframeList frameList;
+	GlobalMockImage mockImage;
+	GlobalMock<MockLibelf> libelf;
+	GlobalMockOpen mockOpen;
+	const TargetAddr libLoadAddr = 0x15410;
+
+	// Use an arbitrary address for the Elf cookie as it's opaque to the
+	// libelf consumer.
+	Elf * elf = reinterpret_cast<Elf*>(&libelf);
+
+	{
+		InSequence seq;
+		const int fd = 128;
+		mockOpen.ExpectOpen("/usr/bin/top", O_RDONLY, 128);
+		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, NULL))
+		  .Times(1)
+		  .WillOnce(Return(elf));
+		EXPECT_CALL(*libelf, elf_getphdrnum(elf, _))
+		  .Times(1)
+		  .WillOnce(DoAll(SetArgPointee<1>(size_t(4)), Return(0)));
+
+		GElf_Phdr phdr = (GElf_Phdr) {
+			.p_type = PT_LOAD,
+			.p_memsz = 0,
+			.p_flags = PF_R | PF_X,
+			.p_vaddr = 0x2000
+
+		};
+		EXPECT_CALL(*libelf, gelf_getphdr(elf, 0, _))
+		  .Times(1)
+		  .WillOnce(DoAll(SetArgPointee<2>(phdr), ReturnArg<2>()));
+
+		phdr = {
+			.p_type = PT_DYNAMIC,
+			.p_memsz = 0x1000,
+			.p_flags = PF_R | PF_X,
+			.p_vaddr = 0x2000
+		};
+		EXPECT_CALL(*libelf, gelf_getphdr(elf, 1, _))
+		  .Times(1)
+		  .WillOnce(DoAll(SetArgPointee<2>(phdr), ReturnArg<2>()));
+
+		phdr = (GElf_Phdr) {
+			.p_type = PT_LOAD,
+			.p_memsz = 0x1000,
+			.p_flags = PF_R | PF_W,
+			.p_vaddr = 0x2000
+
+		};
+		EXPECT_CALL(*libelf, gelf_getphdr(elf, 2, _))
+		  .Times(1)
+		  .WillOnce(DoAll(SetArgPointee<2>(phdr), ReturnArg<2>()));
+
+		phdr = (GElf_Phdr) {
+			.p_type = PT_INTERP,
+			.p_memsz = 0x1000,
+			.p_flags = PF_R | PF_X,
+			.p_vaddr = 0x2000
+
+		};
+		EXPECT_CALL(*libelf, gelf_getphdr(elf, 3, _))
+		  .Times(1)
+		  .WillOnce(DoAll(SetArgPointee<2>(phdr), ReturnArg<2>()));
+
+		EXPECT_CALL(*libelf, elf_end(elf))
+		  .Times(1);
+
+		auto * img = factory.ExpectGetImage("/usr/bin/top");
+		auto * lib = factory.ExpectGetImage("/lib/libc.so.7");
+		mockImage.ExpectGetFrame(img, libLoadAddr - 1, frameList);
+		mockImage.ExpectGetFrame(img, 0, frameList);
+		mockImage.ExpectGetFrame(lib, 0, frameList);
+	}
+
+	AddressSpace space(factory);
+	space.processExec(exec);
+	space.mapIn(libLoadAddr, "/lib/libc.so.7");
+	EXPECT_EQ(&space.mapFrame(libLoadAddr - 1), frameList.at(0).get());
+	EXPECT_EQ(&space.mapFrame(0), frameList.at(1).get());
+	EXPECT_EQ(&space.mapFrame(libLoadAddr), frameList.at(2).get());
+}
+
+TEST_F(AddressSpaceTestSuite, TestProcessExecTextHdrPresent)
+{
+	MockImageFactory factory;
+	ProcessExec exec(123, "/usr/bin/top", 0x53523);
+	CallframeList frameList;
+	GlobalMockImage mockImage;
+	GlobalMock<MockLibelf> libelf;
+	GlobalMockOpen mockOpen;
+	const TargetAddr exeLoadAddr = 0x41000;
+	const TargetAddr libLoadAddr = 0x89248;
+
+	// Use an arbitrary address for the Elf cookie as it's opaque to the
+	// libelf consumer.
+	Elf * elf = reinterpret_cast<Elf*>(&libelf);
+
+	{
+		InSequence seq;
+		const int fd = 128;
+		mockOpen.ExpectOpen("/usr/bin/top", O_RDONLY, 128);
+		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, NULL))
+		  .Times(1)
+		  .WillOnce(Return(elf));
+		EXPECT_CALL(*libelf, elf_getphdrnum(elf, _))
+		  .Times(1)
+		  .WillOnce(DoAll(SetArgPointee<1>(size_t(4)), Return(0)));
+
+		GElf_Phdr phdr = (GElf_Phdr) {
+			.p_type = PT_LOAD,
+			.p_memsz = 0,
+			.p_flags = PF_R | PF_X,
+			.p_vaddr = 0x2000
+
+		};
+		EXPECT_CALL(*libelf, gelf_getphdr(elf, 0, _))
+		  .Times(1)
+		  .WillOnce(DoAll(SetArgPointee<2>(phdr), ReturnArg<2>()));
+
+		phdr = {
+			.p_type = PT_LOAD,
+			.p_memsz = 0x1000,
+			.p_flags = PF_R | PF_X,
+			.p_vaddr = exeLoadAddr
+		};
+		EXPECT_CALL(*libelf, gelf_getphdr(elf, 1, _))
+		  .Times(1)
+		  .WillOnce(DoAll(SetArgPointee<2>(phdr), ReturnArg<2>()));
+
+		EXPECT_CALL(*libelf, elf_end(elf))
+		  .Times(1);
+
+		auto * img = factory.ExpectGetImage("/usr/bin/top");
+		auto * lib = factory.ExpectGetImage("/lib/libc.so.7");
+		mockImage.ExpectGetFrame(img, libLoadAddr - 1, frameList);
+		mockImage.ExpectGetFrame(img, exeLoadAddr, frameList);
+
+		auto * unmapped = factory.ExpectGetUnmappedImage();
+		mockImage.ExpectGetFrame(unmapped, 0, frameList);
+
+		unmapped = factory.ExpectGetUnmappedImage();
+		mockImage.ExpectGetFrame(unmapped, exeLoadAddr - 1, frameList);
+
+		mockImage.ExpectGetFrame(lib, 0, frameList);
+	}
+
+	AddressSpace space(factory);
+	space.processExec(exec);
+	space.mapIn(libLoadAddr, "/lib/libc.so.7");
+	EXPECT_EQ(&space.mapFrame(libLoadAddr - 1), frameList.at(0).get());
+	EXPECT_EQ(&space.mapFrame(exeLoadAddr), frameList.at(1).get());
+	EXPECT_EQ(&space.mapFrame(0), frameList.at(2).get());
+	EXPECT_EQ(&space.mapFrame(exeLoadAddr - 1), frameList.at(3).get());
+	EXPECT_EQ(&space.mapFrame(libLoadAddr), frameList.at(4).get());
 }

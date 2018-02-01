@@ -74,13 +74,4 @@ public:
 	}
 };
 
-class ProcessExit : public ProcessState
-{
-public:
-	ProcessExit(pid_t& processID)
-	  : ProcessState(processID, "")
-	{
-	}
-};
-
 #endif // #if !defined(PROCESSSTATE_H)

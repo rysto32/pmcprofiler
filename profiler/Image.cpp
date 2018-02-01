@@ -31,7 +31,7 @@ __FBSDID("$FreeBSD$");
 #include "SharedString.h"
 
 Image::Image(SharedString imageName)
-  : imageFile(imageName), mapped(!imageName->empty())
+  : imageFile(imageName)
 {
 }
 
@@ -41,7 +41,7 @@ Image::~Image()
 }
 
 const Callframe &
-Image::getFrame(TargetAddr offset)
+Image::GetFrame(TargetAddr offset)
 {
 	auto it = frameMap.find(offset);
 	if (it != frameMap.end())
@@ -50,17 +50,22 @@ Image::getFrame(TargetAddr offset)
 	auto ptr = std::make_unique<Callframe>(offset, imageFile);
 	Callframe & frame = *ptr;
 	frameMap.insert(std::make_pair(offset, std::move(ptr)));
-	if (!mapped)
-		frame.setUnmapped();
 	return frame;
 }
 
 void
-Image::mapAllFrames()
+Image::MapAllFrames()
 {
 	if (frameMap.empty())
 		return;
 
 	DwarfResolver resolver(imageFile);
 	resolver.Resolve(frameMap);
+}
+
+void
+Image::MapAllAsUnmapped()
+{
+	for (auto & [offset, frame] : frameMap)
+		frame->setUnmapped();
 }

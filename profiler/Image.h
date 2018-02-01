@@ -54,7 +54,6 @@ class Image
 private:
 	SharedString imageFile;
 	FrameMap frameMap;
-	bool mapped;
 
 	explicit Image(SharedString imageName);
 
@@ -69,18 +68,14 @@ private:
 public:
 	~Image();
 
-	bool isMapped() const
-	{
-		return mapped;
-	}
-
-	const SharedString & getImageFile() const
+	const SharedString & GetImageFile() const
 	{
 		return imageFile;
 	}
 
-	const Callframe & getFrame(TargetAddr offset);
-	void mapAllFrames();
+	const Callframe & GetFrame(TargetAddr offset);
+	void MapAllFrames();
+	void MapAllAsUnmapped();
 };
 
 #endif // #if !defined(IMAGE_H)

@@ -60,5 +60,7 @@ void
 DefaultImageFactory::MapAll()
 {
 	for (auto & [name, image] : imageMap)
-		image->mapAllFrames();
+		image->MapAllFrames();
+
+	unmappedImage->MapAllAsUnmapped();
 }

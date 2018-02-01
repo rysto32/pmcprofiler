@@ -175,7 +175,7 @@ AddressSpace::mapFrame(TargetAddr addr)
 
 	imageOffset = addr - loadOffset;
 
-	return image.getFrame(imageOffset);
+	return image.GetFrame(imageOffset);
 }
 
 SharedString
@@ -184,5 +184,5 @@ AddressSpace::getExecutableName() const
 	if (executable == NULL)
 		return "<unknown>";
 	else
-		return executable->getImageFile();
+		return executable->GetImageFile();
 }

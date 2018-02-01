@@ -36,7 +36,7 @@ typedef std::vector<std::unique_ptr<Callframe>> CallframeList;
 class MockImage : public GlobalMockBase<MockImage>
 {
 public:
-	MOCK_METHOD2(getFrame, const Callframe & (Image *, TargetAddr offset));
+	MOCK_METHOD2(GetFrame, const Callframe & (Image *, TargetAddr offset));
 };
 
 class GlobalMockImage : public GlobalMock<MockImage>
@@ -44,17 +44,17 @@ class GlobalMockImage : public GlobalMock<MockImage>
 public:
 	void ExpectGetFrame(Image *image, TargetAddr offset, CallframeList & frameList)
 	{
-		frameList.emplace_back(std::make_unique<Callframe>(offset, image->getImageFile()));
-		EXPECT_CALL(**this, getFrame(image, offset))
+		frameList.emplace_back(std::make_unique<Callframe>(offset, image->GetImageFile()));
+		EXPECT_CALL(**this, GetFrame(image, offset))
 		  .Times(1)
 		  .WillOnce(testing::ReturnRef(*frameList.back()));
 	}
 };
 
 const Callframe &
-Image::getFrame(TargetAddr offset)
+Image::GetFrame(TargetAddr offset)
 {
-	return MockImage::MockObj().getFrame(this, offset);
+	return MockImage::MockObj().GetFrame(this, offset);
 }
 
 Image::Image(SharedString n)

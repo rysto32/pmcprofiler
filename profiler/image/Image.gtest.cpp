@@ -25,7 +25,6 @@
 
 #include "Callframe.h"
 #include "DefaultImageFactory.h"
-#include "DwarfCompileUnitDie.h"
 
 #include "mock/GlobalMock.h"
 

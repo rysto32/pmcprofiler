@@ -27,7 +27,7 @@ clean_testobjs_$$(TEST):
 
 else
 
-TEST_$$(TEST)_OBJPATHS:=$$(addprefix $$(LIB_OBJDIR)/,$$(TEST_OBJS))
+TEST_$$(TEST)_OBJPATHS:=$$(addprefix $$($(LIB)_OBJDIR)/,$$(TEST_OBJS))
 
 endif
 

@@ -18,10 +18,6 @@ DEPENDDIR:=$(OUTDIR)/depend/
 TESTOBJDIR:=$(OUTDIR)/test_obj
 TESTDIR:=$(OUTDIR)/test
 
-$(OUTDIR)/%/flag:
-	mkdir -p $(dir $@)
-	touch $@
-
 include make/Subdirs.mk
 
 

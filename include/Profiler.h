@@ -51,7 +51,7 @@ class Profiler
 private:
 	unsigned m_sampleCount;
 
-	const std::string& m_dataFile;
+	const std::string m_dataFile;
 	bool m_showlines;
 
 	std::string kernelFile;

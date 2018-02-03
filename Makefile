@@ -32,3 +32,6 @@ test: $(TEST_PROGS) | programs
 		limits -c 0 ./$${test} || break; \
 	done
 
+.PHONY: nothing
+nothing:
+	@true

@@ -535,8 +535,6 @@ TEST_F(EventFactoryTestSuite, TestLogOpenFail)
 	    imgFactory);
 	GlobalMockOpen mockOpen;
 
-	uint32_t max_depth = 3;
-
 	{
 		InSequence dummy;
 		const int fd = 4841;

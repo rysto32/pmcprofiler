@@ -21,7 +21,7 @@ PROG_STDLIBS:= \
 
 LIB:= pmcprofiler
 
-SRCS=	\
+SRCS :=	\
 	EventFactory.cpp \
 	main.cpp \
 	Profiler.cpp \
@@ -35,6 +35,22 @@ SUBDIRS := \
 	printers \
 	samples \
 	sharedptr \
+
+TESTS := \
+	EventFactory \
+
+TEST_EVENTFACTORY_SRCS := \
+	EventFactory.cpp \
+
+TEST_EVENTFACTORY_WRAPFUNCS := \
+	open=mock_open \
+	close=mock_close \
+
+TEST_EVENTFACTORY_LIBS := \
+	sharedptr \
+
+TEST_EVENTFACTORY_STDLIBS := \
+	gmock \
 
 #DWARFINSTALLDIR=/home/rstone/src/dwarf-20170709/libdwarf
 

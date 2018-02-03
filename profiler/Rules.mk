@@ -1,6 +1,15 @@
 
-PROG:=bin/pmcprofiler
-PROG_LIBS:=pmcprofiler
+PROG:=	bin/pmcprofiler
+
+PROG_LIBS := \
+	pmcprofiler \
+	imagefactory \
+	image \
+	dwarf \
+	abi \
+	frame \
+	sharedptr \
+
 PROG_STDLIBS:= \
 	pmc \
 	elf \
@@ -10,31 +19,22 @@ LIB:= pmcprofiler
 
 SRCS=	\
 	AddressSpace.cpp \
-	Callchain.cpp \
 	CallchainProfilePrinter.cpp \
-	Callframe.cpp \
 	DefaultAddressSpaceFactory.cpp \
-	DefaultImageFactory.cpp \
 	DefaultSampleAggregationFactory.cpp \
-	Demangle.cpp \
-	DwarfCompileUnit.cpp \
-	DwarfCompileUnitDie.cpp \
-	DwarfDie.cpp \
-	DwarfDieRanges.cpp \
-	DwarfDieStack.cpp \
-	DwarfResolver.cpp \
-	DwarfSearch.cpp \
-	DwarfStackState.cpp \
-	DwarfSubprogramInfo.cpp \
-	DwarfUtil.cpp \
 	EventFactory.cpp \
-	Image.cpp \
-	ImageFactory.cpp \
 	main.cpp \
 	Profiler.cpp \
 	ProfilePrinter.cpp \
 	SampleAggregation.cpp \
-	SharedString.cpp \
+
+SUBDIRS := \
+	abi \
+	addr2line \
+	dwarf \
+	frame \
+	image \
+	sharedptr \
 
 #DWARFINSTALLDIR=/home/rstone/src/dwarf-20170709/libdwarf
 

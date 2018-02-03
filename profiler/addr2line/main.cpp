@@ -1,5 +1,6 @@
 
 #include "Callframe.h"
+#include "DefaultImageFactory.h"
 #include "Image.h"
 #include "SharedString.h"
 
@@ -23,9 +24,10 @@ main(int argc, char **argv)
 	
 	if (elf_version(EV_CURRENT) == EV_NONE)
 		err(1, "libelf incompatible");
-	
-	Image *image = Image::getImage(argv[1]);
-	if (!image->isMapped())
+
+	DefaultImageFactory factory;
+	Image *image = factory.GetImage(argv[1]);
+	if (image->GetImageFile()->empty())
 		errx(1, "Could not open %s", argv[1]);
 
 	std::vector<const Callframe *> frameList;
@@ -34,10 +36,10 @@ main(int argc, char **argv)
 		if (argv[i][0] == '\0' || *endp != '\0')
 			errx(1, "%s is not a number\n", argv[i]);
 
-		frameList.push_back(&image->getFrame(addr));
+		frameList.push_back(&image->GetFrame(addr));
 	}
 
-	Image::mapAll();
+	factory.MapAll();
 
 	for (auto frame : frameList) {
 		const auto & inlines = frame->getInlineFrames();

@@ -3,6 +3,9 @@ PROG:=	bin/pmcprofiler
 
 PROG_LIBS := \
 	pmcprofiler \
+	aggfactory \
+	spacefactory \
+	samples \
 	imagefactory \
 	image \
 	dwarf \
@@ -18,15 +21,11 @@ PROG_STDLIBS:= \
 LIB:= pmcprofiler
 
 SRCS=	\
-	AddressSpace.cpp \
 	CallchainProfilePrinter.cpp \
-	DefaultAddressSpaceFactory.cpp \
-	DefaultSampleAggregationFactory.cpp \
 	EventFactory.cpp \
 	main.cpp \
 	Profiler.cpp \
 	ProfilePrinter.cpp \
-	SampleAggregation.cpp \
 
 SUBDIRS := \
 	abi \
@@ -34,6 +33,7 @@ SUBDIRS := \
 	dwarf \
 	frame \
 	image \
+	samples \
 	sharedptr \
 
 #DWARFINSTALLDIR=/home/rstone/src/dwarf-20170709/libdwarf

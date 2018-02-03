@@ -29,5 +29,6 @@ include make/Subdirs.mk
 
 test: $(TEST_PROGS) | programs
 	@for test in $(TEST_PROGS); do \
-		./$${test} || break; \
+		limits -c 0 ./$${test} || break; \
 	done
+

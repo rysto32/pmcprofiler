@@ -4,6 +4,7 @@ PROG:=	bin/pmcprofiler
 PROG_LIBS := \
 	pmcprofiler \
 	aggfactory \
+	printers \
 	spacefactory \
 	samples \
 	imagefactory \
@@ -21,11 +22,9 @@ PROG_STDLIBS:= \
 LIB:= pmcprofiler
 
 SRCS=	\
-	CallchainProfilePrinter.cpp \
 	EventFactory.cpp \
 	main.cpp \
 	Profiler.cpp \
-	ProfilePrinter.cpp \
 
 SUBDIRS := \
 	abi \
@@ -33,6 +32,7 @@ SUBDIRS := \
 	dwarf \
 	frame \
 	image \
+	printers \
 	samples \
 	sharedptr \
 

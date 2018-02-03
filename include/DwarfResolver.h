@@ -24,7 +24,6 @@
 #ifndef DWARFRESOLVER_H
 #define DWARFRESOLVER_H
 
-#include "DwarfRangeLookup.h"
 #include "ProfilerTypes.h"
 #include "SharedString.h"
 #include "SharedPtr.h"
@@ -39,9 +38,14 @@
 class DwarfCompileUnit;
 class DwarfCompileUnitDie;
 
+template <typename T>
+class DwarfRangeLookup;
+
 class DwarfResolver
 {
 private:
+	typedef DwarfRangeLookup<DwarfCompileUnitDie> CompileUnitLookup;
+
 	SharedString imageFile;
 	SharedString symbolFile;
 	SharedString symbolFilePath;
@@ -50,7 +54,7 @@ private:
 	Dwarf_Debug dwarf;
 
 	SymbolMap elfSymbols;
-	DwarfRangeLookup<DwarfCompileUnitDie> cuLookup;
+
 
 	Elf * GetSymbolFile();
 	bool HaveSymbolFile(Elf *origElf);
@@ -67,16 +71,16 @@ private:
 
 	void FillElfSymbolMap(Elf *imageElf, Elf_Scn *section);
 
-	void EnumerateCompileUnits();
-	void ProcessCompileUnit(const DwarfCompileUnit & cu);
-	void SearchCompileUnit(SharedPtr<DwarfCompileUnitDie> cu);
+	void EnumerateCompileUnits(CompileUnitLookup &);
+	void ProcessCompileUnit(const DwarfCompileUnit & cu, CompileUnitLookup &);
+	void SearchCompileUnit(SharedPtr<DwarfCompileUnitDie> cu, CompileUnitLookup &);
 	void AddCompileUnitRange(SharedPtr<DwarfCompileUnitDie> cu, Dwarf_Unsigned low_pc,
-	    Dwarf_Unsigned high_pc);
+	    Dwarf_Unsigned high_pc, CompileUnitLookup &);
 	void SearchCompileUnitRanges(SharedPtr<DwarfCompileUnitDie> cu,
-	    Dwarf_Unsigned range_off);
+	    Dwarf_Unsigned range_off, CompileUnitLookup &);
 
-	void MapFramesToCompileUnits(const FrameMap &frames);
-	void MapFrames();
+	void MapFramesToCompileUnits(const FrameMap &frames, CompileUnitLookup &);
+	void MapFrames(CompileUnitLookup &);
 
 public:
 	explicit DwarfResolver(SharedString image);

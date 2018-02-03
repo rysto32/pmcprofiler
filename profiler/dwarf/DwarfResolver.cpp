@@ -75,11 +75,6 @@ DwarfResolver::~DwarfResolver()
 {
 	Dwarf_Error derr;
 
-	// Clear this manually so that we free up libdwarf memory.  Otherwise
-	// dwarf_finish() will free it and then cuLookup will be destructed,
-	// causing a double free of the libdwarf memory
-	cuLookup.clear();
-
 	if (DwarfValid())
 		dwarf_finish(dwarf, &derr);
 
@@ -229,19 +224,21 @@ DwarfResolver::ResolveDwarf(const FrameMap &frameMap)
 
 	LOG("DwarfResolve %s\n", imageFile->c_str());
 
-	EnumerateCompileUnits();
-	MapFramesToCompileUnits(frameMap);
-	MapFrames();
+	CompileUnitLookup cuLookup;
+
+	EnumerateCompileUnits(cuLookup);
+	MapFramesToCompileUnits(frameMap, cuLookup);
+	MapFrames(cuLookup);
 }
 
 void
-DwarfResolver::EnumerateCompileUnits()
+DwarfResolver::EnumerateCompileUnits(CompileUnitLookup & cuLookup)
 {
 
 	try {
 		auto cu(DwarfCompileUnit::GetFirstCU(dwarf));
 		while (cu) {
-			ProcessCompileUnit(cu);
+			ProcessCompileUnit(cu, cuLookup);
 			cu.AdvanceToSibling();
 		}
 	} catch (DwarfException &)
@@ -251,7 +248,8 @@ DwarfResolver::EnumerateCompileUnits()
 }
 
 void
-DwarfResolver::MapFramesToCompileUnits(const FrameMap &frameMap)
+DwarfResolver::MapFramesToCompileUnits(const FrameMap &frameMap,
+    CompileUnitLookup & cuLookup)
 {
 	auto fit = frameMap.begin();
 
@@ -279,7 +277,7 @@ DwarfResolver::MapFramesToCompileUnits(const FrameMap &frameMap)
 }
 
 void
-DwarfResolver::MapFrames()
+DwarfResolver::MapFrames(CompileUnitLookup & cuLookup)
 {
 	for (auto & [addr, value] : cuLookup) {
 		if (value.GetFrames().empty())
@@ -297,7 +295,8 @@ DwarfResolver::MapFrames()
 }
 
 void
-DwarfResolver::ProcessCompileUnit(const DwarfCompileUnit & cu)
+DwarfResolver::ProcessCompileUnit(const DwarfCompileUnit & cu,
+    CompileUnitLookup & cuLookup)
 {
 	Dwarf_Half tag;
 	auto die = cu.GetDie();
@@ -306,7 +305,7 @@ DwarfResolver::ProcessCompileUnit(const DwarfCompileUnit & cu)
 		tag = GetDieTag(die->GetDie());
 		if (tag == DW_TAG_compile_unit) {
 			try {
-				SearchCompileUnit(die);
+				SearchCompileUnit(die, cuLookup);
 			} catch (const DwarfException &)
 			{
 				// swallow it and continue.  libdwarf
@@ -319,7 +318,8 @@ DwarfResolver::ProcessCompileUnit(const DwarfCompileUnit & cu)
 }
 
 void
-DwarfResolver::SearchCompileUnit(SharedPtr<DwarfCompileUnitDie> cu)
+DwarfResolver::SearchCompileUnit(SharedPtr<DwarfCompileUnitDie> cu,
+    CompileUnitLookup & cuLookup)
 {
 	Dwarf_Error derr;
 	Dwarf_Unsigned range_off, low_pc, high_pc;
@@ -327,14 +327,14 @@ DwarfResolver::SearchCompileUnit(SharedPtr<DwarfCompileUnitDie> cu)
 
 	error = dwarf_attrval_unsigned(cu->GetDie(), DW_AT_ranges, &range_off, &derr);
 	if (error == DW_DLV_OK) {
-		return (SearchCompileUnitRanges(cu, range_off));
+		return (SearchCompileUnitRanges(cu, range_off, cuLookup));
 	}
 
 	err_lo = dwarf_attrval_unsigned(cu->GetDie(), DW_AT_low_pc, &low_pc, &derr);
 	err_hi = dwarf_attrval_unsigned(cu->GetDie(), DW_AT_high_pc, &high_pc, &derr);
 	if (err_lo == DW_DLV_OK && err_hi == DW_DLV_OK) {
 // 		LOG("%lx: low/high pc = %lx/%lx\n", GetDieOffset(cu.GetDie()), low_pc, high_pc);
-		AddCompileUnitRange(cu, low_pc, high_pc);
+		AddCompileUnitRange(cu, low_pc, high_pc, cuLookup);
 		return;
 	}
 
@@ -343,14 +343,14 @@ DwarfResolver::SearchCompileUnit(SharedPtr<DwarfCompileUnitDie> cu)
 
 void
 DwarfResolver::AddCompileUnitRange(SharedPtr<DwarfCompileUnitDie> cu,
-    Dwarf_Unsigned low_pc, Dwarf_Unsigned high_pc)
+    Dwarf_Unsigned low_pc, Dwarf_Unsigned high_pc, CompileUnitLookup & cuLookup)
 {
 	cuLookup.insert(low_pc, high_pc, cu);
 }
 
 void
 DwarfResolver::SearchCompileUnitRanges(SharedPtr<DwarfCompileUnitDie> cu,
-    Dwarf_Unsigned range_off)
+    Dwarf_Unsigned range_off, CompileUnitLookup & cuLookup)
 {
 	Dwarf_Unsigned base_addr, low_pc, high_pc;
 
@@ -362,7 +362,7 @@ DwarfResolver::SearchCompileUnitRanges(SharedPtr<DwarfCompileUnitDie> cu,
 		case DW_RANGES_ENTRY:
 			low_pc = base_addr + range.dwr_addr1;
 			high_pc = base_addr + range.dwr_addr2;
-			AddCompileUnitRange(cu, low_pc, high_pc);
+			AddCompileUnitRange(cu, low_pc, high_pc, cuLookup);
 			break;
 		case DW_RANGES_ADDRESS_SELECTION:
 			base_addr = range.dwr_addr2;

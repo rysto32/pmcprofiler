@@ -7,9 +7,11 @@ SUBDIRS=\
 TOPDIR:=.
 CURDIR:=
 STACK=x
+
 OUTDIR:=$(TOPDIR)/obj
 OBJDIR:=$(OUTDIR)/objects
-LIBDIR=$(OUTDIR)/lib
-INSTALLDIR=$(OUTDIR)/staging/
+LIBDIR:=$(OUTDIR)/lib
+INSTALLDIR:=$(OUTDIR)/staging/
+DEPENDDIR:=$(OUTDIR)/depend/
 
 include make/Subdirs.mk

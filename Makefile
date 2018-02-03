@@ -7,7 +7,7 @@ SUBDIRS=\
 all: programs test
 
 TOPDIR:=.
-CURDIR:=
+CURDIR:=.
 STACK=x
 
 OUTDIR:=$(TOPDIR)/obj

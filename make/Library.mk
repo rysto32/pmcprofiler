@@ -2,7 +2,7 @@
 ifneq ($(LIB),)
 
 define src_to_obj
-$(addprefix $($(LIB)_OBJDIR), $(addsuffix .o,$(basename $1)))
+$(addprefix $($(LIB)_OBJDIR)/, $(addsuffix .o,$(basename $1)))
 endef
 
 define src_to_dep

@@ -13,7 +13,7 @@ TEST_$$(TEST)_REDEFINE_SYMS:=$$(addprefix --redefine-sym ,$$(TEST_$$(TEST)_WRAPF
 
 TEST_$$(TEST)_OBJDIR := $$(TESTOBJDIR)/$$(CURDIR)
 
-TEST_$$(TEST)_OBJPATHS:=$$(addprefix $$(TEST_$$(TEST)_OBJDIR),$$(addsuffix .test.o,$$(basename $$(TEST_OBJS))))
+TEST_$$(TEST)_OBJPATHS:=$$(addprefix $$(TEST_$$(TEST)_OBJDIR)/,$$(addsuffix .test.o,$$(basename $$(TEST_OBJS))))
 
 $$(TEST_$$(TEST)_OBJDIR)/%.test.o: $$($$(LIB)_OBJDIR)/%.o $$(TEST_$$(TEST)_OBJDIR)/flag
 	objcopy $$(TEST_$$(TEST)_REDEFINE_SYMS) $$< $$@

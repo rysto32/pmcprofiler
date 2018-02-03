@@ -2,7 +2,7 @@
 define include_template
  STACK := $$(STACK).x
  DIRSTACK_$$(STACK) := $$(CURDIR)
- CURDIR := $$(CURDIR)$(1)/
+ CURDIR := $$(CURDIR)/$(1)
 
  OBJS:=
  LIB:=

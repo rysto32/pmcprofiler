@@ -31,7 +31,14 @@ TEST_$$(TEST)_OBJPATHS:=$$(addprefix $$(LIB_OBJDIR)/,$$(TEST_OBJS))
 
 endif
 
-TEST_$$(TEST)_GTEST_OBJ := $$($$(LIB)_OBJDIR)/$1.gtest.o
+TEST_GTEST_PREFIX := $$($$(LIB)_OBJDIR)/$1.gtest
+TEST_$$(TEST)_GTEST_OBJ := $$(TEST_GTEST_PREFIX).o
+TEST_$$(TEST)_GTEST_DEPFILE := $$(call src_to_dep,$$(TEST_GTEST_PREFIX).cpp)
+
+$$(TEST_$$(TEST)_GTEST_OBJ): LIB := $(LIB)
+
+-include $$(TEST_$$(TEST)_GTEST_DEPFILE)
+
 TEST_$$(TEST)_OBJPATHS := $$(TEST_$$(TEST)_OBJPATHS) $$(TEST_$$(TEST)_GTEST_OBJ)
 
 TEST_$$(TEST)_LIBARGS:=$$(addprefix -l,$$(TEST_$$(TEST)_LIBS)) -lgtest -lgtest_main -lpthread

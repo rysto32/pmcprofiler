@@ -1,5 +1,4 @@
-*.o
-profiler/pmcprofiler
-profiler/pmcprofiler.debug
-profiler/pmcprofiler.full
-.depend
+obj/
+.kdev4
+profiler.kdev4
+

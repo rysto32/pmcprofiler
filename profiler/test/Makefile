@@ -59,11 +59,4 @@ TEST_IMAGE_LIBS= \
 TEST_INLINEFRAME_OBJS= \
 	SharedString.o \
 
-TEST_SHAREDSTRING_OBJS= \
-	SharedString.o \
-
-TEST_SHAREDSTRING_WRAPFUNCS= \
-	_Znwm=mock_new \
-	_ZdlPv=mock_delete \
-
 .include "gtest.mk"

@@ -8,6 +8,7 @@ SRCS := \
 TESTS := \
 	Callchain \
 	Callframe \
+	InlineFrame \
 
 TEST_CALLCHAIN_SRCS := \
 	Callchain.cpp \
@@ -23,4 +24,7 @@ TEST_CALLFRAME_SRCS := \
 	Callframe.cpp \
 
 TEST_CALLFRAME_LIBS := \
+	sharedptr \
+
+TEST_INLINEFRAME_LIBS := \
 	sharedptr \

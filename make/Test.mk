@@ -22,6 +22,7 @@ $$(TEST_$$(TEST)_OBJDIR)/%.test.o: $$($$(LIB)_OBJDIR)/%.o
 clean:: clean_testobjs_$$(TEST)
 
 .PHONY: clean_testobjs_$$(TEST)
+clean_testobjs_$$(TEST): TEST := $$(TEST)
 clean_testobjs_$$(TEST):
 	$(RM) $$(TEST_$$(TEST)_OBJPATHS)
 

@@ -39,7 +39,7 @@ clean:: clean_lib_$(LIB)
 clean_lib_$(LIB): LIB:=$(LIB)
 
 clean_lib_$(LIB):
-	$(RM) $($(LIB)_CLEAN
+	$(RM) $($(LIB)_CLEAN)
 
 -include $(DEPFILES)
 

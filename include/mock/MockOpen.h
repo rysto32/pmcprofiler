@@ -40,6 +40,12 @@ public:
 class GlobalMockOpen : private GlobalMock<MockOpen>
 {
 public:
+	GlobalMockOpen()
+	{
+		ON_CALL(**this, Open(testing::_, testing::_))
+		    .WillByDefault(testing::Return(-1));
+	}
+
 	void ExpectOpen(const std::string & n, int flags, int fd)
 	{
 		EXPECT_CALL(**this, Open(n, flags))

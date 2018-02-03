@@ -25,18 +25,18 @@
 #define PROCESSSTATE_H
 
 #include "ProfilerTypes.h"
+#include "SharedString.h"
 
-#include <string>
 #include <sys/types.h>
 
 class ProcessState
 {
 	pid_t m_processID;
 
-	const std::string& m_processName;
+	SharedString m_processName;
 
 protected:
-	ProcessState(pid_t processID, const std::string& processName)
+	ProcessState(pid_t processID, SharedString processName)
 	  : m_processID(processID),
 	    m_processName(processName)
 	{
@@ -53,7 +53,7 @@ public:
 
 	const std::string& getProcessName() const
 	{
-		return m_processName;
+		return *m_processName;
 	}
 };
 
@@ -63,7 +63,7 @@ private:
 	TargetAddr entryAddr;
 
 public:
-	ProcessExec(pid_t processID, const std::string& processName, TargetAddr addr)
+	ProcessExec(pid_t processID, SharedString processName, TargetAddr addr)
 	  : ProcessState(processID, processName), entryAddr(addr)
 	{
 	}

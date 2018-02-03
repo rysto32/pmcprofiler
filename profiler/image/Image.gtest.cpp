@@ -255,5 +255,4 @@ TEST(ImageTestSuite, TestMapAllAsUnMapped)
 
 		img->MapAllAsUnmapped();
 	}
-
 }

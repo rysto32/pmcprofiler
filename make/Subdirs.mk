@@ -13,12 +13,16 @@ define include_template
  PROG_LIBS:=
  PROG_STDLIBS:=
 
+ TESTS :=
+
  SUBDIRS:=
 
  include $$(TOPDIR)/make/Defaults.mk
  include $$(CURDIR)/Rules.mk
  include $$(TOPDIR)/make/Library.mk
  include $$(TOPDIR)/make/Program.mk
+ include $$(TOPDIR)/make/Test.mk
+
  include $$(TOPDIR)/make/Subdirs.mk
  CURDIR := $$(DIRSTACK_$$(STACK))
  STACK := $$(basename $$(STACK))

@@ -11,9 +11,10 @@ SUBDIRS := \
 
 TESTS := \
 	AddressSpace \
+	SampleAggregation
 
-TEST_ADDRESSSPACE_SRCS= \
-	AddressSpace.o \
+TEST_ADDRESSSPACE_SRCS := \
+	AddressSpace.cpp \
 
 TEST_ADDRESSSPACE_LIBS := \
 	frame \
@@ -28,3 +29,9 @@ TEST_ADDRESSSPACE_WRAPFUNCS= \
 
 TEST_ADDRESSSPACE_STDLIBS= \
 	gmock \
+
+TEST_SAMPLEAGGREGATION_SRCS := \
+	SampleAggregation.cpp \
+
+TEST_SAMPLEAGGREGATION_LIBS := \
+	sharedptr \

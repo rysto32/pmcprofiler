@@ -4,6 +4,7 @@ PROG:=	bin/pmcprofiler
 PROG_LIBS := \
 	pmcprofiler \
 	aggfactory \
+	callchainFactory \
 	printers \
 	spacefactory \
 	samples \

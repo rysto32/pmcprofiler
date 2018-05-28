@@ -35,6 +35,7 @@
 #include <unordered_map>
 
 class Callchain;
+class CallchainFactory;
 class CallframeMapper;
 class ProcessExec;
 
@@ -50,11 +51,12 @@ private:
 	pid_t pid;
 	size_t sampleCount;
 	size_t userlandSampleCount;
+	CallchainFactory & factory;
 
 	void addFrame(CallframeMapper &space, const Sample &);
 
 public:
-	SampleAggregation(const std::string & name, pid_t);
+	SampleAggregation(CallchainFactory &, const std::string & name, pid_t);
 
 	// Prevent consumers from getting a dependency on ~Callchain
 	~SampleAggregation();

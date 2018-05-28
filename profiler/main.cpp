@@ -25,6 +25,7 @@
 __FBSDID("$FreeBSD$");
 
 #include "DefaultAddressSpaceFactory.h"
+#include "DefaultCallchainFactory.h"
 #include "DefaultImageFactory.h"
 #include "DefaultSampleAggregationFactory.h"
 #include "Profiler.h"
@@ -173,9 +174,10 @@ main(int argc, char *argv[])
 	configedDepth = std::max(configedDepth, minDepth);
 	maxDepth = std::min(preferredDepth, configedDepth);
 
+	DefaultCallchainFactory ccFactory;
 	DefaultImageFactory imgFactory;
 	DefaultAddressSpaceFactory asFactory(imgFactory);
-	DefaultSampleAggregationFactory aggFactory;
+	DefaultSampleAggregationFactory aggFactory(ccFactory);
 	Profiler profiler(samplefile, showlines, modulePath, asFactory,
 	    aggFactory, imgFactory);
 

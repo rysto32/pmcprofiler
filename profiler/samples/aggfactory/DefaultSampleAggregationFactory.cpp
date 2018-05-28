@@ -27,7 +27,8 @@
 #include "Sample.h"
 #include "SampleAggregation.h"
 
-DefaultSampleAggregationFactory::DefaultSampleAggregationFactory()
+DefaultSampleAggregationFactory::DefaultSampleAggregationFactory(CallchainFactory & factory)
+  : ccFactory(factory)
 {
 
 }
@@ -50,7 +51,7 @@ DefaultSampleAggregationFactory::GetAggregation(const Sample &sample)
 SampleAggregation &
 DefaultSampleAggregationFactory::AddAggregation(pid_t pid, const std::string &name)
 {
-	auto ptr = std::make_unique<SampleAggregation>(name, pid);
+	auto ptr = std::make_unique<SampleAggregation>(ccFactory, name, pid);
 	SampleAggregation & agg = *ptr;
 	aggregationMap[pid] = ptr.get();
 	aggregationOwnerList.push_back(std::move(ptr));

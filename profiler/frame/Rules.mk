@@ -1,4 +1,7 @@
 
+SUBDIRS := \
+	callchainFactory
+
 LIB :=	frame
 
 SRCS := \

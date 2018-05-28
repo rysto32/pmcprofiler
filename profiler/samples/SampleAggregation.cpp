@@ -25,6 +25,7 @@
 
 #include "AddressSpace.h"
 #include "Callchain.h"
+#include "CallchainFactory.h"
 #include "ProcessState.h"
 #include "Sample.h"
 
@@ -32,8 +33,12 @@
 #include <memory>
 #include <sstream>
 
-SampleAggregation::SampleAggregation(const std::string &name, pid_t pid)
- : executableName(name), pid(pid), sampleCount(0), userlandSampleCount(0)
+SampleAggregation::SampleAggregation(CallchainFactory & f, const std::string &name, pid_t pid)
+ : executableName(name),
+   pid(pid),
+   sampleCount(0),
+   userlandSampleCount(0),
+   factory(f)
 {
 }
 
@@ -45,8 +50,7 @@ SampleAggregation::~SampleAggregation()
 void
 SampleAggregation::addFrame(CallframeMapper &space, const Sample & sample)
 {
-	frameMap.insert(std::make_pair(sample,
-	    std::make_unique<Callchain>(space, sample)));
+	frameMap.insert(std::make_pair(sample, factory.MakeCallchain(space, sample)));
 }
 
 void

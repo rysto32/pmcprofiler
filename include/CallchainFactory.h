@@ -21,38 +21,19 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef DEFAULT_SAMPLE_AGGREGATION_FACTORY
-#define DEFAULT_SAMPLE_AGGREGATION_FACTORY
+#ifndef CALLCHAIN_FACTORY_H
+#define CALLCHAIN_FACTORY_H
 
-#include "SampleAggregationFactory.h"
+#include <memory>
 
-#include <unordered_map>
-#include <vector>
+class Callchain;
+class CallframeMapper;
+class Sample;
 
-class CallchainFactory;
-
-class DefaultSampleAggregationFactory : public SampleAggregationFactory
+class CallchainFactory
 {
-private:
-	typedef std::vector<std::unique_ptr<SampleAggregation>> AggregationOwnerList;
-	typedef std::unordered_map<pid_t, SampleAggregation*> AggregationMap;
-
-	AggregationOwnerList aggregationOwnerList;
-	AggregationMap aggregationMap;
-	CallchainFactory & ccFactory;
-
-	SampleAggregation &AddAggregation(pid_t, const std::string &);
-
 public:
-	// These need to be defined in the .cpp file to prevent consumers from
-	// needing to include SampleAggregation.h
-	DefaultSampleAggregationFactory(CallchainFactory &);
-	~DefaultSampleAggregationFactory();
-
-	virtual SampleAggregation &GetAggregation(const Sample &);
-	virtual void GetAggregationList(AggregationList &);
-	virtual void HandleExec(const ProcessExec &);
-	virtual void HandleMapIn(pid_t pid, const char *path);
+	virtual std::unique_ptr<Callchain> MakeCallchain(CallframeMapper &space, const Sample & sample) = 0;
 };
 
 #endif

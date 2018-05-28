@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Ryan Stone.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,38 +21,12 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef DEFAULT_SAMPLE_AGGREGATION_FACTORY
-#define DEFAULT_SAMPLE_AGGREGATION_FACTORY
+#include "DefaultCallchainFactory.h"
 
-#include "SampleAggregationFactory.h"
+#include "Callchain.h"
 
-#include <unordered_map>
-#include <vector>
-
-class CallchainFactory;
-
-class DefaultSampleAggregationFactory : public SampleAggregationFactory
+std::unique_ptr<Callchain>
+DefaultCallchainFactory::MakeCallchain(CallframeMapper & space, const Sample & sample)
 {
-private:
-	typedef std::vector<std::unique_ptr<SampleAggregation>> AggregationOwnerList;
-	typedef std::unordered_map<pid_t, SampleAggregation*> AggregationMap;
-
-	AggregationOwnerList aggregationOwnerList;
-	AggregationMap aggregationMap;
-	CallchainFactory & ccFactory;
-
-	SampleAggregation &AddAggregation(pid_t, const std::string &);
-
-public:
-	// These need to be defined in the .cpp file to prevent consumers from
-	// needing to include SampleAggregation.h
-	DefaultSampleAggregationFactory(CallchainFactory &);
-	~DefaultSampleAggregationFactory();
-
-	virtual SampleAggregation &GetAggregation(const Sample &);
-	virtual void GetAggregationList(AggregationList &);
-	virtual void HandleExec(const ProcessExec &);
-	virtual void HandleMapIn(pid_t pid, const char *path);
-};
-
-#endif
+	return std::make_unique<Callchain>(space, sample);
+}

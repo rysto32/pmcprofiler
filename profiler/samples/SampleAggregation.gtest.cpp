@@ -64,6 +64,19 @@ public:
 	MOCK_METHOD2(MakeCallchain, std::unique_ptr<Callchain>(CallframeMapper &space, const Sample & sample));
 };
 
+void PrintTo(const Sample & s, std::ostream* os)
+{
+	const char * sep = "";
+
+	*os << "{ ";
+	for (int i = 0; i < s.getChainDepth(); ++i) {
+		*os << sep << "0x" << std::hex << s.getAddress(i) << std::dec;
+		sep = ", ";
+	}
+
+	*os << "}";
+}
+
 TEST(SampleAggregationTestSuite, TestGetters)
 {
 	MockCallchainFactory ccFactory;

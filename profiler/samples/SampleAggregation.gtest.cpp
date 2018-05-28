@@ -24,14 +24,38 @@
 #include "SampleAggregation.h"
 
 #include "Callchain.h"
+#include "Callframe.h"
+#include "CallframeMapper.h"
+#include "Sample.h"
+
+#include "mock/GlobalMock.h"
 
 #include <gtest/gtest.h>
 
-Callchain::Callchain(CallframeMapper &mapper, const Sample &)
-  : space(mapper)
-{}
+class MockFrameMapper : public CallframeMapper
+{
+public:
+	MOCK_METHOD1(mapFrame, const Callframe & (TargetAddr));
+	MOCK_CONST_METHOD0(getExecutableName, SharedString ());
+};
 
-void Callchain::addSample() {}
+class CallchainMocker : public GlobalMockBase<CallchainMocker>
+{
+public:
+	MOCK_METHOD2(construct, void (CallframeMapper *, const Sample &));
+	MOCK_METHOD0(addSample, void ());
+};
+
+Callchain::Callchain(CallframeMapper &mapper, const Sample &sample)
+  : space(mapper)
+{
+	CallchainMocker::MockObj().construct(&mapper, sample);
+}
+
+void Callchain::addSample()
+{
+	CallchainMocker::MockObj().addSample();
+}
 
 TEST(SampleAggregationTestSuite, TestGetters)
 {
@@ -41,4 +65,42 @@ TEST(SampleAggregationTestSuite, TestGetters)
 	EXPECT_EQ(agg.getDisplayName(), "/usr/bin/pmcstat (866)");
 	EXPECT_EQ(agg.getBaseName(), "pmcstat");
 	EXPECT_EQ(agg.getPid(), 866);
+}
+
+TEST(SampleAggregationTestSuite, TestAddSingleSample)
+{
+	std::string imageName("sbin/ifconfig");
+	SampleAggregation agg(imageName, 156);
+	MockFrameMapper mapper;
+	GlobalMock<CallchainMocker> callchainMock;
+
+	pmclog_ev_callchain pmc_cc{ .pl_npc = 1, .pl_pc = {0x123}};
+	Sample sample(pmc_cc, 1);
+
+	EXPECT_CALL(*callchainMock, construct(&mapper, sample))
+	    .Times(1);
+
+	agg.addSample(mapper, sample);
+}
+
+TEST(SampleAggregationTestSuite, TestAddSingleSampleMultipleTimes)
+{
+	std::string imageName("sbin/ifconfig");
+	SampleAggregation agg(imageName, 156);
+	MockFrameMapper mapper;
+	GlobalMock<CallchainMocker> callchainMock;
+
+	pmclog_ev_callchain pmc_cc{ .pl_npc = 1, .pl_pc = {0x123}};
+	Sample sample(pmc_cc, 1);
+
+	EXPECT_CALL(*callchainMock, construct(&mapper, sample))
+	    .Times(1);
+	EXPECT_CALL(*callchainMock, addSample()).Times(2);
+
+	agg.addSample(mapper, sample);
+
+	Sample sample2(sample);
+	agg.addSample(mapper, sample2);
+
+	agg.addSample(mapper, sample);
 }

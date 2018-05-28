@@ -158,3 +158,33 @@ TEST(CallchainTestSuite, TestFlatten)
 	EXPECT_EQ(ifl.at(3)->getDieOffset(), 0x31);
 	EXPECT_EQ(ifl.at(4)->getDieOffset(), 0x32);
 }
+
+TEST(CallchainTestSuite, TestAddSample)
+{
+	SharedString imageName("libgcc.so.2");
+	Callframe cf(0x459, imageName);
+	cf.setUnmapped();
+
+	MockFrameMapper mapper;
+
+	EXPECT_CALL(mapper, mapFrame(0x459)).WillOnce(ReturnRef(cf));
+
+	pmclog_ev_pcsample event = {
+		.pl_usermode = 0,
+		.pl_pid = 123,
+		.pl_pc = 0x45a,
+	};
+
+	Sample s(event);
+	Callchain chain(mapper, s);
+
+	for (int i = 0; i < 3; i++)
+		chain.addSample();
+
+	EXPECT_EQ(chain.getSampleCount(), 3);
+
+	for (int i = 0; i < 2; i++)
+		chain.addSample();
+
+	EXPECT_EQ(chain.getSampleCount(), 5);
+}

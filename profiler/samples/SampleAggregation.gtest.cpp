@@ -24,6 +24,7 @@
 #include "SampleAggregation.h"
 
 #include "Callchain.h"
+#include "CallchainFactory.h"
 #include "Callframe.h"
 #include "CallframeMapper.h"
 #include "Sample.h"
@@ -31,6 +32,8 @@
 #include "mock/GlobalMock.h"
 
 #include <gtest/gtest.h>
+
+using namespace testing;
 
 class MockFrameMapper : public CallframeMapper
 {
@@ -42,24 +45,29 @@ public:
 class CallchainMocker : public GlobalMockBase<CallchainMocker>
 {
 public:
-	MOCK_METHOD2(construct, void (CallframeMapper *, const Sample &));
-	MOCK_METHOD0(addSample, void ());
+	MOCK_METHOD1(addSample, void (const Callchain *));
 };
 
 Callchain::Callchain(CallframeMapper &mapper, const Sample &sample)
   : space(mapper)
 {
-	CallchainMocker::MockObj().construct(&mapper, sample);
 }
 
 void Callchain::addSample()
 {
-	CallchainMocker::MockObj().addSample();
+	CallchainMocker::MockObj().addSample(this);
 }
+
+class MockCallchainFactory : public CallchainFactory
+{
+public:
+	MOCK_METHOD2(MakeCallchain, std::unique_ptr<Callchain>(CallframeMapper &space, const Sample & sample));
+};
 
 TEST(SampleAggregationTestSuite, TestGetters)
 {
-	SampleAggregation agg("/usr/bin/pmcstat", 866);
+	MockCallchainFactory ccFactory;
+	SampleAggregation agg(ccFactory, "/usr/bin/pmcstat", 866);
 
 	EXPECT_EQ(agg.getExecutable(), "/usr/bin/pmcstat");
 	EXPECT_EQ(agg.getDisplayName(), "/usr/bin/pmcstat (866)");
@@ -69,33 +77,41 @@ TEST(SampleAggregationTestSuite, TestGetters)
 
 TEST(SampleAggregationTestSuite, TestAddSingleSample)
 {
+	MockCallchainFactory ccFactory;
 	std::string imageName("sbin/ifconfig");
-	SampleAggregation agg(imageName, 156);
+	SampleAggregation agg(ccFactory, imageName, 156);
 	MockFrameMapper mapper;
 	GlobalMock<CallchainMocker> callchainMock;
 
 	pmclog_ev_callchain pmc_cc{ .pl_npc = 1, .pl_pc = {0x123}};
 	Sample sample(pmc_cc, 1);
 
-	EXPECT_CALL(*callchainMock, construct(&mapper, sample))
-	    .Times(1);
+	auto ccRet = std::make_unique<Callchain>(mapper, sample);
+	EXPECT_CALL(ccFactory, MakeCallchain(Ref(mapper), sample))
+	    .Times(1)
+	    .WillOnce(Return(ByMove(std::move(ccRet))));
 
 	agg.addSample(mapper, sample);
 }
 
 TEST(SampleAggregationTestSuite, TestAddSingleSampleMultipleTimes)
 {
+	MockCallchainFactory ccFactory;
 	std::string imageName("sbin/ifconfig");
-	SampleAggregation agg(imageName, 156);
+	SampleAggregation agg(ccFactory, imageName, 156);
 	MockFrameMapper mapper;
 	GlobalMock<CallchainMocker> callchainMock;
 
 	pmclog_ev_callchain pmc_cc{ .pl_npc = 1, .pl_pc = {0x123}};
 	Sample sample(pmc_cc, 1);
 
-	EXPECT_CALL(*callchainMock, construct(&mapper, sample))
-	    .Times(1);
-	EXPECT_CALL(*callchainMock, addSample()).Times(2);
+
+	auto ccRet = std::make_unique<Callchain>(mapper, sample);
+	Callchain * callchain = ccRet.get();
+	EXPECT_CALL(ccFactory, MakeCallchain(Ref(mapper), sample))
+	    .Times(1)
+	    .WillOnce(Return(ByMove(std::move(ccRet))));
+	EXPECT_CALL(*callchainMock, addSample(callchain)).Times(2);
 
 	agg.addSample(mapper, sample);
 

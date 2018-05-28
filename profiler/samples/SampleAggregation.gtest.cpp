@@ -87,9 +87,11 @@ TEST(SampleAggregationTestSuite, TestAddSingleSample)
 	Sample sample(pmc_cc, 1);
 
 	auto ccRet = std::make_unique<Callchain>(mapper, sample);
+	Callchain * callchain = ccRet.get();
 	EXPECT_CALL(ccFactory, MakeCallchain(Ref(mapper), sample))
 	    .Times(1)
 	    .WillOnce(Return(ByMove(std::move(ccRet))));
+	EXPECT_CALL(*callchainMock, addSample(callchain)).Times(1);
 
 	agg.addSample(mapper, sample);
 }
@@ -105,13 +107,12 @@ TEST(SampleAggregationTestSuite, TestAddSingleSampleMultipleTimes)
 	pmclog_ev_callchain pmc_cc{ .pl_npc = 1, .pl_pc = {0x123}};
 	Sample sample(pmc_cc, 1);
 
-
 	auto ccRet = std::make_unique<Callchain>(mapper, sample);
 	Callchain * callchain = ccRet.get();
 	EXPECT_CALL(ccFactory, MakeCallchain(Ref(mapper), sample))
 	    .Times(1)
 	    .WillOnce(Return(ByMove(std::move(ccRet))));
-	EXPECT_CALL(*callchainMock, addSample(callchain)).Times(2);
+	EXPECT_CALL(*callchainMock, addSample(callchain)).Times(3);
 
 	agg.addSample(mapper, sample);
 

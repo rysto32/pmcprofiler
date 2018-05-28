@@ -53,7 +53,7 @@ private:
 	size_t userlandSampleCount;
 	CallchainFactory & factory;
 
-	void addFrame(CallframeMapper &space, const Sample &);
+	Callchain * addFrame(CallframeMapper &space, const Sample &);
 
 public:
 	SampleAggregation(CallchainFactory &, const std::string & name, pid_t);

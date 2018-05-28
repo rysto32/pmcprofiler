@@ -64,7 +64,7 @@ TEST(CallchainTestSuite, TestGetters)
 	EXPECT_EQ(&chain.getMapper(), &mapper);
 	EXPECT_EQ(chain.getAddress(), 0x543);
 	EXPECT_TRUE(chain.isKernel());
-	EXPECT_EQ(chain.getSampleCount(), 1);
+	EXPECT_EQ(chain.getSampleCount(), 0);
 	EXPECT_FALSE(chain.isMapped());
 
 	const InlineFrame & ifr = chain.getLeafFrame();

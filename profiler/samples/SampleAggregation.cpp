@@ -47,10 +47,14 @@ SampleAggregation::~SampleAggregation()
 
 }
 
-void
+Callchain *
 SampleAggregation::addFrame(CallframeMapper &space, const Sample & sample)
 {
-	frameMap.insert(std::make_pair(sample, factory.MakeCallchain(space, sample)));
+	auto ptr = factory.MakeCallchain(space, sample);
+	Callchain * cc = ptr.get();
+	frameMap.insert(std::make_pair(sample, std::move(ptr)));
+
+	return cc;
 }
 
 void
@@ -58,11 +62,13 @@ SampleAggregation::addSample(CallframeMapper &space, const Sample &sample)
 {
 	auto it = frameMap.find(sample);
 
+	Callchain *cc;
 	if (it == frameMap.end())
-		addFrame(space, sample);
+		cc = addFrame(space, sample);
 	else
-		it->second->addSample();
+		cc = it->second.get();
 
+	cc->addSample();
 	sampleCount++;
 	if (!sample.isKernel())
 		userlandSampleCount++;

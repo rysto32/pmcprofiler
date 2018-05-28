@@ -34,8 +34,8 @@
 #include <memory>
 #include <unordered_map>
 
-class AddressSpace;
 class Callchain;
+class CallframeMapper;
 class ProcessExec;
 
 class SampleAggregation
@@ -51,7 +51,7 @@ private:
 	size_t sampleCount;
 	size_t userlandSampleCount;
 
-	void addFrame(AddressSpace &space, const Sample &);
+	void addFrame(CallframeMapper &space, const Sample &);
 
 public:
 	SampleAggregation(const std::string & name, pid_t);
@@ -62,7 +62,7 @@ public:
 	SampleAggregation(const SampleAggregation&) = delete;
 	SampleAggregation& operator=(const SampleAggregation &) = delete;
 
-	void addSample(AddressSpace &, const Sample &);
+	void addSample(CallframeMapper &, const Sample &);
 
 	void getCallchainList(CallchainList &) const;
 

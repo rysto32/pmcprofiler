@@ -43,14 +43,14 @@ SampleAggregation::~SampleAggregation()
 }
 
 void
-SampleAggregation::addFrame(AddressSpace &space, const Sample & sample)
+SampleAggregation::addFrame(CallframeMapper &space, const Sample & sample)
 {
 	frameMap.insert(std::make_pair(sample,
 	    std::make_unique<Callchain>(space, sample)));
 }
 
 void
-SampleAggregation::addSample(AddressSpace &space, const Sample &sample)
+SampleAggregation::addSample(CallframeMapper &space, const Sample &sample)
 {
 	auto it = frameMap.find(sample);
 

@@ -150,27 +150,27 @@ TEST(SampleAggregationTestSuite, TestAddMultipleSamples)
 	Sample sample3(pmclog_ev_callchain { .pl_npc = 4, .pl_pc = {1, 2, 3, 4}}, 32);
 
 	auto ccRet = std::make_unique<Callchain>(mapper, sample1);
-	Callchain * callchain1 = ccRet.get();
+	Callchain * cc1 = ccRet.get();
 	EXPECT_CALL(ccFactory, MakeCallchain(Ref(mapper), sample1))
 	    .Times(1)
 	    .WillOnce(Return(ByMove(std::move(ccRet))));
 
 	ccRet = std::make_unique<Callchain>(mapper, sample2);
-	Callchain * callchain2 = ccRet.get();
+	Callchain * cc2 = ccRet.get();
 	EXPECT_CALL(ccFactory, MakeCallchain(Ref(mapper), sample2))
 	    .Times(1)
 	    .WillOnce(Return(ByMove(std::move(ccRet))));
 
 	ccRet = std::make_unique<Callchain>(mapper, sample3);
-	Callchain * callchain3 = ccRet.get();
+	Callchain * cc3 = ccRet.get();
 	EXPECT_CALL(ccFactory, MakeCallchain(Ref(mapper), sample3))
 	    .Times(1)
 	    .WillOnce(Return(ByMove(std::move(ccRet))));
 
 
-	EXPECT_CALL(*callchainMock, addSample(callchain1)).Times(2);
-	EXPECT_CALL(*callchainMock, addSample(callchain2)).Times(3);
-	EXPECT_CALL(*callchainMock, addSample(callchain3)).Times(1);
+	EXPECT_CALL(*callchainMock, addSample(cc1)).Times(2);
+	EXPECT_CALL(*callchainMock, addSample(cc2)).Times(3);
+	EXPECT_CALL(*callchainMock, addSample(cc3)).Times(1);
 
 	agg.addSample(mapper, sample2);
 	agg.addSample(mapper, sample1);

@@ -129,6 +129,8 @@ TEST(SampleAggregationTestSuite, TestAddSingleSampleMultipleTimes)
 
 	agg.addSample(mapper, sample);
 
+	// Make a copy to ensure that different objects with the same
+	// contents are aggregated correctly.
 	Sample sample2(sample);
 	agg.addSample(mapper, sample2);
 

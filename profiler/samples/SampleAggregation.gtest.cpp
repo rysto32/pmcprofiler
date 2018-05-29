@@ -180,3 +180,50 @@ TEST(SampleAggregationTestSuite, TestAddMultipleSamples)
 	agg.addSample(mapper, sample1);
 	agg.addSample(mapper, sample2);
 }
+
+TEST(SampleAggregationTestSuite, TestGetCallchainList)
+{
+	MockCallchainFactory ccFactory;
+	std::string imageName("sbin/ifconfig");
+	SampleAggregation agg(ccFactory, imageName, 156);
+	MockFrameMapper mapper;
+	GlobalMock<CallchainMocker> callchainMock;
+
+	Sample sample1(pmclog_ev_callchain { .pl_npc = 3, .pl_pc = {1, 2, 3}}, 32);
+	Sample sample2(pmclog_ev_pcsample { .pl_pc = 10});
+	Sample sample3(pmclog_ev_callchain { .pl_npc = 4, .pl_pc = {1, 2, 3, 4}}, 32);
+
+	auto ccRet = std::make_unique<Callchain>(mapper, sample1);
+	Callchain * cc1 = ccRet.get();
+	EXPECT_CALL(ccFactory, MakeCallchain(Ref(mapper), sample1))
+	    .Times(1)
+	    .WillOnce(Return(ByMove(std::move(ccRet))));
+
+	ccRet = std::make_unique<Callchain>(mapper, sample2);
+	Callchain * cc2 = ccRet.get();
+	EXPECT_CALL(ccFactory, MakeCallchain(Ref(mapper), sample2))
+	    .Times(1)
+	    .WillOnce(Return(ByMove(std::move(ccRet))));
+
+	ccRet = std::make_unique<Callchain>(mapper, sample3);
+	Callchain * cc3 = ccRet.get();
+	EXPECT_CALL(ccFactory, MakeCallchain(Ref(mapper), sample3))
+	    .Times(1)
+	    .WillOnce(Return(ByMove(std::move(ccRet))));
+
+	EXPECT_CALL(*callchainMock, addSample(cc1)).Times(1);
+	EXPECT_CALL(*callchainMock, addSample(cc2)).Times(1);
+	EXPECT_CALL(*callchainMock, addSample(cc3)).Times(1);
+
+	agg.addSample(mapper, sample1);
+	agg.addSample(mapper, sample2);
+	agg.addSample(mapper, sample3);
+
+	CallchainList ccList;
+	agg.getCallchainList(ccList);
+
+	EXPECT_EQ(ccList.size(), 3);
+	EXPECT_THAT(ccList, UnorderedElementsAre(AggCallChain(&agg, cc1),
+						 AggCallChain(&agg, cc2),
+						 AggCallChain(&agg, cc3)));
+}

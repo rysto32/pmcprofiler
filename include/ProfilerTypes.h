@@ -51,6 +51,11 @@ struct AggCallChain
 	  : agg(a), chain(c)
 	{
 	}
+
+	bool operator==(const AggCallChain & other) const
+	{
+		return agg == other.agg && chain == other.chain;
+	}
 };
 
 typedef std::vector<SampleAggregation*> AggregationList;

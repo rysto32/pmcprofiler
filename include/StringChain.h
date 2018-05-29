@@ -50,21 +50,9 @@ public:
 		if (hash_valid)
 			return hash_value;
 
-		CallchainVector::const_iterator it = vec.begin();
 		size_t val = 0;
-		std::hash<std::string> hasher;
-
-		/*
-		 * The default hasher for strings multiplies the hash
-		 * value by 5 for each iteration, so we follow that hash
-		 * function here.
-		 *
-		 * We essentially act as if we have concatenated all of
-		 * the strings in vec together and hashed that one
-		 * string.
-		 */
-		for (; it != vec.end(); ++it)
-			val = 5 * val + hasher(**it);
+		for (const auto & str : vec)
+			hash_combine(val, *str);
 
 		hash_value = val;
 		hash_valid = true;

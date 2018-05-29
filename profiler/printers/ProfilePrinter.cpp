@@ -52,15 +52,12 @@ ProfilePrinter::FuncLocKey::operator==(const FuncLocKey & other) const
 	return file == other.file && func == other.func;
 }
 
-// XXX I would like a better hash function here
 size_t
 ProfilePrinter::FuncLocKey::hasher::operator()(const FuncLocKey & key) const
 {
 	size_t hash = std::hash<std::string>{}(*key.file);
-	hash *= 5;
-	hash += std::hash<std::string>{}(*key.func);
 
-	return hash;
+	return hash_combine(hash, *key.func);
 }
 
 void

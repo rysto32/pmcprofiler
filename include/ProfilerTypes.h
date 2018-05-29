@@ -64,6 +64,17 @@ typedef std::map<TargetAddr, std::unique_ptr<Callframe> > FrameMap;
 typedef std::set<unsigned> LineLocationList;
 typedef std::map<TargetAddr, SharedString> SymbolMap;
 
+/* Shamelessly stolen from boost::hash_combine. */
+template <typename T, typename Hash = std::hash<T> >
+size_t hash_combine(size_t seed, const T & val)
+{
+	Hash hash_value;
+
+	seed ^= hash_value(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+	return seed;
+}
+
 #ifdef LOG_ENABLED
 
 #define LOG(args...) \

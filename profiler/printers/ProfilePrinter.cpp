@@ -126,10 +126,10 @@ ProfilePrinter::getFunctionLocations(const SampleAggregation &agg,
 
 		insertFuncLoc(locMap, **jt, *chain);
 
-		StringChain strChain;
-		strChain.push_back((*jt)->getDemangled());
-
 		if (chainMap) {
+			StringChain strChain;
+			strChain.push_back((*jt)->getDemangled());
+
 			for (++jt; jt != jt_end; ++jt) {
 				const auto & frame = **jt;
 

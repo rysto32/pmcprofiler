@@ -125,7 +125,7 @@ ProfilePrinter::getFunctionLocations(const SampleAggregation &agg,
 
 		if (chainMap) {
 			StringChain strChain;
-			strChain.push_back((*jt)->getDemangled());
+			strChain.push_back(**jt);
 
 			for (++jt; jt != jt_end; ++jt) {
 				const auto & frame = **jt;
@@ -133,7 +133,7 @@ ProfilePrinter::getFunctionLocations(const SampleAggregation &agg,
 				auto insert = chainMap->insert(std::make_pair(strChain, FuncLocMap(1)));
 				insertFuncLoc(insert.first->second, frame, *chain);
 
-				strChain.push_back(frame.getDemangled());
+				strChain.push_back(frame);
 			}
 		}
 	}

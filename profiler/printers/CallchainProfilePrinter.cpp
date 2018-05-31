@@ -47,7 +47,7 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::isCallChainBoring(
 		return true;
 	else {
 		const InlineFrame & frame = functions.front()->getFrame();
-		chain.push_back(frame.getFunc());
+		chain.push_back(frame);
 		bool boring = isCallChainBoring(agg, chain, chainMap);
 		assert(chain.back() == frame.getFunc());
 		chain.pop_back();
@@ -82,7 +82,7 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printCallChain(
 		    frame.getDemangled()->c_str(), chain);
 
 		if (!isBoring && depth < m_maxDepth) {
-			chain.push_back(frame.getFunc());
+			chain.push_back(frame);
 			printCallChain(profiler, agg, chain, depth + 1, strategy, chainMap);
 			assert(chain.back() == frame.getFunc());
 			chain.pop_back();
@@ -114,7 +114,7 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printProfile(const Prof
 				strategy.printFrame(m_outfile, 0, percent, percent, *this, profiler, functionLocation,
 						    *agg, frame.getDemangled()->c_str(), chain);
 
-				chain.push_back(frame.getFunc());
+				chain.push_back(frame);
 				printCallChain(profiler, *agg, chain, 1, strategy, chainMap);
 			}
 		}

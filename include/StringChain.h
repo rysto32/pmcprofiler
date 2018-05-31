@@ -27,6 +27,7 @@
 #include <functional>
 #include <vector>
 
+#include "InlineFrame.h"
 #include "SharedString.h"
 
 class StringChain
@@ -60,9 +61,9 @@ public:
 		return val;
 	}
 
-	void push_back(const SharedString& t)
+	void push_back(const InlineFrame& f)
 	{
-		vec.push_back(t);
+		vec.push_back(f.getFunc());
 		hash_valid = false;
 	}
 

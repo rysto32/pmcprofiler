@@ -63,7 +63,7 @@ public:
 
 	void push_back(const InlineFrame& f)
 	{
-		vec.push_back(f.getFunc());
+		vec.push_back(f.getDemangled());
 		hash_valid = false;
 	}
 

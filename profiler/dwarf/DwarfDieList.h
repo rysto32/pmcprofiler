@@ -70,7 +70,7 @@ public:
 		const_iterator & operator=(const_iterator && other) = default;
 		const_iterator & operator=(const const_iterator &) = delete;
 
-		const Dwarf_Die & operator*() const
+		Dwarf_Die operator*() const
 		{
 			return (*die);
 		}

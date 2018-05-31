@@ -53,7 +53,7 @@ public:
 	DwarfStackState(const DwarfStackState &) = delete;
 	DwarfStackState & operator=(const DwarfStackState &) = delete;
 
-	const Dwarf_Die & GetLeafDie() const
+	Dwarf_Die GetLeafDie() const
 	{
 		return *iterator;
 	}

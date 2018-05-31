@@ -97,7 +97,7 @@ public:
 		return !bool(*this);
 	}
 
-	const Dwarf_Die &operator*() const
+	Dwarf_Die operator*() const
 	{
 		return die;
 	}

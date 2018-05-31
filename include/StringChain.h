@@ -52,7 +52,7 @@ public:
 
 		size_t val = 0;
 		for (const auto & str : vec)
-			hash_combine(val, *str);
+			val = hash_combine(val, *str);
 
 		hash_value = val;
 		hash_valid = true;

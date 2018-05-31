@@ -6,6 +6,7 @@ define include_template
 
  OBJS:=
  LIB:=
+ SRCS:=
  LOCAL_INCLUDE:=
 
  PROG_TARGET:=

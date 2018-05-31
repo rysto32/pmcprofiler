@@ -42,8 +42,10 @@ class DwarfDie
 
 	void Release()
 	{
-		if (ownDie)
+		if (ownDie) {
 			dwarf_dealloc(dwarf, die, DW_DLA_DIE);
+			ownDie = false;
+		}
 	}
 
 	friend class DwarfDieList;

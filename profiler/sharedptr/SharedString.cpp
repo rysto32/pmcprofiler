@@ -23,40 +23,15 @@
 
 #include "SharedString.h"
 
-// To avoid static initialization/deinitialization issues, we make the
-// intern_map a pointer that is allocated on first use and never
-// deallocated.
-SharedString::InternMap *
-SharedString::GetInternMap()
+
+void
+SharedString::Init(const char *str)
 {
-	static InternMap *intern_map;
-
-	if (intern_map == NULL)
-		intern_map = new InternMap;
-	return intern_map;
-}
-
-SharedString::StringValue *
-SharedString::Intern(const char *str)
-{
-	InternMap::iterator it = GetInternMap()->find(str);
-
-	if (it != GetInternMap()->end()) {
-		//printf("String '%s' interned\n", str);
-		it->second->count++;
-		return it->second;
-	}
-
-	StringValue *val = new StringValue(str);
-	GetInternMap()->insert(std::make_pair(val->str, val));
-	//printf("String '%s' create\n", str);
-	return val;
+	value = new StringValue(str);
 }
 
 void
 SharedString::Destroy(StringValue *str)
 {
-	GetInternMap()->erase(str->str);
-	//printf("String '%s' destroy\n", str->str.c_str());
 	delete str;
 }

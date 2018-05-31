@@ -147,40 +147,6 @@ TEST(SharedStringTestSuite, TestSharedStringMoveConstructor)
 	ASSERT_EQ(first, second);
 }
 
-TEST(SharedStringTestSuite, TestInterning)
-{
-	const char *cStr = "a c string";
-	std::string std(cStr);
-	const char cStrArr[] = "a c string";
-
-	SharedString first(cStr);
-	SharedString second(std);
-
-	ASSERT_EQ(first, second);
-	ASSERT_EQ(&*first, &*second);
-
-	SharedString third = cStrArr;
-	ASSERT_EQ(first, third);
-	ASSERT_EQ(&*first, &*third);
-
-	const auto * origMem = &*first;
-
-	second = "something else";
-
-	ASSERT_NE(first, second);
-	ASSERT_NE(&*first, &*second);
-	ASSERT_TRUE(IsAllocated(origMem));
-
-	// Release all references to origMem and assert that it has been
-	// freed (note: this is a bit fragile -- we depend on the memory
-	// not be reallocated, which is only guaranteed to happen
-	// because third is a reference counted copy of second, so we
-	// won't allocate more memory when third releases the reference)
-	first = "";
-	third = second;
-	ASSERT_TRUE(!IsAllocated(origMem));
-}
-
 TEST(SharedStringTestSuite, TestCopyAssignment)
 {
 	const char *cStr = "frist";

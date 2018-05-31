@@ -45,16 +45,10 @@ class SharedString
 
 	StringValue *value;
 
-	typedef std::unordered_map<std::string, StringValue*> InternMap;
-
-	static InternMap *GetInternMap();
-	static StringValue *Intern(const char *str);
-	static void Destroy(StringValue *str);
-
-	void Init(const char *str)
-	{
-		value = Intern(str);
-	}
+	// These are separate functions solely to facilitate unit tests.  If
+	// SharedString was taught to use allocators, this could be avoid.
+	void Init(const char *str);
+	void Destroy(StringValue *);
 
 	void Copy(const SharedString &other)
 	{
@@ -130,8 +124,10 @@ public:
 
 	bool operator==(const SharedString &other) const
 	{
-		// Becase we intern strings we can do a simple pointer compare
-		return value == other.value;
+		if (value == other.value)
+			return true;
+
+		return **this == *other;
 	}
 
 	bool operator!=(const SharedString &other) const

@@ -163,7 +163,7 @@ PrintFlameGraphStrategy::printProcessHeader(FILE *outfile __unused, const Profil
 void
 PrintFlameGraphStrategy::printFrame(FILE *outfile, uint32_t depth, double processPercent, double parentPercent,
 		ProfilePrinter &printer, const Profiler &profiler, const FunctionLocation& functionLocation,
-		const SampleAggregation &agg, const char *functionName, StringChain & chain __unused) const
+		const SampleAggregation &agg, const char *functionName, StringChain & chain) const
 {
 	if (strcmp(functionName, "[self]") == 0) {
 		const char *sep = "";

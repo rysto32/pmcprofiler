@@ -94,7 +94,7 @@ public:
 
 	bool operator!() const
 	{
-		return !this->operator bool();
+		return !bool(*this);
 	}
 
 	const Dwarf_Die &operator*() const

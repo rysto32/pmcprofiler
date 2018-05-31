@@ -28,18 +28,7 @@
 void
 DwarfDie::AdvanceToSibling()
 {
-	Dwarf_Die last_die = die;
-	Dwarf_Error derr;
-	int error;
-
-	error = dwarf_siblingof(dwarf, last_die, &die, &derr);
-	if (ownDie)
-		dwarf_dealloc(dwarf, last_die, DW_DLA_DIE);
-
-	if (error != DW_DLV_OK) {
-		die = nullptr;
-		ownDie = false;
-	}
+	*this = GetSibling();
 }
 
 DwarfDie
@@ -51,7 +40,7 @@ DwarfDie::GetSibling() const
 
 	error = dwarf_siblingof(dwarf, die, &new_die, &derr);
 	if (error != DW_DLV_OK)
-		return DwarfDie();
+		return DwarfDie(dwarf, nullptr);
 	else
 		return DwarfDie(dwarf, new_die);
 }

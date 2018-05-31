@@ -1,4 +1,5 @@
 obj/
 .kdev4
 profiler.kdev4
+.kdev_include_paths
 

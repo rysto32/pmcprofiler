@@ -38,7 +38,7 @@ class StringChain
 	mutable bool hash_valid;
 
 public:
-	typedef CallchainVector::iterator iterator;
+	typedef CallchainVector::const_iterator iterator;
 
 	StringChain()
 	  : hash_valid(false)

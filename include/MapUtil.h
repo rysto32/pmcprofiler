@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2015 Sandvine Incorporated.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -20,21 +20,42 @@
 // LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
+//
+// $FreeBSD$
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef MAP_UTIL_H
+#define MAP_UTIL_H
 
-#include <stdint.h>
+#include <map>
 
-class Profiler;
-
-class EventFactory
+template <typename K, typename Map, typename Iterator>
+Iterator
+LastSmallerThanImpl(Map &map, K addr)
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+	Iterator it = map.upper_bound(addr);
 
-	static void createEvents(Profiler& profiler);
-};
+	if (it == map.begin())
+		return (map.end());
+	--it;
+	return (it);
+}
 
-#endif // #if !defined(EVENTFACTORY_H)
+template <typename K, typename V, typename C, typename A>
+typename std::map<K, V, C, A>::iterator
+LastSmallerThan(std::map<K, V, C, A> &map, K addr)
+{
+
+	return (LastSmallerThanImpl<K, std::map<K, V, C, A>,
+	    typename std::map<K, V, C, A>::iterator>(map, addr));
+}
+
+template <typename K, typename V, typename C, typename A>
+typename std::map<K, V, C, A>::const_iterator
+LastSmallerThan(const std::map<K, V, C, A> &map, K addr)
+{
+
+	return (LastSmallerThanImpl<K, const std::map<K, V, C, A>,
+	    typename std::map<K, V, C, A>::const_iterator>(map, addr));
+}
+
+#endif

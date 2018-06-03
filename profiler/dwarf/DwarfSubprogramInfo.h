@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,42 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef DWARFFUNCINFO_H
+#define DWARFFUNCINFO_H
 
-#include <stdint.h>
+#include <libdwarf.h>
 
-class Profiler;
+#include "SharedString.h"
 
-class EventFactory
+class DwarfSubprogramInfo
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+	Dwarf_Debug dwarf;
+	Dwarf_Die die;
+	SharedString func;
+	int line;
+	bool inited;
 
-	static void createEvents(Profiler& profiler);
+	void CheckInitialized();
+
+	void InitFromAbstractOrigin(Dwarf_Attribute);
+	void InitFromSpecification(Dwarf_Die);
+	void InitFromLocalAttr(Dwarf_Die);
+
+	void SetFunc(SharedString f, int l);
+
+public:
+	DwarfSubprogramInfo(Dwarf_Debug dwarf, Dwarf_Die die)
+	  : dwarf(dwarf), die(die), inited(false)
+	{
+	}
+
+	DwarfSubprogramInfo(const DwarfSubprogramInfo &) = delete;
+	DwarfSubprogramInfo(DwarfSubprogramInfo &&) = delete;
+	DwarfSubprogramInfo & operator=(const DwarfSubprogramInfo &) = delete;
+	DwarfSubprogramInfo & operator=(DwarfSubprogramInfo &&) = delete;
+
+	SharedString GetFunc();
+	int GetLine();
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

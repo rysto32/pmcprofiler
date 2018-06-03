@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,54 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#include "DwarfDie.h"
 
-#include <stdint.h>
+#include "DwarfException.h"
 
-class Profiler;
-
-class EventFactory
+void
+DwarfDie::AdvanceToSibling()
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+	*this = GetSibling();
+}
 
-	static void createEvents(Profiler& profiler);
-};
+DwarfDie
+DwarfDie::GetSibling() const
+{
+	Dwarf_Die new_die;
+	Dwarf_Error derr;
+	int error;
 
-#endif // #if !defined(EVENTFACTORY_H)
+	error = dwarf_siblingof(dwarf, die, &new_die, &derr);
+	if (error != DW_DLV_OK)
+		return DwarfDie(dwarf, nullptr);
+	else
+		return DwarfDie(dwarf, new_die);
+}
+
+DwarfDie
+DwarfDie::OffDie(Dwarf_Debug dwarf, Dwarf_Off ref)
+{
+	Dwarf_Die die;
+	Dwarf_Error derr;
+	int error;
+
+	error = dwarf_offdie(dwarf, ref, &die, &derr);
+	if (error != 0)
+		return DwarfDie();
+	else
+		return DwarfDie(dwarf, die);
+}
+
+DwarfDie
+DwarfDie::GetCuDie(Dwarf_Debug dwarf)
+{
+	int error;
+	Dwarf_Die die;
+	Dwarf_Error derr;
+
+	error = dwarf_siblingof(dwarf, NULL, &die, &derr);
+	if (error != 0)
+		return DwarfDie();
+	else
+		return DwarfDie(dwarf, die);
+}

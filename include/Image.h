@@ -21,20 +21,61 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#if !defined(IMAGE_H)
+#define IMAGE_H
 
-#include <stdint.h>
+#include "DwarfResolver.h"
+#include "ProfilerTypes.h"
+#include "SharedString.h"
 
-class Profiler;
+#include <string>
+#include <algorithm>
+#include <functional>
+#include <vector>
+#include <map>
+#include <memory>
+#include <set>
+#include <unordered_map>
 
-class EventFactory
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+
+class Callframe;
+class ProcessExec;
+class FunctionLocation;
+class ImageFactory;
+class Location;
+class SharedString;
+
+class Image
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+private:
+	SharedString imageFile;
+	FrameMap frameMap;
 
-	static void createEvents(Profiler& profiler);
+	explicit Image(SharedString imageName);
+
+	Image() = delete;
+	Image(const Image&) = delete;
+	Image(Image&&) = delete;
+	Image& operator=(const Image &) = delete;
+	Image& operator=(Image &&) = delete;
+
+	friend class ImageFactory;
+
+public:
+	~Image();
+
+	const SharedString & GetImageFile() const
+	{
+		return imageFile;
+	}
+
+	const Callframe & GetFrame(TargetAddr offset);
+	void MapAllFrames();
+	void MapAllAsUnmapped();
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif // #if !defined(IMAGE_H)

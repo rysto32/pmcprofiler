@@ -25,33 +25,65 @@
 __FBSDID("$FreeBSD$");
 
 #include "Profiler.h"
+
+#include "AddressSpace.h"
+#include "AddressSpaceFactory.h"
 #include "EventFactory.h"
-#include "Process.h"
-#include "Image.h"
+#include "ImageFactory.h"
 #include "ProcessState.h"
 #include "Sample.h"
 #include "ProfilePrinter.h"
+#include "SampleAggregation.h"
+#include "SampleAggregationFactory.h"
+
 #include <cassert>
+#include <cstring>
+#include <memory>
 
 #include <paths.h>
 #include <libgen.h>
+#include <sys/sysctl.h>
+
+Profiler::Profiler(const std::string& dataFile, bool showlines,
+    const char* modulePathStr, AddressSpaceFactory & asFactory,
+    SampleAggregationFactory & aggFactory, ImageFactory & imgFactory)
+  : m_sampleCount(0),
+    m_dataFile(dataFile),
+    m_showlines(showlines),
+    asFactory(asFactory),
+    aggFactory(aggFactory),
+    imgFactory(imgFactory)
+{
+	if (modulePathStr != NULL)
+		overrideModulePath(modulePathStr);
+	else
+		getLocalModulePath();
+}
+
+void
+Profiler::MapSamples()
+{
+	m_sampleCount = 0;
+
+	EventFactory::createEvents(*this);
+	imgFactory.MapAll();
+}
 
 void
 Profiler::createProfile(ProfilePrinter & printer)
 {
-	m_sampleCount = 0;
-	Process::clearOldSamples();
-	EventFactory::createEvents(*this, printer.getMaxDepth());
-	Process::ActiveProcessList activeProcessList;
-	Process::collectActiveProcesses(activeProcessList);
+	AggregationList aggregations;
+	aggFactory.GetAggregationList(aggregations);
 
-	printer.printProfile(*this, activeProcessList);
+	printer.printProfile(*this, aggregations);
 }
 
 void
 Profiler::processEvent(const ProcessExec& processExec)
 {
-	Process::processExecs(processExec);
+	aggFactory.HandleExec(processExec);
+	auto & space = asFactory.ReplaceAddressSpace(processExec.getProcessID());
+	space.processExec(processExec);
 }
 
 void
@@ -60,21 +92,74 @@ Profiler::processEvent(const Sample& sample)
 	if (!pid_filter.empty() && pid_filter.count(sample.getProcessID()) == 0)
 		return;
 
-	Process::getProcess(sample).addSample(sample);
+	bool kernel = sample.isKernel();
+	AddressSpace &space = GetAddressSpace(kernel, sample.getProcessID());
+
+	aggFactory.GetAggregation(sample).addSample(space, sample);
 	m_sampleCount++;
 }
 
 void
-Profiler::processMapIn(pid_t pid, uintptr_t map_start, const char * image)
+Profiler::processMapIn(pid_t pid, TargetAddr map_start, const char * image)
 {
-	/* a pid of -1 indicates that this is for the kernel, but we don't have a process
-	 * for the kernel.  Load the images directly to get around this:
-	 */
-	if (pid == -1)
-		Image::loadKldImage(map_start, image);
-	else {
-		Process & process = Process::getProcess(image, pid);
-		process.mapIn(map_start, image);
+	/* a pid of -1 indicates that this is for the kernel */
+	if (pid == -1) {
+		AddressSpace &space = asFactory.GetKernelAddressSpace();
+		space.findAndMap(map_start, modulePath, image);
+	} else {
+		AddressSpace &space = asFactory.GetProcessAddressSpace(pid);
+		space.mapIn(map_start, image);
+	}
+
+	aggFactory.HandleMapIn(pid, image);
+}
+
+void
+Profiler::parseModulePath(char * pathBuf, std::vector<std::string> & vec)
+{
+	char * path;
+	char * next = pathBuf;
+
+	vec.clear();
+
+	while ((path = strsep(&next, ";")) != NULL) {
+		if (*path == '\0')
+			continue;
+
+		vec.push_back(path);
 	}
 }
 
+void
+Profiler::getLocalModulePath()
+{
+	std::unique_ptr<char[]> pathBuf;
+	size_t path_len = 0;
+	int error;
+
+	sysctlbyname("kern.module_path", NULL, &path_len, NULL, 0);
+	pathBuf = std::make_unique<char[]>(path_len+1);
+
+	error = sysctlbyname("kern.module_path", pathBuf.get(), &path_len, NULL, 0);
+	if (error == 0)
+		parseModulePath(pathBuf.get(), modulePath);
+}
+
+void
+Profiler::overrideModulePath(const char* modulePathStr)
+{
+	size_t len = strlen(modulePathStr) + 1;
+	std::unique_ptr<char[]> pathBuf = std::make_unique<char[]>(len);
+	memcpy(pathBuf.get(), modulePathStr, len);
+
+	parseModulePath(pathBuf.get(), modulePath);
+}
+
+AddressSpace &
+Profiler::GetAddressSpace(bool kernel, pid_t pid)
+{
+	if (kernel)
+		return asFactory.GetKernelAddressSpace();
+	else
+		return asFactory.GetProcessAddressSpace(pid);
+}

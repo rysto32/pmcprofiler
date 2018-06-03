@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,32 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#include "DwarfCompileUnitDie.h"
 
-#include <stdint.h>
+#include <dwarf.h>
 
-class Profiler;
+#include "DwarfUtil.h"
 
-class EventFactory
+DwarfCompileUnitDie::DwarfCompileUnitDie(DwarfDie &&die, SharedPtr<DwarfCompileUnitParams> params)
+  : die(std::move(die)), params(params)
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+	Dwarf_Unsigned addr;
+	Dwarf_Error derr;
+	int error;
 
-	static void createEvents(Profiler& profiler);
-};
+	error = dwarf_attrval_unsigned(*die, DW_AT_low_pc, &addr, &derr);
+	if (error != DW_DLV_OK)
+		baseAddr = 0;
+	else
+		baseAddr = addr;
+}
 
-#endif // #if !defined(EVENTFACTORY_H)
+SharedPtr<DwarfCompileUnitDie>
+DwarfCompileUnitDie::GetSibling() const
+{
+	DwarfDie sibDie(die.GetSibling());
+	if (!sibDie)
+		return SharedPtr<DwarfCompileUnitDie>();
+
+	return SharedPtr<DwarfCompileUnitDie>::make({std::move(sibDie), params});
+}

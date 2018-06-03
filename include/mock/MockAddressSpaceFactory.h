@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,21 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef MOCK_MOCK_ADDRESS_SPACE_FACTORY_H
+#define MOCK_MOCK_ADDRESS_SPACE_FACTORY_H
 
-#include <stdint.h>
+#include "AddressSpaceFactory.h"
 
-class Profiler;
+#include "AddressSpace.h"
 
-class EventFactory
+#include <gmock/gmock.h>
+
+class MockAddressSpaceFactory : public AddressSpaceFactory
 {
 public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
-
-	static void createEvents(Profiler& profiler);
+	MOCK_METHOD0(GetKernelAddressSpace, AddressSpace &());
+	MOCK_METHOD1(GetProcessAddressSpace, AddressSpace &(pid_t pid));
+	MOCK_METHOD1(ReplaceAddressSpace, AddressSpace & (pid_t pid));
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

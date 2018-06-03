@@ -1,4 +1,5 @@
 // Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +22,66 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef ADDRESSSPACE_H
+#define ADDRESSSPACE_H
 
-#include <stdint.h>
+#include "CallframeMapper.h"
+#include "ProfilerTypes.h"
 
-class Profiler;
+#include <map>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-class EventFactory
+#include <sys/types.h>
+
+class Callframe;
+class Image;
+class ImageFactory;
+class ProcessExec;
+class SharedString;
+
+class AddressSpace : public CallframeMapper
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+private:
+	struct LoadedImage
+	{
+		Image *image;
+		TargetAddr loadOffset;
 
-	static void createEvents(Profiler& profiler);
+		LoadedImage(Image *i, TargetAddr off)
+		  : image(i), loadOffset(off)
+		{
+		}
+	};
+
+	typedef std::map<TargetAddr, LoadedImage> LoadableImageMap;
+
+	ImageFactory &imgFactory;
+	LoadableImageMap loadableImageMap;
+	Image *executable;
+
+	static TargetAddr getLoadAddr(const std::string &executable);
+
+	Image &getImage(TargetAddr addr, TargetAddr & loadOffset) const;
+	void mapImage(TargetAddr addr, Image *image);
+
+public:
+	AddressSpace(ImageFactory &imgFactory);
+	virtual ~AddressSpace() = default;
+
+	AddressSpace(const AddressSpace&) = delete;
+	AddressSpace& operator=(const AddressSpace &) = delete;
+
+	void mapIn(TargetAddr start, SharedString imagePath);
+	void findAndMap(TargetAddr start, const std::vector<std::string> path,
+	    SharedString name);
+
+	const Callframe & mapFrame(TargetAddr addr);
+	void processExec(const ProcessExec& ev);
+
+	SharedString getExecutableName() const;
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

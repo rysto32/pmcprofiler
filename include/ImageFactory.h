@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,23 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef IMAGE_FACTORY_H
+#define IMAGE_FACTORY_H
 
-#include <stdint.h>
+#include <memory>
 
-class Profiler;
+class Image;
+class SharedString;
 
-class EventFactory
+class ImageFactory
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+protected:
+	std::unique_ptr<Image> AllocImage(SharedString);
 
-	static void createEvents(Profiler& profiler);
+public:
+	virtual Image *GetImage(SharedString name) = 0;
+	virtual Image &GetUnmappedImage() = 0;
+	virtual void MapAll() = 0;
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

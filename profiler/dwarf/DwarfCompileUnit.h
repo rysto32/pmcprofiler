@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,54 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef DWARFCOMPILEUNIT_H
+#define DWARFCOMPILEUNIT_H
 
-#include <stdint.h>
+#include <libdwarf.h>
 
-class Profiler;
+#include <memory>
 
-class EventFactory
+#include "DwarfCompileUnitParams.h"
+#include "DwarfDie.h"
+#include "ProfilerTypes.h"
+#include "SharedPtr.h"
+#include "SharedString.h"
+
+class DwarfCompileUnitDie;
+
+class DwarfCompileUnit
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+private:
+	Dwarf_Debug dwarf;
+	SharedPtr<DwarfCompileUnitParams> params;
+	Dwarf_Bool is_info;
+	bool complete;
 
-	static void createEvents(Profiler& profiler);
+	DwarfCompileUnit(Dwarf_Debug dwarf, Dwarf_Bool is_info);
+
+public:
+	DwarfCompileUnit() = delete;
+	DwarfCompileUnit(const DwarfCompileUnit &) = delete;
+	DwarfCompileUnit(DwarfCompileUnit &&) = default;
+
+	DwarfCompileUnit & operator=(const DwarfCompileUnit &) = delete;
+	DwarfCompileUnit & operator=(DwarfCompileUnit &&) = default;
+
+	static DwarfCompileUnit GetFirstCU(Dwarf_Debug, Dwarf_Bool is_info = 1);
+
+	void AdvanceToSibling();
+
+	operator bool() const
+	{
+		return !complete;
+	}
+
+	bool operator!() const
+	{
+		return !this->operator bool();
+	}
+
+	SharedPtr<DwarfCompileUnitDie> GetDie() const;
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

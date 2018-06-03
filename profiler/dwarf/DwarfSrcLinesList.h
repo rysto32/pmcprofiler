@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,43 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef DWARFSRCLINESLIST_H
+#define DWARFSRCLINESLIST_H
 
-#include <stdint.h>
+#include "DwarfArray.h"
+#include "DwarfException.h"
 
-class Profiler;
-
-class EventFactory
+struct DwarfSrcLinesDeleter
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
-
-	static void createEvents(Profiler& profiler);
+	void operator()(Dwarf_Debug dwarf, Dwarf_Line *lines, Dwarf_Signed count)
+	{
+		dwarf_srclines_dealloc(dwarf, lines, count);
+	}
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+class DwarfSrcLinesList : public DwarfArray<Dwarf_Line, DwarfSrcLinesDeleter>
+{
+	typedef DwarfArray<Dwarf_Line, DwarfSrcLinesDeleter> Super;
+
+	static Super::Array GetArray(Dwarf_Die die)
+	{
+		Dwarf_Error derr;
+		Dwarf_Line *array;
+		Dwarf_Signed count;
+		int error;
+
+		error = dwarf_srclines(die, &array, &count, &derr);
+		if (error != DW_DLV_OK)
+			throw DwarfException("dwarf_srclines failed");
+
+		return Super::Array(array, count);
+	}
+
+public:
+	DwarfSrcLinesList(Dwarf_Debug dwarf, Dwarf_Die die)
+	  : DwarfArray(dwarf, GetArray(die))
+	{
+	}
+};
+
+#endif

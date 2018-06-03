@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,35 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef DEFAULT_ADDRESS_SPACE_FACTORY_H
+#define DEFAULT_ADDRESS_SPACE_FACTORY_H
 
-#include <stdint.h>
+#include "AddressSpaceFactory.h"
+#include "AddressSpace.h"
 
-class Profiler;
+#include <unordered_map>
+#include <vector>
 
-class EventFactory
+class ImageFactory;
+
+class DefaultAddressSpaceFactory : public AddressSpaceFactory
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+private:
+	typedef std::unordered_map<pid_t, AddressSpace*> AddressSpaceMap;
+	typedef std::vector<std::unique_ptr<AddressSpace> > AddressSpaceList;
 
-	static void createEvents(Profiler& profiler);
+	ImageFactory &imgFactory;
+	AddressSpaceMap addressSpaceMap;
+	AddressSpaceList addressSpaceList;
+
+	AddressSpace kernelAddressSpace;
+
+public:
+	DefaultAddressSpaceFactory(ImageFactory &);
+
+	virtual AddressSpace &GetKernelAddressSpace();
+	virtual AddressSpace &GetProcessAddressSpace(pid_t);
+	virtual AddressSpace &ReplaceAddressSpace(pid_t pid);
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

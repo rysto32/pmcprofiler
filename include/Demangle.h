@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,11 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef DEMANGLE_H
+#define DEMANGLE_H
 
-#include <stdint.h>
+#include "SharedString.h"
 
-class Profiler;
+SharedString Demangle(SharedString name);
 
-class EventFactory
-{
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
-
-	static void createEvents(Profiler& profiler);
-};
-
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

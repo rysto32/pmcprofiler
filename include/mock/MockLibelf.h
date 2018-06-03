@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,48 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef MOCK_MOCK_LIBELF_H
+#define MOCK_MOCK_LIBELF_H
 
-#include <stdint.h>
+#include <gmock/gmock.h>
+#include <gelf.h>
+#include <libelf.h>
 
-class Profiler;
+#include <memory>
 
-class EventFactory
+#include "mock/GlobalMock.h"
+
+class MockLibelf : public GlobalMockBase<MockLibelf>
 {
 public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
-
-	static void createEvents(Profiler& profiler);
+	MOCK_METHOD3(elf_begin, Elf *(int, Elf_Cmd, Elf *));
+	MOCK_METHOD2(elf_getphdrnum, int(Elf *, size_t *));
+	MOCK_METHOD3(gelf_getphdr, GElf_Phdr *(Elf *, int, GElf_Phdr*));
+	MOCK_METHOD1(elf_end, int (Elf *));
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+Elf *
+elf_begin(int fd, Elf_Cmd cmd, Elf *ar)
+{
+	return MockLibelf::MockObj().elf_begin(fd, cmd, ar);
+}
+
+int
+elf_getphdrnum(Elf *elf, size_t *phnum)
+{
+	return MockLibelf::MockObj().elf_getphdrnum(elf, phnum);
+}
+
+GElf_Phdr *
+gelf_getphdr(Elf *elf, int index, GElf_Phdr *dst)
+{
+	return MockLibelf::MockObj().gelf_getphdr(elf, index, dst);
+}
+
+int
+elf_end(Elf *elf)
+{
+	return MockLibelf::MockObj().elf_end(elf);
+}
+
+#endif

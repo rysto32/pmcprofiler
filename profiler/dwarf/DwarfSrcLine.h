@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,75 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef DWARFSRCLINE_H
+#define DWARFSRCLINE_H
 
-#include <stdint.h>
+#include <libdwarf.h>
 
-class Profiler;
+#include "DwarfException.h"
+#include "SharedString.h"
 
-class EventFactory
+class DwarfSrcLine
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+private:
+	Dwarf_Line line;
+	Dwarf_Addr addr;
 
-	static void createEvents(Profiler& profiler);
+	static Dwarf_Addr GetAddr(const Dwarf_Line &l)
+	{
+		Dwarf_Error derr;
+		Dwarf_Addr addr;
+		int error;
+
+		error = dwarf_lineaddr(l, &addr, &derr);
+		if (error != 0)
+			throw DwarfException("dwarf_lineaddr failed");
+
+		return addr;
+	}
+
+public:
+	DwarfSrcLine(const Dwarf_Line & l)
+	  : line(l), addr(GetAddr(l))
+	{
+	}
+
+	DwarfSrcLine(const DwarfSrcLine &) = delete;
+	DwarfSrcLine(DwarfSrcLine &&) = delete;
+
+	DwarfSrcLine & operator=(const DwarfSrcLine &) = delete;
+	DwarfSrcLine & operator=(DwarfSrcLine && other) = default;
+
+	Dwarf_Addr GetAddr() const
+	{
+		return addr;
+	}
+
+	Dwarf_Unsigned GetLine() const
+	{
+		Dwarf_Error derr;
+		Dwarf_Unsigned lineno;
+		int error;
+
+		error = dwarf_lineno(line, &lineno, &derr);
+		if (error != 0)
+			throw DwarfException("dwarf_lineno failed");
+
+		return lineno;
+	}
+
+	SharedString GetFile(SharedString image) const
+	{
+		Dwarf_Error derr;
+		char *file;
+		int error;
+
+		error = dwarf_linesrc(line, &file, &derr);
+		if (error != 0)
+			return image;
+
+		return file;
+	}
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,26 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef SAMPLE_AGGREGATION_FACTORY_H
+#define SAMPLE_AGGREGATION_FACTORY_H
 
-#include <stdint.h>
+#include "ProfilerTypes.h"
 
-class Profiler;
+#include <sys/types.h>
 
-class EventFactory
+class ProcessExec;
+class Sample;
+class SampleAggregation;
+
+class SampleAggregationFactory
 {
 public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+	virtual ~SampleAggregationFactory() = default;
 
-	static void createEvents(Profiler& profiler);
+	virtual SampleAggregation &GetAggregation(const Sample &) = 0;
+	virtual void GetAggregationList(AggregationList &) = 0;
+	virtual void HandleExec(const ProcessExec &) = 0;
+	virtual void HandleMapIn(pid_t pid, const char *path) = 0;
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

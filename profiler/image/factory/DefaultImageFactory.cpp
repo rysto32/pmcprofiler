@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,46 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#include "DefaultImageFactory.h"
 
-#include <stdint.h>
+#include "Image.h"
 
-class Profiler;
-
-class EventFactory
+DefaultImageFactory::DefaultImageFactory()
+  : unmappedImage(AllocImage(""))
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
 
-	static void createEvents(Profiler& profiler);
-};
+}
 
-#endif // #if !defined(EVENTFACTORY_H)
+DefaultImageFactory::~DefaultImageFactory()
+{
+
+}
+
+Image*
+DefaultImageFactory::GetImage(SharedString name)
+{
+	ImageMap::iterator it = imageMap.find(name);
+	if (it == imageMap.end()) {
+		auto ptr = AllocImage(name);
+		Image *image = ptr.get();
+		imageMap.insert(std::make_pair(name, std::move(ptr)));
+		return image;
+	}
+
+	return it->second.get();
+}
+
+Image&
+DefaultImageFactory::GetUnmappedImage()
+{
+	return *unmappedImage;
+}
+
+void
+DefaultImageFactory::MapAll()
+{
+	for (auto & [name, image] : imageMap)
+		image->MapAllFrames();
+
+	unmappedImage->MapAllAsUnmapped();
+}

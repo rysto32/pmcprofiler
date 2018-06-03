@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,39 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef DWARFCOMPILEUNITPARAMS_H
+#define DWARFCOMPILEUNITPARAMS_H
 
-#include <stdint.h>
+#include <libdwarf.h>
 
-class Profiler;
+class DwarfCompileUnit;
 
-class EventFactory
+class DwarfCompileUnitParams
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+private:
+	Dwarf_Unsigned cu_length;
+	Dwarf_Half cu_version;
+	Dwarf_Off cu_abbrev_offset;
+	Dwarf_Half cu_pointer_size;
+	Dwarf_Half cu_offset_size;
+	Dwarf_Half cu_extension_size;
+	Dwarf_Sig8 type_signature;
+	Dwarf_Unsigned type_offset;
+	Dwarf_Unsigned cu_next_offset;
 
-	static void createEvents(Profiler& profiler);
+	friend class DwarfCompileUnit;
+
+public:
+
+	Dwarf_Half GetDwarfVersion() const
+	{
+		return cu_version;
+	}
+
+	Dwarf_Half GetOffsetSize() const
+	{
+		return cu_offset_size;
+	}
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

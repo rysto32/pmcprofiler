@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,80 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef CALLCHAIN_H
+#define CALLCHAIN_H
 
-#include <stdint.h>
+#include <vector>
 
-class Profiler;
+#include "ProfilerTypes.h"
+#include "InlineFrame.h"
 
-class EventFactory
+class Callframe;
+class CallframeMapper;
+class Sample;
+
+class Callchain
 {
 public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+	class CallchainRecord
+	{
+		TargetAddr addr;
+		const Callframe &frame;
 
-	static void createEvents(Profiler& profiler);
+		CallchainRecord(TargetAddr a, const Callframe &f)
+		  : addr(a), frame(f)
+		{
+		}
+
+		friend class Callchain;
+	};
+
+	typedef std::vector<CallchainRecord> RecordChain;
+
+private:
+	const CallframeMapper &space;
+	RecordChain callframes;
+	std::unique_ptr<InlineFrame> selfFrame;
+	size_t sampleCount;
+	bool kernel;
+
+public:
+	Callchain(CallframeMapper &, const Sample &);
+
+	Callchain(const Callchain&) = delete;
+	Callchain& operator=(const Callchain &) = delete;
+
+	Callchain(Callchain&& other) noexcept = default;
+
+	void addSample();
+
+	const CallframeMapper & getMapper() const
+	{
+		return space;
+	}
+
+	size_t getSampleCount() const
+	{
+		return sampleCount;
+	}
+
+	TargetAddr getAddress() const
+	{
+		return callframes.front().addr;
+	}
+
+	bool isKernel() const
+	{
+		return kernel;
+	}
+
+	const InlineFrame * getSelfFrame(const InlineFrame &);
+
+	bool isMapped() const;
+
+	const InlineFrame & getLeafFrame() const;
+
+	void flatten(std::vector<const InlineFrame*> &) const;
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

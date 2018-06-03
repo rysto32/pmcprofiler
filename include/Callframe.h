@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,50 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef CALLFRAME_H
+#define CALLFRAME_H
 
-#include <stdint.h>
+#include <vector>
 
-class Profiler;
+#include "InlineFrame.h"
+#include "ProfilerTypes.h"
+#include "SharedString.h"
 
-class EventFactory
+class Callframe
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+	TargetAddr offset;
+	SharedString imageName;
+	std::vector<InlineFrame> inlineFrames;
+	bool unmapped;
 
-	static void createEvents(Profiler& profiler);
+public:
+	Callframe(TargetAddr off, SharedString imageName);
+	~Callframe();
+
+	Callframe(const Callframe&) = delete;
+	Callframe& operator=(const Callframe &) = delete;
+
+	Callframe(Callframe &&) noexcept = default;
+
+	void addFrame(SharedString file, SharedString func,
+	    SharedString demangled, int codeLine, int funcLine,
+	    uint64_t dwarfDieOffset);
+	void setUnmapped();
+
+	TargetAddr getOffset() const
+	{
+		return offset;
+	}
+
+	const std::vector<InlineFrame> & getInlineFrames() const
+	{
+		return inlineFrames;
+	}
+
+	bool isUnmapped() const
+	{
+		return unmapped;
+	}
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

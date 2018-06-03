@@ -21,20 +21,57 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#if !defined(PROCESSSTATE_H)
+#define PROCESSSTATE_H
 
-#include <stdint.h>
+#include "ProfilerTypes.h"
+#include "SharedString.h"
 
-class Profiler;
+#include <sys/types.h>
 
-class EventFactory
+class ProcessState
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+	pid_t m_processID;
 
-	static void createEvents(Profiler& profiler);
+	SharedString m_processName;
+
+protected:
+	ProcessState(pid_t processID, SharedString processName)
+	  : m_processID(processID),
+	    m_processName(processName)
+	{
+	}
+
+	ProcessState(const ProcessState&) = delete;
+	ProcessState& operator=(const ProcessState &) = delete;
+
+public:
+	pid_t getProcessID() const
+	{
+		return m_processID;
+	}
+
+	const std::string& getProcessName() const
+	{
+		return *m_processName;
+	}
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+class ProcessExec : public ProcessState
+{
+private:
+	TargetAddr entryAddr;
+
+public:
+	ProcessExec(pid_t processID, SharedString processName, TargetAddr addr)
+	  : ProcessState(processID, processName), entryAddr(addr)
+	{
+	}
+
+	TargetAddr getEntryAddr() const
+	{
+		return entryAddr;
+	}
+};
+
+#endif // #if !defined(PROCESSSTATE_H)

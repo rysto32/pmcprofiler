@@ -21,20 +21,85 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef STRINGCHAIN_H
+#define STRINGCHAIN_H
 
-#include <stdint.h>
+#include <functional>
+#include <vector>
 
-class Profiler;
+#include "InlineFrame.h"
+#include "SharedString.h"
 
-class EventFactory
+class StringChain
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+	typedef std::vector<SharedString> CallchainVector;
 
-	static void createEvents(Profiler& profiler);
+	CallchainVector vec;
+	mutable size_t hash_value;
+	mutable bool hash_valid;
+
+public:
+	typedef CallchainVector::const_iterator iterator;
+
+	StringChain()
+	  : hash_valid(false)
+	{
+	}
+
+	size_t hash() const
+	{
+		if (hash_valid)
+			return hash_value;
+
+		size_t val = 0;
+		for (const auto & str : vec)
+			val = hash_combine(val, *str);
+
+		hash_value = val;
+		hash_valid = true;
+
+		return val;
+	}
+
+	void push_back(const InlineFrame& f)
+	{
+		vec.push_back(f.getDemangled());
+		hash_valid = false;
+	}
+
+	void pop_back()
+	{
+		vec.pop_back();
+		hash_valid = false;
+	}
+
+	const SharedString& back()
+	{
+		return vec.back();
+	}
+
+	bool operator==(const StringChain & other) const
+	{
+		return vec == other.vec;
+	}
+
+	struct Hasher
+	{
+		size_t operator()(const StringChain & v) const
+		{
+			return v.hash();
+		}
+	};
+
+	iterator begin()
+	{
+		return vec.begin();
+	}
+
+	iterator end()
+	{
+		return vec.end();
+	}
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

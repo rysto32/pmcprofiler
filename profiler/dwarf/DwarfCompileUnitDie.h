@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,48 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef DWARFCOMPILEUNITDIE_H
+#define DWARFCOMPILEUNITDIE_H
 
-#include <stdint.h>
+#include "DwarfCompileUnitParams.h"
+#include "DwarfDie.h"
+#include "ProfilerTypes.h"
+#include "SharedPtr.h"
 
-class Profiler;
+class Callframe;
 
-class EventFactory
+class DwarfCompileUnitDie
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+private:
+	DwarfDie die;
+	SharedPtr<DwarfCompileUnitParams> params;
+	TargetAddr baseAddr;
 
-	static void createEvents(Profiler& profiler);
+public:
+	DwarfCompileUnitDie(DwarfDie &&die, SharedPtr<DwarfCompileUnitParams> params);
+
+	DwarfCompileUnitDie(DwarfCompileUnitDie &&) = default;
+	DwarfCompileUnitDie(const DwarfCompileUnitDie &) = delete;
+
+	DwarfCompileUnitDie & operator=(DwarfCompileUnitDie &&) = default;
+	DwarfCompileUnitDie & operator=(const DwarfCompileUnitDie &) = delete;
+
+	Dwarf_Die GetDie() const
+	{
+		return *die;
+	}
+
+	TargetAddr GetBaseAddr() const
+	{
+		return baseAddr;
+	}
+
+	const DwarfCompileUnitParams & GetParams() const
+	{
+		return *params;
+	}
+
+	SharedPtr<DwarfCompileUnitDie> GetSibling() const;
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,46 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef DWARFRANGELIST_H
+#define DWARFRANGELIST_H
 
-#include <stdint.h>
+#include <libdwarf.h>
 
-class Profiler;
+#include "DwarfArray.h"
+#include "DwarfException.h"
 
-class EventFactory
+struct DwarfRangeDeleter
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
-
-	static void createEvents(Profiler& profiler);
+	void operator()(Dwarf_Debug dwarf, Dwarf_Ranges *ranges, Dwarf_Signed count)
+	{
+		dwarf_ranges_dealloc(dwarf, ranges, count);
+	}
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+class DwarfRangeList : public DwarfArray<Dwarf_Ranges, DwarfRangeDeleter>
+{
+	typedef DwarfArray<Dwarf_Ranges, DwarfRangeDeleter> Super;
+
+	static Super::Array GetArray(Dwarf_Debug dwarf, Dwarf_Unsigned off)
+	{
+		Dwarf_Error derr;
+		Dwarf_Ranges *array;
+		Dwarf_Signed count;
+		Dwarf_Unsigned size;
+		int error;
+
+		error = dwarf_get_ranges(dwarf, off, &array, &count, &size, &derr);
+		if (error != DW_DLV_OK)
+			throw DwarfException("dwarf_get_ranges failed");
+
+		return Super::Array(array, count);
+	}
+
+public:
+	DwarfRangeList(Dwarf_Debug dwarf, Dwarf_Unsigned off)
+	  : DwarfArray(dwarf, GetArray(dwarf, off))
+	{
+	}
+};
+
+#endif

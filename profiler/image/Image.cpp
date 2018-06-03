@@ -21,20 +21,51 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#include <sys/cdefs.h>
+__FBSDID("$FreeBSD$");
 
-#include <stdint.h>
+#include "Image.h"
 
-class Profiler;
+#include "Callframe.h"
+#include "DwarfResolver.h"
+#include "SharedString.h"
 
-class EventFactory
+Image::Image(SharedString imageName)
+  : imageFile(imageName)
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+}
 
-	static void createEvents(Profiler& profiler);
-};
+Image::~Image()
+{
 
-#endif // #if !defined(EVENTFACTORY_H)
+}
+
+const Callframe &
+Image::GetFrame(TargetAddr offset)
+{
+	auto it = frameMap.find(offset);
+	if (it != frameMap.end())
+		return *it->second;
+
+	auto ptr = std::make_unique<Callframe>(offset, imageFile);
+	Callframe & frame = *ptr;
+	frameMap.insert(std::make_pair(offset, std::move(ptr)));
+	return frame;
+}
+
+void
+Image::MapAllFrames()
+{
+	if (frameMap.empty())
+		return;
+
+	DwarfResolver resolver(imageFile);
+	resolver.Resolve(frameMap);
+}
+
+void
+Image::MapAllAsUnmapped()
+{
+	for (auto & [offset, frame] : frameMap)
+		frame->setUnmapped();
+}

@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,22 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef DWARFUTIL_H
+#define DWARFUTIL_H
 
-#include <stdint.h>
+#include <libdwarf.h>
+#include <sys/types.h>
 
-class Profiler;
+typedef uint64_t DwarfDieOffset;
 
-class EventFactory
-{
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+DwarfDieOffset GetDieOffset(Dwarf_Die die);
+Dwarf_Half GetDieTag(Dwarf_Die die);
 
-	static void createEvents(Profiler& profiler);
-};
+#ifdef GNU_LIBDWARF
+int		dwarf_attrval_string(Dwarf_Die, Dwarf_Half, const char **,
+		    Dwarf_Error *);
+int		dwarf_attrval_unsigned(Dwarf_Die, Dwarf_Half, Dwarf_Unsigned *,
+		    Dwarf_Error *);
+#endif
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

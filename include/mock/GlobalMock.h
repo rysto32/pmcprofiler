@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,62 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef MOCK_GLOBAL_MOCK_H
+#define MOCK_GLOBAL_MOCK_H
 
-#include <stdint.h>
+#include <gmock/gmock.h>
 
-class Profiler;
+#include <memory>
 
-class EventFactory
+template <typename Mock>
+class GlobalMock
 {
 public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+	GlobalMock()
+	{
+		Mock::SetUp();
+	}
 
-	static void createEvents(Profiler& profiler);
+	~GlobalMock()
+	{
+		Mock::TearDown();
+	}
+
+	auto & operator*()
+	{
+		return Mock::MockObj();
+	}
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+template <typename Derived>
+class GlobalMockBase
+{
+private:
+	typedef std::unique_ptr<testing::StrictMock<Derived>> MockPtr;
+	static MockPtr mockobj;
+
+	static void SetUp()
+	{
+		mockobj = std::make_unique<testing::StrictMock<Derived>>();
+	}
+
+	static void TearDown()
+	{
+		mockobj.reset();
+	}
+
+	friend class GlobalMock<Derived>;
+
+public:
+
+	static auto & MockObj()
+	{
+		return *mockobj;
+	}
+
+};
+
+template <typename T>
+typename GlobalMockBase<T>::MockPtr GlobalMockBase<T>::mockobj;
+
+#endif

@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,54 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef MOCK_MOCK_OPEN_H
+#define MOCK_MOCK_OPEN_H
 
-#include <stdint.h>
+#include <memory>
 
-class Profiler;
+#include <gmock/gmock.h>
 
-class EventFactory
+#include "mock/GlobalMock.h"
+
+class MockOpen : public GlobalMockBase<MockOpen>
 {
 public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
-
-	static void createEvents(Profiler& profiler);
+	MOCK_METHOD2(Open, int(std::string name, int flags));
+	MOCK_METHOD1(Close, int(int fd));
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+class GlobalMockOpen : private GlobalMock<MockOpen>
+{
+public:
+	GlobalMockOpen()
+	{
+		ON_CALL(**this, Open(testing::_, testing::_))
+		    .WillByDefault(testing::Return(-1));
+	}
+
+	void ExpectOpen(const std::string & n, int flags, int fd)
+	{
+		EXPECT_CALL(**this, Open(n, flags))
+		    .Times(1).WillOnce(testing::Return(fd));
+	}
+
+	void ExpectClose(int fd, int ret = 0)
+	{
+		EXPECT_CALL(**this, Close(fd))
+		    .Times(1).WillOnce(testing::Return(ret));
+	}
+};
+
+extern "C" int
+mock_open(const char * file, int flags)
+{
+	return MockOpen::MockObj().Open(file, flags);
+}
+
+extern "C" int
+mock_close(int fd)
+{
+	return MockOpen::MockObj().Close(fd);
+}
+
+#endif

@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,69 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef PROFILERTYPES_H
+#define PROFILERTYPES_H
 
 #include <stdint.h>
+#include <stdio.h>
 
-class Profiler;
+#include <map>
+#include <memory>
+#include <set>
+#include <vector>
 
-class EventFactory
+typedef uintptr_t TargetAddr;
+
+extern bool g_includeTemplates;
+extern bool g_quitOnError;
+
+class Callchain;
+class Callframe;
+class SampleAggregation;
+class SharedString;
+
+struct AggCallChain
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+	const SampleAggregation *agg;
+	Callchain *chain;
 
-	static void createEvents(Profiler& profiler);
+	AggCallChain(const SampleAggregation * a, Callchain * c)
+	  : agg(a), chain(c)
+	{
+	}
+
+	bool operator==(const AggCallChain & other) const
+	{
+		return agg == other.agg && chain == other.chain;
+	}
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+typedef std::vector<SampleAggregation*> AggregationList;
+typedef std::vector<AggCallChain> CallchainList;
+typedef std::map<TargetAddr, std::unique_ptr<Callframe> > FrameMap;
+typedef std::set<unsigned> LineLocationList;
+typedef std::map<TargetAddr, SharedString> SymbolMap;
+
+/* Shamelessly stolen from boost::hash_combine. */
+template <typename T, typename Hash = std::hash<T> >
+size_t hash_combine(size_t seed, const T & val)
+{
+	Hash hash_value;
+
+	seed ^= hash_value(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+
+	return seed;
+}
+
+#ifdef LOG_ENABLED
+
+#define LOG(args...) \
+	fprintf(stderr, args)
+
+#else
+
+#define LOG(args...)
+
+#endif
+
+#endif

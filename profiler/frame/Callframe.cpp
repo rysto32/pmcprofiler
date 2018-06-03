@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,38 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#include "Callframe.h"
 
-#include <stdint.h>
+#include "InlineFrame.h"
+#include "SharedString.h"
 
-class Profiler;
-
-class EventFactory
+Callframe::Callframe(TargetAddr off, SharedString imageName)
+  : offset(off), imageName(imageName), unmapped(false)
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+}
 
-	static void createEvents(Profiler& profiler);
-};
+// This is defined for the benefit of a unit test that wants to intercept
+// calls to ~Callframe() to track Callframe lifecycles
+Callframe::~Callframe()
+{
+}
 
-#endif // #if !defined(EVENTFACTORY_H)
+void
+Callframe::addFrame(SharedString file, SharedString func,
+     SharedString demangled, int codeLine, int funcLine, uint64_t dwarfDieOffset)
+{
+	inlineFrames.emplace_back(file, func, demangled, offset, codeLine,
+	    funcLine, dwarfDieOffset, imageName);
+}
+
+
+void
+Callframe::setUnmapped()
+{
+	SharedString unmapped_function("[unmapped_function]");
+	inlineFrames.clear();
+	inlineFrames.emplace_back(imageName, unmapped_function,
+	    unmapped_function, offset, -1, -1, 0, imageName);
+
+	unmapped = true;
+}

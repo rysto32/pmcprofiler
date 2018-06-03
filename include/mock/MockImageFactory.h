@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,51 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef MOCK_MOCK_IMAGE_FACTORY_H
+#define MOCK_MOCK_IMAGE_FACTORY_H
 
-#include <stdint.h>
+#include "ImageFactory.h"
 
-class Profiler;
+#include "Image.h"
+#include "SharedString.h"
 
-class EventFactory
+#include <gmock/gmock.h>
+
+class MockImageFactory : public ImageFactory
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+private:
+	std::vector<std::unique_ptr<Image>> imageList;
+	std::unique_ptr<Image> unmapped;
 
-	static void createEvents(Profiler& profiler);
+public:
+	MOCK_METHOD1(GetImage, Image *(SharedString name));
+	MOCK_METHOD0(GetUnmappedImage, Image &());
+	MOCK_METHOD0(MapAll, void ());
+
+	Image * ExpectGetImage(SharedString name)
+	{
+		auto img = AllocImage(name);
+		auto * imgPtr = img.get();
+
+		EXPECT_CALL(*this, GetImage(name))
+		    .Times(1)
+		    .WillOnce(testing::Return(imgPtr));
+
+		imageList.push_back(std::move(img));
+
+		return imgPtr;
+	}
+
+	Image * ExpectGetUnmappedImage()
+	{
+		if (!unmapped)
+			unmapped = AllocImage("<unknown>");
+
+		EXPECT_CALL(*this, GetUnmappedImage())
+		    .Times(1)
+		    .WillOnce(testing::ReturnRef(*unmapped));
+		return unmapped.get();
+	}
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

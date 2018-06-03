@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,58 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#include "Demangle.h"
 
-#include <stdint.h>
+#include "ProfilerTypes.h"
 
-class Profiler;
+#include <cxxabi.h>
 
-class EventFactory
+SharedString
+Demangle(SharedString name)
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+	char *demangled;
+	char *dst, *src;
+	int angle_count;
+	size_t len;
+	int status;
 
-	static void createEvents(Profiler& profiler);
-};
+	/*
+	 * abi::__cxa_demangle doesn't work on all non-mangled symbol names,
+	 * so do a hacky test for a mangled name before trying to demangle it.
+	 */
+	if (name->substr(0, 2) != "_Z")
+		return (name);
 
-#endif // #if !defined(EVENTFACTORY_H)
+	len = 0;
+	demangled = (abi::__cxa_demangle(name->c_str(), NULL, &len, &status));
+
+	if (demangled == NULL)
+		return (name);
+
+	// If template arguments are included in the output, it tends to be
+	// so long that functions are unreadable.  By default, filter out
+	// the template arguments.
+	if (!g_includeTemplates) {
+		dst = demangled;
+		src = demangled;
+		angle_count = 0;
+		while (*src != '\0') {
+			if (*src == '<')
+				angle_count++;
+			else if (*src == '>')
+				angle_count--;
+			else if (angle_count == 0) {
+				if (dst != src)
+					*dst = *src;
+				dst++;
+			}
+			src++;
+		}
+		*dst = '\0';
+	}
+
+	SharedString shared(demangled);
+	free(demangled);
+
+	return (shared);
+}

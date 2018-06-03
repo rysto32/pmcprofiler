@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,25 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef DWARFEXCEPTION_H
+#define DWARFEXCEPTION_H
 
-#include <stdint.h>
+#include <exception>
 
-class Profiler;
-
-class EventFactory
+class DwarfException : public std::exception
 {
+private:
+	const char *msg;
 public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+	DwarfException(const char * msg)
+	  : msg(msg)
+	{
+	}
 
-	static void createEvents(Profiler& profiler);
+	virtual const char *what() const noexcept
+	{
+		return msg;
+	}
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

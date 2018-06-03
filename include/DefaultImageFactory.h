@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,31 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef DEFAULT_IMAGE_FACTORY_H
+#define DEFAULT_IMAGE_FACTORY_H
 
-#include <stdint.h>
+#include "ImageFactory.h"
+#include "SharedString.h"
 
-class Profiler;
+#include <memory>
+#include <unordered_map>
 
-class EventFactory
+class DefaultImageFactory : public ImageFactory
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+private:
+	typedef std::unordered_map<SharedString, std::unique_ptr<Image>> ImageMap;
 
-	static void createEvents(Profiler& profiler);
+	ImageMap imageMap;
+	std::unique_ptr<Image> unmappedImage;
+
+public:
+	// Explicitly define these to prevent consumers from depending on Image.h
+	DefaultImageFactory();
+	~DefaultImageFactory();
+
+	virtual Image *GetImage(SharedString name);
+	virtual Image &GetUnmappedImage();
+	virtual void MapAll();
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

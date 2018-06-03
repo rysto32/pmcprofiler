@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,47 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef DWARFDIESTACK_H
+#define DWARFDIESTACK_H
 
-#include <stdint.h>
+#include "DwarfDieList.h"
+#include "DwarfLocation.h"
+#include "DwarfRangeLookup.h"
+#include "DwarfStackState.h"
+#include "ProfilerTypes.h"
 
-class Profiler;
+#include <libdwarf.h>
+#include <vector>
 
-class EventFactory
+class Callframe;
+class DwarfCompileUnitDie;
+
+class DwarfDieStack
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+private:
+	SharedString imageFile;
+	Dwarf_Debug dwarf;
+	Dwarf_Die topDie;
+	std::vector<DwarfStackState> dieStack;
+	const DwarfCompileUnitDie &cu;
 
-	static void createEvents(Profiler& profiler);
+	SharedString GetCallFile(Dwarf_Die die);
+	int GetCallLine(Dwarf_Die die);
+
+	void AddSubprogramSymbol(DwarfLocationList &list, const DwarfDieRanges &);
+	void AddInlineSymbol(DwarfLocationList &list, Dwarf_Die die);
+
+public:
+	DwarfDieStack(SharedString imageFile, Dwarf_Debug dwarf,
+	    const DwarfCompileUnitDie &cu, Dwarf_Die die);
+
+	DwarfDieStack(const DwarfDieStack &) = delete;
+	DwarfDieStack(DwarfDieStack &&) = delete;
+	DwarfDieStack & operator=(const DwarfDieStack &) = delete;
+	DwarfDieStack & operator=(DwarfDieStack &&) = delete;
+
+	void EnumerateSubprograms(DwarfRangeLookup<DwarfDie> &);
+	void FillSubprogramSymbols(DwarfLocationList &, const DwarfDieRanges &);
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

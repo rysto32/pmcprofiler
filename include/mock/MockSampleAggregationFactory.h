@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,23 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef MOCK_MOCK_SAMPLE_AGGREGATION_FACTORY_H
+#define MOCK_MOCK_SAMPLE_AGGREGATION_FACTORY_H
 
-#include <stdint.h>
+#include "SampleAggregationFactory.h"
 
-class Profiler;
+#include "SampleAggregation.h"
+#include "SharedString.h"
 
-class EventFactory
+#include <gmock/gmock.h>
+
+class MockSampleAggregationFactory : public SampleAggregationFactory
 {
 public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
-
-	static void createEvents(Profiler& profiler);
+	MOCK_METHOD1(GetAggregation, SampleAggregation &(const Sample &));
+	MOCK_METHOD1(GetAggregationList, void (AggregationList &));
+	MOCK_METHOD1(HandleExec, void (const ProcessExec &));
+	MOCK_METHOD2(HandleMapIn, void (pid_t pid, const char *path));
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+#endif

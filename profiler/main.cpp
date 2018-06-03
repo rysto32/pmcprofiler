@@ -24,15 +24,23 @@
 #include <sys/cdefs.h>
 __FBSDID("$FreeBSD$");
 
-#include "Image.h"
-#include "Process.h"
+#include "DefaultAddressSpaceFactory.h"
+#include "DefaultCallchainFactory.h"
+#include "DefaultImageFactory.h"
+#include "DefaultSampleAggregationFactory.h"
 #include "Profiler.h"
 #include "ProfilePrinter.h"
+#include "CallchainProfilePrinter.h"
 #include "SharedString.h"
 
 #include <err.h>
+#include <libelf.h>
+#include <sys/param.h>
+#include <pmclog.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#include <functional>
 #include <memory>
 
 void usage(void);
@@ -71,28 +79,28 @@ main(int argc, char *argv[])
 	int ch;
 	bool showlines = false;
 	bool printBoring = true;
-	uint32_t maxDepth = PMC_CALLCHAIN_DEPTH_MAX;
 	int threshold = 0;
 	g_quitOnError = false;
 	FILE * file;
 	char * temp;
-	std::vector<ProfilePrinter*> printers;
+	std::vector<std::unique_ptr<ProfilePrinter> > printers;
+	const char *modulePath = NULL;
 	pid_t pid;
 
 	if (elf_version(EV_CURRENT) == EV_NONE)
 		err(1, "libelf incompatible");
 
 	/* Workaround for libdwarf crash when processing some KLD modules. */
-	dwarf_set_reloc_application(0);
+	//dwarf_set_reloc_application(0);
 
-	while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:p:t:r:N:m:T")) != -1) {
+	while ((ch = getopt(argc, argv, "qlG:bf:F:o:p:t:r:m:T")) != -1) {
 		switch (ch) {
 			case 'f':
 				samplefile = optarg;
 				break;
 			case 'F':
 				file = openOutFile(optarg);
-				printers.push_back(new FlameGraphProfilerPrinter(file, PMC_CALLCHAIN_DEPTH_MAX, threshold, true));
+				printers.push_back(std::make_unique<FlameGraphProfilerPrinter>(file, threshold, true));
 				break;
 			case 'l':
 				showlines = true;
@@ -102,15 +110,15 @@ main(int argc, char *argv[])
 				break;
 			case 'G':
 				file = openOutFile(optarg);
-				printers.push_back(new LeafProfilePrinter(file, maxDepth, threshold, printBoring));
+				printers.push_back(std::make_unique<LeafProfilePrinter>(file, threshold, printBoring));
 				break;
 			case 'r':
 				file = openOutFile(optarg);
-				printers.push_back(new RootProfilePrinter(file, PMC_CALLCHAIN_DEPTH_MAX, threshold, true));
+				printers.push_back(std::make_unique<RootProfilePrinter>(file, threshold, true));
 				break;
 			case 'o':
 				file = openOutFile(optarg);
-				printers.push_back(new FlatProfilePrinter(file));
+				printers.push_back(std::make_unique<FlatProfilePrinter>(file));
 				break;
 			case 'p':
 				pid = strtoul(optarg, &temp, 0);
@@ -130,19 +138,8 @@ main(int argc, char *argv[])
 					usage();
 
 				break;
-			case 'd':
-				char * temp;
-				maxDepth = strtoul(optarg, &temp, 0);
-
-				if (*temp != '\0')
-					usage();
-
-				break;
-			case 'N':
-				Image::setBootfile(optarg);
-				break;
 			case 'm':
-				Image::setModulePath(optarg);
+				modulePath = optarg;
 				break;
 			case 'T':
 				g_includeTemplates = true;
@@ -157,17 +154,19 @@ main(int argc, char *argv[])
 	argv += optind;
 
 	if (printers.empty())
-		printers.push_back(new FlatProfilePrinter(stdout));
+		printers.push_back(std::make_unique<FlatProfilePrinter>(stdout));
 
-	Profiler profiler(samplefile, showlines);
-	std::vector<ProfilePrinter* >::iterator it = printers.begin();
-	for (; it != printers.end(); ++it) {
-		profiler.createProfile(**it);
-		delete *it;
-	}
+	DefaultCallchainFactory ccFactory;
+	DefaultImageFactory imgFactory;
+	DefaultAddressSpaceFactory asFactory(imgFactory);
+	DefaultSampleAggregationFactory aggFactory(ccFactory);
+	Profiler profiler(samplefile, showlines, modulePath, asFactory,
+	    aggFactory, imgFactory);
 
-	Process::freeProcessMap();
-	Image::freeImages();
+	profiler.MapSamples();
+	for (const auto & printer : printers)
+		profiler.createProfile(*printer);
+
 	return 0;
 }
 

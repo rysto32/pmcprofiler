@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,46 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#ifndef MOCK_MOCK_IMAGE_H
+#define MOCK_MOCK_IMAGE_H
 
-#include <stdint.h>
+#include <gmock/gmock.h>
 
-class Profiler;
+#include "mock/GlobalMock.h"
 
-class EventFactory
+#include "Callframe.h"
+#include "Image.h"
+
+typedef std::vector<std::unique_ptr<Callframe>> CallframeList;
+
+class MockImage : public GlobalMockBase<MockImage>
 {
 public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
-
-	static void createEvents(Profiler& profiler);
+	MOCK_METHOD2(GetFrame, const Callframe & (Image *, TargetAddr offset));
 };
 
-#endif // #if !defined(EVENTFACTORY_H)
+class GlobalMockImage : public GlobalMock<MockImage>
+{
+public:
+	void ExpectGetFrame(Image *image, TargetAddr offset, CallframeList & frameList)
+	{
+		frameList.emplace_back(std::make_unique<Callframe>(offset, image->GetImageFile()));
+		EXPECT_CALL(**this, GetFrame(image, offset))
+		  .Times(1)
+		  .WillOnce(testing::ReturnRef(*frameList.back()));
+	}
+};
+
+const Callframe &
+Image::GetFrame(TargetAddr offset)
+{
+	return MockImage::MockObj().GetFrame(this, offset);
+}
+
+Image::Image(SharedString n)
+  : imageFile(n)
+{}
+
+Image::~Image() {}
+
+#endif

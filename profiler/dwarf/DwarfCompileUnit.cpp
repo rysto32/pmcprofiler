@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2014 Sandvine Incorporated.  All rights reserved.
+// Copyright (c) 2017 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,20 +21,48 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#if !defined(EVENTFACTORY_H)
-#define EVENTFACTORY_H
+#include "DwarfCompileUnit.h"
 
-#include <stdint.h>
+#include "DwarfCompileUnitDie.h"
+#include "DwarfDie.h"
+#include "DwarfException.h"
+#include "DwarfSearch.h"
+#include "DwarfUtil.h"
 
-class Profiler;
+#include <dwarf.h>
 
-class EventFactory
+DwarfCompileUnit::DwarfCompileUnit(Dwarf_Debug dwarf, Dwarf_Bool is_info)
+  : dwarf(dwarf),
+    is_info(is_info),
+    complete(false)
 {
-public:
-	EventFactory(const EventFactory&) = delete;
-	EventFactory& operator=(const EventFactory &) = delete;
+	AdvanceToSibling();
+}
 
-	static void createEvents(Profiler& profiler);
-};
+DwarfCompileUnit
+DwarfCompileUnit::GetFirstCU(Dwarf_Debug dwarf, Dwarf_Bool is_info)
+{
+	return DwarfCompileUnit(dwarf, is_info);
+}
 
-#endif // #if !defined(EVENTFACTORY_H)
+SharedPtr<DwarfCompileUnitDie>
+DwarfCompileUnit::GetDie() const
+{
+	return SharedPtr<DwarfCompileUnitDie>::make({DwarfDie::GetCuDie(dwarf), params});
+}
+
+void
+DwarfCompileUnit::AdvanceToSibling()
+{
+	params = SharedPtr<DwarfCompileUnitParams>::make();
+	int error = dwarf_next_cu_header_c(dwarf, is_info, &params->cu_length,
+	    &params->cu_version, &params->cu_abbrev_offset, &params->cu_pointer_size,
+	    &params->cu_offset_size, &params->cu_extension_size,
+	    &params->type_signature, &params->type_offset, &params->cu_next_offset,
+	    NULL);
+
+	if (error == DW_DLV_ERROR)
+		throw DwarfException("dwarf_next_cu_header_c failed");
+	else if (error == DW_DLV_NO_ENTRY)
+		complete = true;
+}

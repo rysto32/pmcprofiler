@@ -76,7 +76,6 @@ protected:
 	typedef std::vector<FunctionLocation> FunctionLocationList;
 
 	FILE * m_outfile;
-	uint32_t m_maxDepth;
 
 	template <typename Strategy>
 	void getFunctionLocations(const SampleAggregation &agg,
@@ -92,19 +91,13 @@ protected:
 
 public:
 
-	ProfilePrinter(FILE * file, uint32_t maximumDepth)
-	  : m_outfile(file),
-	m_maxDepth(maximumDepth)
+	ProfilePrinter(FILE * file)
+	  : m_outfile(file)
 	{
 	}
 
 	ProfilePrinter(const ProfilePrinter&) = delete;
 	ProfilePrinter& operator=(const ProfilePrinter &) = delete;
-
-	uint32_t getMaxDepth() const
-	{
-		return m_maxDepth;
-	}
 
 	virtual void printProfile(const Profiler & profiler,
 	    const AggregationList & aggList) = 0;
@@ -123,7 +116,7 @@ class FlatProfilePrinter : public ProfilePrinter
 {
 public:
 	FlatProfilePrinter(FILE * file)
-	  : ProfilePrinter(file, 1)
+	  : ProfilePrinter(file)
 	{
 	}
 

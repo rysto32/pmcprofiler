@@ -42,7 +42,7 @@ __FBSDID("$FreeBSD$");
 extern void usage(void);
 
 void
-EventFactory::createEvents(Profiler& profiler, uint32_t maxDepth)
+EventFactory::createEvents(Profiler& profiler)
 {
 	pmclog_ev pmcEvent;
 	void *logCookie;
@@ -95,7 +95,7 @@ EventFactory::createEvents(Profiler& profiler, uint32_t maxDepth)
 				break;
 
 			case PMCLOG_TYPE_CALLCHAIN:
-				profiler.processEvent(Sample(pmcEvent.pl_u.pl_cc, maxDepth));
+				profiler.processEvent(Sample(pmcEvent.pl_u.pl_cc));
 				break;
 
 			case PMCLOG_TYPE_PROCEXEC:

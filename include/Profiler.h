@@ -90,7 +90,7 @@ public:
 		return m_showlines;
 	}
 
-	void MapSamples(uint32_t maxDepth);
+	void MapSamples();
 	void createProfile(ProfilePrinter & printer);
 
 	void processEvent(const ProcessExec& processExec);

@@ -137,7 +137,7 @@ TEST(CallchainTestSuite, TestFlatten)
 		EXPECT_CALL(mapper, mapFrame(cf.getOffset())).WillOnce(ReturnRef(cf));
 	}
 
-	Sample s(event, 32);
+	Sample s(event);
 	Callchain chain(mapper, s);
 
 	frameList.at(0).addFrame("", "", "", 1, 1, 0x11);

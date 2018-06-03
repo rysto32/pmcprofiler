@@ -79,7 +79,6 @@ main(int argc, char *argv[])
 	int ch;
 	bool showlines = false;
 	bool printBoring = true;
-	int32_t minDepth = 1, preferredDepth = 1, maxDepth, configedDepth = 0;
 	int threshold = 0;
 	g_quitOnError = false;
 	FILE * file;
@@ -94,16 +93,14 @@ main(int argc, char *argv[])
 	/* Workaround for libdwarf crash when processing some KLD modules. */
 	//dwarf_set_reloc_application(0);
 
-	while ((ch = getopt(argc, argv, "qlG:bf:F:d:o:p:t:r:m:T")) != -1) {
+	while ((ch = getopt(argc, argv, "qlG:bf:F:o:p:t:r:m:T")) != -1) {
 		switch (ch) {
 			case 'f':
 				samplefile = optarg;
 				break;
 			case 'F':
 				file = openOutFile(optarg);
-				printers.push_back(std::make_unique<FlameGraphProfilerPrinter>(file, PMC_CALLCHAIN_DEPTH_MAX, threshold, true));
-				minDepth = std::max(minDepth, PMC_CALLCHAIN_DEPTH_MAX);
-				preferredDepth = std::max(preferredDepth, PMC_CALLCHAIN_DEPTH_MAX);
+				printers.push_back(std::make_unique<FlameGraphProfilerPrinter>(file, threshold, true));
 				break;
 			case 'l':
 				showlines = true;
@@ -113,14 +110,11 @@ main(int argc, char *argv[])
 				break;
 			case 'G':
 				file = openOutFile(optarg);
-				printers.push_back(std::make_unique<LeafProfilePrinter>(file, maxDepth, threshold, printBoring));
-				preferredDepth = std::max(preferredDepth, PMC_CALLCHAIN_DEPTH_MAX);
+				printers.push_back(std::make_unique<LeafProfilePrinter>(file, threshold, printBoring));
 				break;
 			case 'r':
 				file = openOutFile(optarg);
-				printers.push_back(std::make_unique<RootProfilePrinter>(file, PMC_CALLCHAIN_DEPTH_MAX, threshold, true));
-				minDepth = std::max(minDepth, PMC_CALLCHAIN_DEPTH_MAX);
-				preferredDepth = std::max(preferredDepth, PMC_CALLCHAIN_DEPTH_MAX);
+				printers.push_back(std::make_unique<RootProfilePrinter>(file, threshold, true));
 				break;
 			case 'o':
 				file = openOutFile(optarg);
@@ -144,13 +138,6 @@ main(int argc, char *argv[])
 					usage();
 
 				break;
-			case 'd':
-				configedDepth = strtoul(optarg, &temp, 0);
-
-				if (*temp != '\0')
-					usage();
-
-				break;
 			case 'm':
 				modulePath = optarg;
 				break;
@@ -169,11 +156,6 @@ main(int argc, char *argv[])
 	if (printers.empty())
 		printers.push_back(std::make_unique<FlatProfilePrinter>(stdout));
 
-	// If the user asked for a depth less than our minimum, ignore it for mapping
-	// The ProfilePrinter will obey the minimum anyway.
-	configedDepth = std::max(configedDepth, minDepth);
-	maxDepth = std::min(preferredDepth, configedDepth);
-
 	DefaultCallchainFactory ccFactory;
 	DefaultImageFactory imgFactory;
 	DefaultAddressSpaceFactory asFactory(imgFactory);
@@ -181,7 +163,7 @@ main(int argc, char *argv[])
 	Profiler profiler(samplefile, showlines, modulePath, asFactory,
 	    aggFactory, imgFactory);
 
-	profiler.MapSamples(maxDepth);
+	profiler.MapSamples();
 	for (const auto & printer : printers)
 		profiler.createProfile(*printer);
 

@@ -40,13 +40,12 @@ class Sample
 	std::vector<uintptr_t> m_address;
 
 public:
-	Sample(const pmclog_ev_callchain & event, uint32_t maxDepth)
+	Sample(const pmclog_ev_callchain & event)
 	  : m_isKernel(!PMC_CALLCHAIN_CPUFLAGS_TO_USERMODE(event.pl_cpuflags)),
 	m_processID(event.pl_pid)
 	{
 		uint32_t i;
-		uint32_t depth = std::min(maxDepth, event.pl_npc);
-		for (i = 0; i < depth; i++)
+		for (i = 0; i < event.pl_npc; i++)
 			m_address.push_back(event.pl_pc[i]-1);
 	}
 

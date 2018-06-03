@@ -39,8 +39,8 @@ class CallchainProfilePrinter : public ProfilePrinter
 	    const StringChainMap &chainMap);
 
 public:
-	CallchainProfilePrinter(FILE * file, uint32_t maximumDepth, int threshold, bool printBoring)
-	  : ProfilePrinter(file, maximumDepth),
+	CallchainProfilePrinter(FILE * file, int threshold, bool printBoring)
+	  : ProfilePrinter(file),
 	    threshold(threshold),
 	    printBoring(printBoring)
 	{

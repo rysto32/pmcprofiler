@@ -81,7 +81,7 @@ CallchainProfilePrinter<ProcessStrategy, PrintStrategy>::printCallChain(
 		    *this, profiler, *funcLoc, agg,
 		    frame.getDemangled()->c_str(), chain);
 
-		if (!isBoring && depth < m_maxDepth) {
+		if (!isBoring) {
 			chain.push_back(frame);
 			printCallChain(profiler, agg, chain, depth + 1, strategy, chainMap);
 			assert(chain.back() == frame.getDemangled());

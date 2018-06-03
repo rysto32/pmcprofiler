@@ -97,7 +97,7 @@ TEST(SampleAggregationTestSuite, TestAddSingleSample)
 	GlobalMock<CallchainMocker> callchainMock;
 
 	pmclog_ev_callchain pmc_cc{ .pl_npc = 1, .pl_pc = {0x123}};
-	Sample sample(pmc_cc, 1);
+	Sample sample(pmc_cc);
 
 	auto ccRet = std::make_unique<Callchain>(mapper, sample);
 	Callchain * callchain = ccRet.get();
@@ -118,7 +118,7 @@ TEST(SampleAggregationTestSuite, TestAddSingleSampleMultipleTimes)
 	GlobalMock<CallchainMocker> callchainMock;
 
 	pmclog_ev_callchain pmc_cc{ .pl_npc = 1, .pl_pc = {0x123}};
-	Sample sample(pmc_cc, 1);
+	Sample sample(pmc_cc);
 
 	auto ccRet = std::make_unique<Callchain>(mapper, sample);
 	Callchain * callchain = ccRet.get();
@@ -145,9 +145,9 @@ TEST(SampleAggregationTestSuite, TestAddMultipleSamples)
 	MockFrameMapper mapper;
 	GlobalMock<CallchainMocker> callchainMock;
 
-	Sample sample1(pmclog_ev_callchain { .pl_npc = 3, .pl_pc = {1, 2, 3}}, 32);
+	Sample sample1(pmclog_ev_callchain { .pl_npc = 3, .pl_pc = {1, 2, 3}});
 	Sample sample2(pmclog_ev_pcsample { .pl_pc = 10});
-	Sample sample3(pmclog_ev_callchain { .pl_npc = 4, .pl_pc = {1, 2, 3, 4}}, 32);
+	Sample sample3(pmclog_ev_callchain { .pl_npc = 4, .pl_pc = {1, 2, 3, 4}});
 
 	auto ccRet = std::make_unique<Callchain>(mapper, sample1);
 	Callchain * cc1 = ccRet.get();
@@ -189,9 +189,9 @@ TEST(SampleAggregationTestSuite, TestGetCallchainList)
 	MockFrameMapper mapper;
 	GlobalMock<CallchainMocker> callchainMock;
 
-	Sample sample1(pmclog_ev_callchain { .pl_npc = 3, .pl_pc = {1, 2, 3}}, 32);
+	Sample sample1(pmclog_ev_callchain { .pl_npc = 3, .pl_pc = {1, 2, 3}});
 	Sample sample2(pmclog_ev_pcsample { .pl_pc = 10});
-	Sample sample3(pmclog_ev_callchain { .pl_npc = 4, .pl_pc = {1, 2, 3, 4}}, 32);
+	Sample sample3(pmclog_ev_callchain { .pl_npc = 4, .pl_pc = {1, 2, 3, 4}});
 
 	auto ccRet = std::make_unique<Callchain>(mapper, sample1);
 	Callchain * cc1 = ccRet.get();

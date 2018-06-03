@@ -34,7 +34,7 @@ public:
 	EventFactory(const EventFactory&) = delete;
 	EventFactory& operator=(const EventFactory &) = delete;
 
-	static void createEvents(Profiler& profiler, uint32_t maxDepth);
+	static void createEvents(Profiler& profiler);
 };
 
 #endif // #if !defined(EVENTFACTORY_H)

@@ -206,7 +206,7 @@ public:
 
 	void
 	AddCallchainExpectation(void * cookie, bool usermode,
-	    pid_t pid, size_t max_depth, std::vector<TargetAddr> chain)
+	    pid_t pid, std::vector<TargetAddr> chain)
 	{
 		pmclog_ev event = {
 			.pl_state = PMCLOG_OK,
@@ -232,12 +232,9 @@ public:
 		    )
 		);
 
-		int depth = std::min(max_depth, chain.size());
-		chain.resize(depth);
-
 		EXPECT_CALL(*profilerMock, processSample(AllOf(
 			Property(&Sample::getProcessID, pid),
-			Property(&Sample::getChainDepth, depth),
+			Property(&Sample::getChainDepth, chain.size()),
 			Property(&Sample::isKernel, !usermode),
 			ResultOf(SampleCallchainMatcher(chain), true))))
 		    .Times(1);
@@ -342,7 +339,7 @@ TEST_F(EventFactoryTestSuite, TestEmptyPmclog)
 		mockOpen.ExpectClose(fd, 0);
 	}
 
-	EventFactory::createEvents(profiler, 1);
+	EventFactory::createEvents(profiler);
 }
 
 TEST_F(EventFactoryTestSuite, TestSingleSample)
@@ -375,7 +372,7 @@ TEST_F(EventFactoryTestSuite, TestSingleSample)
 		mockOpen.ExpectClose(fd, 0);
 	}
 
-	EventFactory::createEvents(profiler, 1);
+	EventFactory::createEvents(profiler);
 
 }
 
@@ -384,8 +381,6 @@ TEST_F(EventFactoryTestSuite, TestSingleCallchain)
 	Profiler profiler("pmcstat.bin", false, "", asFactory, aggFactory,
 	    imgFactory);
 	GlobalMockOpen mockOpen;
-
-	uint32_t max_depth = 32;
 
 	{
 		InSequence dummy;
@@ -400,7 +395,7 @@ TEST_F(EventFactoryTestSuite, TestSingleCallchain)
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
 
-		AddCallchainExpectation(cookie, false, 90746, max_depth, {0xe569d, 0x54896, 0x49564});
+		AddCallchainExpectation(cookie, false, 90746, {0xe569d, 0x54896, 0x49564});
 
 		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
 		    .Times(1).WillOnce(Return(-1));
@@ -410,7 +405,7 @@ TEST_F(EventFactoryTestSuite, TestSingleCallchain)
 		mockOpen.ExpectClose(fd, 0);
 	}
 
-	EventFactory::createEvents(profiler, max_depth);
+	EventFactory::createEvents(profiler);
 
 }
 
@@ -419,8 +414,6 @@ TEST_F(EventFactoryTestSuite, TestMaxDepth)
 	Profiler profiler("pmcstat.bin", false, "", asFactory, aggFactory,
 	    imgFactory);
 	GlobalMockOpen mockOpen;
-
-	uint32_t max_depth = 3;
 
 	{
 		InSequence dummy;
@@ -436,7 +429,7 @@ TEST_F(EventFactoryTestSuite, TestMaxDepth)
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
 
-		AddCallchainExpectation(cookie, false, 90746, max_depth,
+		AddCallchainExpectation(cookie, false, 90746,
 		    {0xf9d2, 0x296487, 0xefe892, 0x59dab});
 
 		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
@@ -447,7 +440,7 @@ TEST_F(EventFactoryTestSuite, TestMaxDepth)
 		mockOpen.ExpectClose(fd, 0);
 	}
 
-	EventFactory::createEvents(profiler, max_depth);
+	EventFactory::createEvents(profiler);
 
 }
 
@@ -457,15 +450,13 @@ TEST_F(EventFactoryTestSuite, TestMapIn)
 	    imgFactory);
 	GlobalMockOpen mockOpen;
 
-	uint32_t max_depth = 3;
-
 	{
 		InSequence dummy;
 		const int fd = INT_MAX - 1;
 
 		// Use an arbitrary address for the cookie -- it's opaque
 		// to the user
-		void *cookie = &max_depth;
+		void *cookie = &mockOpen;
 
 		mockOpen.ExpectOpen("./output/callchains", O_RDONLY, fd);
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
@@ -481,7 +472,7 @@ TEST_F(EventFactoryTestSuite, TestMapIn)
 		mockOpen.ExpectClose(fd, 0);
 	}
 
-	EventFactory::createEvents(profiler, max_depth);
+	EventFactory::createEvents(profiler);
 }
 
 TEST_F(EventFactoryTestSuite, TestExec)
@@ -490,15 +481,13 @@ TEST_F(EventFactoryTestSuite, TestExec)
 	    imgFactory);
 	GlobalMockOpen mockOpen;
 
-	uint32_t max_depth = 3;
-
 	{
 		InSequence dummy;
 		const int fd = 0;
 
 		// Use an arbitrary address for the cookie -- it's opaque
 		// to the user
-		void *cookie = &max_depth;
+		void *cookie = &mockOpen;
 
 		mockOpen.ExpectOpen("./output/callchains", O_RDONLY, fd);
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
@@ -514,7 +503,7 @@ TEST_F(EventFactoryTestSuite, TestExec)
 		mockOpen.ExpectClose(fd, 0);
 	}
 
-	EventFactory::createEvents(profiler, max_depth);
+	EventFactory::createEvents(profiler);
 
 }
 
@@ -526,7 +515,7 @@ TEST_F(EventFactoryTestSuite, TestOpenFail)
 
 	mockOpen.ExpectOpen("./output/callchains", O_RDONLY, -1);
 
-	EventFactory::createEvents(profiler, 32);
+	EventFactory::createEvents(profiler);
 }
 
 TEST_F(EventFactoryTestSuite, TestLogOpenFail)
@@ -544,7 +533,7 @@ TEST_F(EventFactoryTestSuite, TestLogOpenFail)
 		mockOpen.ExpectClose(fd, 0);
 	}
 
-	EventFactory::createEvents(profiler, 32);
+	EventFactory::createEvents(profiler);
 }
 
 TEST_F(EventFactoryTestSuite, TestUnhandledEvents)
@@ -552,8 +541,6 @@ TEST_F(EventFactoryTestSuite, TestUnhandledEvents)
 	Profiler profiler("./output/callchains", false, "", asFactory, aggFactory,
 	    imgFactory);
 	GlobalMockOpen mockOpen;
-
-	uint32_t max_depth = 3;
 
 	// Use an arbitrary address for the cookie -- it's opaque
 	// to the user
@@ -590,7 +577,7 @@ TEST_F(EventFactoryTestSuite, TestUnhandledEvents)
 		mockOpen.ExpectClose(fd, 0);
 	}
 
-	EventFactory::createEvents(profiler, max_depth);
+	EventFactory::createEvents(profiler);
 }
 
 TEST_F(EventFactoryTestSuite, TestMultipleCallchains)
@@ -598,8 +585,6 @@ TEST_F(EventFactoryTestSuite, TestMultipleCallchains)
 	Profiler profiler("./output/callchains", false, "", asFactory, aggFactory,
 	    imgFactory);
 	GlobalMockOpen mockOpen;
-
-	uint32_t max_depth = 32;
 
 	// Use an arbitrary address for the cookie -- it's opaque
 	// to the user
@@ -619,21 +604,21 @@ TEST_F(EventFactoryTestSuite, TestMultipleCallchains)
 		AddMapInExpectation(cookie, 2, 0x5540, "/bin/sh");
 		AddMapInExpectation(cookie, 2, 0x100000, "/lib/libc.so.7");
 
-		AddCallchainExpectation(cookie, true, 2, max_depth,
+		AddCallchainExpectation(cookie, true, 2,
 		    {0xfffe7838, 0xffff2300, 0xfffe8632});
-		AddCallchainExpectation(cookie, false, 2, max_depth,
+		AddCallchainExpectation(cookie, false, 2,
 		    {1, 2, 3, 4});
-		AddCallchainExpectation(cookie, false, 1, max_depth,
+		AddCallchainExpectation(cookie, false, 1,
 		    {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 		     17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32});
-		AddCallchainExpectation(cookie, true, 1, max_depth,
+		AddCallchainExpectation(cookie, true, 1,
 		    {0xfffe0001, 4, 2, 5, 2});
 		AddExecExpectation(cookie, 3, "/bin/dd", 0x9000);
-		AddCallchainExpectation(cookie, true, 3, max_depth,
+		AddCallchainExpectation(cookie, true, 3,
 		    {454, 1564, 1478, 18794, 1684, 154, 14});
-		AddCallchainExpectation(cookie, true, 3, max_depth,
+		AddCallchainExpectation(cookie, true, 3,
 		    {454, 1564, 1478, 18794, 1684, 154, 14});
-		AddCallchainExpectation(cookie, false, 1, max_depth,
+		AddCallchainExpectation(cookie, false, 1,
 		    {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 		     17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32});
 
@@ -645,5 +630,5 @@ TEST_F(EventFactoryTestSuite, TestMultipleCallchains)
 		mockOpen.ExpectClose(fd, 0);
 	}
 
-	EventFactory::createEvents(profiler, max_depth);
+	EventFactory::createEvents(profiler);
 }

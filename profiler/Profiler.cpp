@@ -61,11 +61,11 @@ Profiler::Profiler(const std::string& dataFile, bool showlines,
 }
 
 void
-Profiler::MapSamples(uint32_t maxDepth)
+Profiler::MapSamples()
 {
 	m_sampleCount = 0;
 
-	EventFactory::createEvents(*this, maxDepth);
+	EventFactory::createEvents(*this);
 	imgFactory.MapAll();
 }
 

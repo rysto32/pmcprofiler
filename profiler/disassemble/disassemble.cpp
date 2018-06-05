@@ -25,6 +25,18 @@ using namespace llvm::dwarf;
 
 typedef std::map<GElf_Addr, std::shared_ptr<GElf_Sym>> SymbolMap;
 
+u_long GetDieOffset(Dwarf_Die die)
+{
+	Dwarf_Error derr;
+	Dwarf_Off offset;
+	int error;
+
+	error = dwarf_dieoffset(die, &offset, &derr);
+	if (error != 0)
+		errx(1, "dwarf_dieoffset failed");
+	return (offset);
+}
+
 class MemoryOffset
 {
 public:
@@ -197,14 +209,26 @@ FindBaseReg(const MCInst &inst, const MCRegisterInfo &MRI, MemoryOffset &off)
 		if (op0.isReg() && op1.isReg()) {
 			// mov (op1,%reg,0), op0
 			const MCOperand & op4 = inst.getOperand(4);
-			int dwarfReg = MRI.getDwarfRegNum(op1.getReg(), false);
+			int dwarfRegNum = MRI.getDwarfRegNum(op1.getReg(), false);
+			
+			int dwarfReg;
+			if (dwarfRegNum < 32)
+				dwarfReg = DW_OP_reg0 + dwarfRegNum;
+			else
+				errx(1, "Can't handle DW_OP_regx");
 
 			off = MemoryOffset(dwarfReg, op4.getImm(), MemoryOffset::STORE);
 			return;
 		} else if (op0.isReg() && (op5.isReg() || op5.isImm())) {
 			// mov op5, (op0, %reg, 0)
 			const MCOperand & op3 = inst.getOperand(3);
-			int dwarfReg = MRI.getDwarfRegNum(op0.getReg(), false);
+			int dwarfRegNum = MRI.getDwarfRegNum(op0.getReg(), false);
+			
+			int dwarfReg;
+			if (dwarfRegNum < 32)
+				dwarfReg = DW_OP_reg0 + dwarfRegNum;
+			else
+				errx(1, "Can't handle DW_OP_regx");
 
 			off = MemoryOffset(dwarfReg, op3.getImm(), MemoryOffset::LOAD);
 			return;
@@ -284,7 +308,7 @@ public:
 
 	DwarfDieCollection() = delete;
 
-	~DwarfDieCollection();
+	~DwarfDieCollection() = default;
 
 	class const_iterator
 	{
@@ -307,7 +331,8 @@ public:
 
 		~const_iterator()
 		{
-			dwarf_dealloc(dwarf, die, DW_DLA_DIE);
+			if (die != NULL)
+				dwarf_dealloc(dwarf, die, DW_DLA_DIE);
 		}
 
 		const Dwarf_Die & operator*() const
@@ -369,10 +394,11 @@ CheckLocalVar(Dwarf_Debug dwarf, Dwarf_Die die, uint64_t offset,
 {
 	Dwarf_Attribute attr;
 	Dwarf_Locdesc **llbuf;
+	Dwarf_Loc *lr;
 	Dwarf_Signed lcnt, i;
-	Dwarf_Loc *loc;
 	Dwarf_Error derr;
 	Dwarf_Half j;
+	char *name;
 	int error;
 
 	error = dwarf_attr(die, DW_AT_location, &attr, &derr);
@@ -380,17 +406,30 @@ CheckLocalVar(Dwarf_Debug dwarf, Dwarf_Die die, uint64_t offset,
 		return (false);
 
 	error = dwarf_loclist_n(attr, &llbuf, &lcnt, &derr);
-	if (error != NULL)
+	if (error != 0)
 		return (false);
 
 	for (i = 0; i < lcnt; i++) {
-		for (j = 0; j < llbuf[i]->ld_cents; j++) {
-			lr = &llbuf[i]->ld_s[j];
+		if (llbuf[i]->ld_lopc != 0 && llbuf[i]->ld_lopc <= offset &&
+		    llbuf[i]->ld_hipc > offset) {
+			for (j = 0; j < llbuf[i]->ld_cents; j++) {
+				lr = &llbuf[i]->ld_s[j];
+				if (lr->lr_atom == memOff.GetReg()) {
+					error = dwarf_diename(die, &name, &derr);
+					if (error != 0)
+						errx(1, "Could not fetch name of die\n");
+					
+					printf("Address %lx maps to variable %s (die=%lx)\n",
+					    offset, name, GetDieOffset(die));
+					exit(0);
+				}
+			}
 		}
 		dwarf_dealloc(dwarf, llbuf[i]->ld_s, DW_DLA_LOC_BLOCK);
-		dwarf_dealloc(dbg, llbuf[i], DW_DLA_LOCDESC);
+		dwarf_dealloc(dwarf, llbuf[i], DW_DLA_LOCDESC);
 	}
-	dwarf_dealloc(dbg, llbuf, DW_DLA_LIST);
+	dwarf_dealloc(dwarf, llbuf, DW_DLA_LIST);
+	return false;
 }
 
 static void
@@ -604,6 +643,9 @@ ProcessCompileUnit(Dwarf_Debug dwarf, Dwarf_Die die, uint64_t offset, const Memo
 
 		dwarf_dealloc(dwarf, last_die, DW_DLA_DIE);
 	} while (error == DW_DLV_OK && !found);
+	
+	if (!found)
+		errx(1, "Could not variable for %lx", offset);
 }
 
 static void
@@ -614,6 +656,8 @@ FindVar(Elf *elf, uint64_t offset, const MemoryOffset &memOff)
 	Dwarf_Error derr;
 	Dwarf_Unsigned next_offset;
 	int error;
+	
+	printf("Find variable in %d + %x\n", memOff.GetReg(), memOff.GetOffset());
 
 	error = dwarf_elf_init(elf, DW_DLC_READ, NULL, NULL, &dwarf, &derr);
 	if (error != 0)
@@ -684,5 +728,7 @@ int main(int argc, char **argv)
 		FindRegister(text, data, symbol, offset, memOff);
 		if (memOff.IsDefined())
 			FindVar(elf, offset, memOff);
+		else
+			errx(1, "Could not find register at offset %lx", offset);
 	}
 }

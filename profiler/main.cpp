@@ -34,6 +34,8 @@ __FBSDID("$FreeBSD$");
 #include "CallchainProfilePrinter.h"
 #include "SharedString.h"
 
+#include "llvm/Support/TargetSelect.h"
+
 #include <err.h>
 #include <libelf.h>
 #include <sys/param.h>
@@ -92,6 +94,11 @@ main(int argc, char *argv[])
 
 	if (elf_version(EV_CURRENT) == EV_NONE)
 		err(1, "libelf incompatible");
+
+	llvm::InitializeAllTargetInfos();
+	llvm::InitializeAllTargetMCs();
+	llvm::InitializeAllAsmParsers();
+	llvm::InitializeAllDisassemblers();
 
 	/* Workaround for libdwarf crash when processing some KLD modules. */
 	//dwarf_set_reloc_application(0);

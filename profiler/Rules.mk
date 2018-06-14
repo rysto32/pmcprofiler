@@ -1,6 +1,7 @@
 
 PROG:=	bin/pmcprofiler
 
+# XXX sample circular dependency
 PROG_LIBS := \
 	pmcprofiler \
 	aggfactory \
@@ -11,14 +12,21 @@ PROG_LIBS := \
 	imagefactory \
 	image \
 	dwarf \
+	disassemble \
+	type \
 	abi \
 	frame \
 	sharedptr \
+	samples \
 
 PROG_STDLIBS:= \
 	pmc \
 	elf \
 	dwarf \
+	LLVM \
+
+PROG_LDFLAGS := \
+	-L/usr/local/llvm-devel/lib \
 
 LIB:= pmcprofiler
 
@@ -30,12 +38,14 @@ SRCS :=	\
 SUBDIRS := \
 	abi \
 	addr2line \
+	disassemble \
 	dwarf \
 	frame \
 	image \
 	printers \
 	samples \
 	sharedptr \
+	type \
 
 TESTS := \
 	EventFactory \

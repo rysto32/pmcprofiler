@@ -30,17 +30,21 @@
 #include <memory>
 #include <unordered_map>
 
+class BufferSampleFactory;
+
 class DefaultImageFactory : public ImageFactory
 {
 private:
 	typedef std::unordered_map<SharedString, std::unique_ptr<Image>> ImageMap;
+
+	BufferSampleFactory & sampleFactory;
 
 	ImageMap imageMap;
 	std::unique_ptr<Image> unmappedImage;
 
 public:
 	// Explicitly define these to prevent consumers from depending on Image.h
-	DefaultImageFactory();
+	DefaultImageFactory(BufferSampleFactory &);
 	~DefaultImageFactory();
 
 	virtual Image *GetImage(SharedString name);

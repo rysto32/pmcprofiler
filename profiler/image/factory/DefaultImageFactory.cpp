@@ -25,8 +25,9 @@
 
 #include "Image.h"
 
-DefaultImageFactory::DefaultImageFactory()
-  : unmappedImage(AllocImage(""))
+DefaultImageFactory::DefaultImageFactory(BufferSampleFactory &f)
+  : sampleFactory(f),
+    unmappedImage(AllocImage(""))
 {
 
 }
@@ -59,8 +60,10 @@ DefaultImageFactory::GetUnmappedImage()
 void
 DefaultImageFactory::MapAll()
 {
-	for (auto & [name, image] : imageMap)
+	for (auto & [name, image] : imageMap) {
 		image->MapAllFrames();
+		image->MapAllTypes(sampleFactory);
+	}
 
 	unmappedImage->MapAllAsUnmapped();
 }

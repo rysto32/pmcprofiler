@@ -25,6 +25,7 @@
 __FBSDID("$FreeBSD$");
 
 #include "DefaultAddressSpaceFactory.h"
+#include "DefaultBufferSampleFactory.h"
 #include "DefaultCallchainFactory.h"
 #include "DefaultImageFactory.h"
 #include "DefaultSampleAggregationFactory.h"
@@ -164,7 +165,8 @@ main(int argc, char *argv[])
 		printers.push_back(std::make_unique<FlatProfilePrinter>(stdout));
 
 	DefaultCallchainFactory ccFactory;
-	DefaultImageFactory imgFactory;
+	DefaultBufferSampleFactory bufFactory;
+	DefaultImageFactory imgFactory(bufFactory);
 	DefaultAddressSpaceFactory asFactory(imgFactory);
 	DefaultSampleAggregationFactory aggFactory(ccFactory);
 	Profiler profiler(samplefile, showlines, modulePath, asFactory,

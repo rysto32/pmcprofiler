@@ -42,6 +42,7 @@
 #include <string.h>
 #include <fcntl.h>
 
+class BufferSampleFactory;
 class Callframe;
 class ProcessExec;
 class FunctionLocation;
@@ -75,6 +76,7 @@ public:
 
 	const Callframe & GetFrame(TargetAddr offset);
 	void MapAllFrames();
+	void MapAllTypes(BufferSampleFactory &);
 	void MapAllAsUnmapped();
 };
 

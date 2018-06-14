@@ -25,6 +25,7 @@
 
 #include "Callframe.h"
 #include "DefaultImageFactory.h"
+#include "BufferSampleFactory.h"
 
 #include "mock/GlobalMock.h"
 
@@ -78,11 +79,32 @@ DwarfResolver::Resolve(const FrameMap &frames)
 	DwarfResolverMock::MockObj().Resolve(frames);
 }
 
+void
+DwarfResolver::ResolveTypes(const FrameMap &frames, BufferSampleFactory &)
+{
+}
+
+class BufferSampleFactoryStub : public BufferSampleFactory
+{
+public:
+	virtual BufferSample * GetSample(Dwarf_Debug dwarf,
+	    const DwarfCompileUnitParams & params, const DwarfDie & type)
+	{
+		abort();
+	}
+
+	virtual BufferSample * GetUnknownSample()
+	{
+		abort();
+	}
+};
+
 void dwarf_dealloc(Dwarf_Debug, Dwarf_Ptr, Dwarf_Unsigned) {}
 
 TEST(ImageTestSuite, TestGetters)
 {
-	DefaultImageFactory factory;
+	BufferSampleFactoryStub bufFactory;
+	DefaultImageFactory factory(bufFactory);
 	Image *img = factory.GetImage("/bin/testprog");
 
 	EXPECT_EQ(img->GetImageFile(), "/bin/testprog");
@@ -101,7 +123,8 @@ TEST(ImageTestSuite, TestGetFrame)
 	  .Times(1);
 
 	{
-		DefaultImageFactory factory;
+		BufferSampleFactoryStub bufFactory;
+		DefaultImageFactory factory(bufFactory);
 		Image *img = factory.GetImage(execname);
 		std::vector<const Callframe *> frameList;
 
@@ -128,7 +151,8 @@ TEST(ImageTestSuite, TestGetFrameTwice)
 	  .Times(1);
 
 	{
-		DefaultImageFactory factory;
+		BufferSampleFactoryStub bufFactory;
+		DefaultImageFactory factory(bufFactory);
 		Image *img = factory.GetImage(execname);
 		std::vector<const Callframe *> frameList;
 
@@ -156,7 +180,8 @@ TEST(ImageTestSuite, TestMapEmptyImage)
 
 	SharedString execname("./a.out");
 
-	DefaultImageFactory factory;
+	BufferSampleFactoryStub bufFactory;
+	DefaultImageFactory factory(bufFactory);
 	Image *img = factory.GetImage(execname);
 
 	img->MapAllFrames();
@@ -195,7 +220,8 @@ TEST(ImageTestSuite, TestMapAll)
 	  .Times(1);
 
 	{
-		DefaultImageFactory factory;
+		BufferSampleFactoryStub bufFactory;
+		DefaultImageFactory factory(bufFactory);
 		Image *img = factory.GetImage(execname);
 		std::unordered_set<const Callframe *> frameList;
 
@@ -233,7 +259,8 @@ TEST(ImageTestSuite, TestMapAllAsUnMapped)
 	  .Times(1);
 
 	{
-		DefaultImageFactory factory;
+		BufferSampleFactoryStub bufFactory;
+		DefaultImageFactory factory(bufFactory);
 		Image *img = factory.GetImage(execname);
 		std::unordered_set<const Callframe *> frameList;
 

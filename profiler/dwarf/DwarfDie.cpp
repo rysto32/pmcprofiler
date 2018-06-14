@@ -72,3 +72,46 @@ DwarfDie::GetCuDie(Dwarf_Debug dwarf)
 	else
 		return DwarfDie(dwarf, die);
 }
+
+Dwarf_Unsigned
+DwarfDie::GetUnsignedAttr(Dwarf_Half tag) const
+{
+	int error;
+	Dwarf_Unsigned val;
+	Dwarf_Error derr;
+
+	error = dwarf_attrval_unsigned(die, tag, &val, &derr);
+	if (error != 0)
+		throw DwarfException("dwarf_attrval_unsigned failed");
+
+	return val;
+}
+
+
+SharedString
+DwarfDie::GetStringAttr(Dwarf_Half tag) const
+{
+	int error;
+	const char *val;
+	Dwarf_Error derr;
+
+	error = dwarf_attrval_string(die, tag, &val, &derr);
+	if (error != 0)
+		throw DwarfException("dwarf_attrval_string failed");
+
+	return val;
+
+}
+
+bool
+DwarfDie::HasAttr(Dwarf_Half tag) const
+{
+	Dwarf_Bool hasAttr;
+	Dwarf_Error derr;
+
+	int error = dwarf_hasattr(die, tag, &hasAttr, &derr);
+	if (error != 0)
+		throw DwarfException("dwarf_hasattr returned an error");
+
+	return hasAttr;
+}

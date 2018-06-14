@@ -24,7 +24,12 @@
 #ifndef DWARFDIE_H
 #define DWARFDIE_H
 
+#include "llvm/BinaryFormat/Dwarf.h"
+#include <dwarf.h>
 #include <libdwarf.h>
+
+#include "DwarfUtil.h"
+#include "SharedString.h"
 
 class DwarfDieList;
 
@@ -102,6 +107,30 @@ public:
 	Dwarf_Die operator*() const
 	{
 		return die;
+	}
+
+	DwarfDieOffset GetOffset() const
+	{
+		return GetDieOffset(die);
+	}
+
+	Dwarf_Half GetTag() const
+	{
+		return GetDieTag(die);
+	}
+
+	bool HasAttr(Dwarf_Half) const;
+	Dwarf_Unsigned GetUnsignedAttr(Dwarf_Half) const;
+	SharedString GetStringAttr(Dwarf_Half) const;
+
+	SharedString GetNameAttr() const
+	{
+		return GetStringAttr(DW_AT_name);
+	}
+
+	bool HasNameAttr() const
+	{
+		return HasAttr(DW_AT_name);
 	}
 
 	void AdvanceToSibling();

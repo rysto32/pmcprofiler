@@ -25,11 +25,13 @@
 
 #include "Callframe.h"
 #include "DwarfCompileUnitDie.h"
+#include "DwarfLocList.h"
 #include "DwarfRangeLookup.h"
 #include "DwarfException.h"
 #include "DwarfStackState.h"
 #include "DwarfUtil.h"
 #include "MapUtil.h"
+#include "VariableLookup.h"
 
 #include <cassert>
 #include <dwarf.h>
@@ -187,3 +189,101 @@ DwarfDieStack::FillSubprogramSymbols(DwarfLocationList& list,
 	}
 }
 
+void
+DwarfDieStack::FillSubprogramVars(VariableLookup &vars)
+{
+	size_t stackPos = dieStack.size();
+
+	while (1) {
+		while (dieStack.size() >= stackPos && !dieStack.back()) {
+			dieStack.pop_back();
+			if (dieStack.size() < stackPos)
+				break;
+			dieStack.back().Skip();
+		}
+
+		if (dieStack.size() < stackPos)
+			break;
+
+		Dwarf_Die die = dieStack.back().GetLeafDie();
+		Dwarf_Half tag = GetDieTag(die);
+
+		switch (tag) {
+		case DW_TAG_formal_parameter:
+		case DW_TAG_variable:
+			try {
+				AddVariable(vars, die);
+			} catch (const DwarfException &) {
+				// Ignore the error and move onto the next DIE
+			}
+			break;
+		}
+
+		dieStack.emplace_back(dwarf, die, cu);
+	}
+
+}
+
+void
+DwarfDieStack::AddVariable(VariableLookup &vars, Dwarf_Die def)
+{
+	Dwarf_Attribute attr;
+	Dwarf_Error derr;
+	int error;
+
+	DwarfDieOffset off = GetTypeOff(def);
+
+	error = dwarf_attr(def, DW_AT_location, &attr, &derr);
+	if (error != 0)
+		return;
+
+	DwarfLocList list(dwarf, attr);
+
+	for (Dwarf_Locdesc * desc : list) {
+		if (desc->ld_lopc != desc->ld_hipc) {
+			// Only check the first location description.  If the operator
+			// is not a DW_OP_regX we don't need to worry about it here.
+			Dwarf_Loc *lr = &desc->ld_s[0];
+
+			if (lr->lr_atom >= DW_OP_reg0 && lr->lr_atom <= DW_OP_reg31) {
+				vars.AddVariable(lr->lr_atom, desc->ld_lopc, desc->ld_hipc, off);
+			}
+		}
+	}
+}
+
+DwarfDieOffset
+DwarfDieStack::GetTypeOff(Dwarf_Die die)
+{
+	Dwarf_Attribute attr;
+	Dwarf_Error derr;
+
+	int error = dwarf_attr(die, DW_AT_type, &attr, &derr);
+	if (error != 0) {
+		error = dwarf_attr(die, DW_AT_abstract_origin, &attr, &derr);
+		if (error != 0) {
+			throw DwarfException("No type associated with variable");
+		}
+
+		Dwarf_Off originOff;
+		error = dwarf_global_formref(attr, &originOff, &derr);
+		if (error != 0) {
+			throw DwarfException("Can't formref");
+		}
+
+		DwarfDie originDie = DwarfDie::OffDie(dwarf, originOff);
+		if (!originDie)
+			throw DwarfException("Could not get origin die");
+
+		error = dwarf_attr(*originDie, DW_AT_type, &attr, &derr);
+		if (error != 0)
+			throw DwarfException("No type attribute");
+	}
+
+	Dwarf_Off subtypeOff;
+	error = dwarf_global_formref(attr, &subtypeOff, &derr);
+	if (error != 0)
+		throw DwarfException("dwarf_global_formref failed");
+
+	return subtypeOff;
+}

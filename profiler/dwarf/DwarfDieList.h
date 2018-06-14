@@ -91,6 +91,11 @@ public:
 			return !(*this == rhs);
 		}
 
+		const DwarfDie & Get() const
+		{
+			return die;
+		}
+
 		DwarfDie Take()
 		{
 			return std::move(die);

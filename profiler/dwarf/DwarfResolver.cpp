@@ -338,6 +338,13 @@ DwarfResolver::SearchCompileUnit(SharedPtr<DwarfCompileUnitDie> cu,
 		return;
 	}
 
+	/*
+	 * LLVM 3.3 seems to only describe CUs via statement lists.  I really
+	 * don't know why they chose that structure, but fall back on that
+	 * information if there are no ranges or lopc/hipc attributes.
+	 */
+	AddCompileUnitSrcLines(cu, cuLookup);
+
 	// This likely indicates a CU with no code, so skip it
 }
 
@@ -374,6 +381,37 @@ DwarfResolver::SearchCompileUnitRanges(SharedPtr<DwarfCompileUnitDie> cu,
 
 break_loop:
 	return;
+}
+
+void
+DwarfResolver::AddCompileUnitSrcLines(SharedPtr<DwarfCompileUnitDie> cu,
+    CompileUnitLookup & cuLookup)
+{
+	DwarfSrcLinesList srcLines(dwarf, cu->GetDie());
+
+	auto srcIt = srcLines.begin();
+	if (srcIt == srcLines.end())
+		return;
+
+	DwarfSrcLine src(*srcIt);
+	Dwarf_Unsigned lo, hi;
+
+	/*
+	 * The srclines data structures aren't able to describe non-contiguous
+	 * areas, so just iterate over the list to find the beginning and ending
+	 * address for this CU.
+	 */
+	lo = src.GetAddr();
+	while (1) {
+		auto lastIt = srcIt;
+		++srcIt;
+		if (srcIt == srcLines.end()) {
+			src = *lastIt;
+			hi = src.GetAddr();
+			break;
+		}
+	}
+	AddCompileUnitRange(cu, lo, hi, cuLookup);
 }
 
 void

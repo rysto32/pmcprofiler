@@ -76,6 +76,7 @@ private:
 	void SearchCompileUnit(SharedPtr<DwarfCompileUnitDie> cu, CompileUnitLookup &);
 	void AddCompileUnitRange(SharedPtr<DwarfCompileUnitDie> cu, Dwarf_Unsigned low_pc,
 	    Dwarf_Unsigned high_pc, CompileUnitLookup &);
+	void AddCompileUnitSrcLines(SharedPtr<DwarfCompileUnitDie> cu, CompileUnitLookup &);
 	void SearchCompileUnitRanges(SharedPtr<DwarfCompileUnitDie> cu,
 	    Dwarf_Unsigned range_off, CompileUnitLookup &);
 

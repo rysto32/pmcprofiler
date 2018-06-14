@@ -27,7 +27,7 @@
 #include "SharedString.h"
 
 Callframe::Callframe(TargetAddr off, SharedString imageName)
-  : offset(off), imageName(imageName), unmapped(false)
+  : offset(off), imageName(imageName), unmapped(false), bufferSample(nullptr)
 {
 }
 
@@ -55,4 +55,14 @@ Callframe::setUnmapped()
 	    unmapped_function, offset, -1, -1, 0, imageName);
 
 	unmapped = true;
+}
+
+void
+Callframe::SetBufferSample(const BufferSample *s, size_t offset, size_t width)
+{
+	assert (bufferSample == nullptr);
+
+	bufferSample = s;
+	bufferOffset = offset;
+	bufferWidth = width;
 }

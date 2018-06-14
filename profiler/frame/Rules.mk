@@ -5,6 +5,7 @@ SUBDIRS := \
 LIB :=	frame
 
 SRCS := \
+	BufferSample.cpp \
 	Callchain.cpp \
 	Callframe.cpp \
 

@@ -156,7 +156,7 @@ DefaultBufferSampleFactory::BuildTypeFromArray(Dwarf_Debug dwarf, const DwarfCom
 	if (!subdie)
 		throw DwarfException("Could not get DIE of type");
 
-	DwarfDieList list(dwarf, *subdie);
+	DwarfDieList list(dwarf, *type);
 
 	auto listIt = list.begin();
 	if (listIt == list.end())

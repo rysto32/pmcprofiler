@@ -263,6 +263,8 @@ DwarfSearch::MapSubprogramTypes(BufferSampleFactory & factory, Elf_Scn *textSect
 
 	Disassembler disasm(textHdr, textData);
 
+	disasm.InitFunc(symAddr);
+
 	for (Callframe * frame : frameList) {
 		MemoryOffset off(disasm.GetInsnOffset(frame->getOffset()));
 		if (!off.IsDefined()) {

@@ -41,6 +41,8 @@ clean_lib_$(LIB): LIB:=$(LIB)
 clean_lib_$(LIB):
 	$(RM) $($(LIB)_CLEAN)
 
+lib$(LIB): $($(LIB)_LIBRARY)
+
 -include $(DEPFILES)
 
 endif

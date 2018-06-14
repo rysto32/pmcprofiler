@@ -30,12 +30,18 @@
 #include "ProfilerTypes.h"
 #include "SharedString.h"
 
+class BufferSample;
+
 class Callframe
 {
 	TargetAddr offset;
 	SharedString imageName;
 	std::vector<InlineFrame> inlineFrames;
 	bool unmapped;
+
+	const BufferSample * bufferSample;
+	size_t bufferOffset;
+	size_t bufferWidth;
 
 public:
 	Callframe(TargetAddr off, SharedString imageName);
@@ -50,6 +56,8 @@ public:
 	    SharedString demangled, int codeLine, int funcLine,
 	    uint64_t dwarfDieOffset);
 	void setUnmapped();
+
+	void SetBufferSample(const BufferSample *, size_t, size_t);
 
 	TargetAddr getOffset() const
 	{

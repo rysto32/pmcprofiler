@@ -13,6 +13,7 @@ define include_template
  PROG:=
  PROG_LIBS:=
  PROG_STDLIBS:=
+ PROG_LDFLAGS :=
 
  TESTS :=
 

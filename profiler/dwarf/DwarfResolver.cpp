@@ -24,7 +24,9 @@
 
 #include "DwarfResolver.h"
 
+#include "BufferSampleFactory.h"
 #include "Callframe.h"
+#include "Disassembler.h"
 #include "DwarfCompileUnit.h"
 #include "DwarfCompileUnitDie.h"
 #include "DwarfDieList.h"
@@ -50,7 +52,9 @@
 DwarfResolver::DwarfResolver(SharedString image)
   : imageFile(image),
     elf(NULL),
-    dwarf(nullptr)
+    imageElf(nullptr),
+    dwarf(nullptr),
+    textSection(nullptr)
 {
 	Dwarf_Error derr;
 
@@ -61,7 +65,7 @@ DwarfResolver::DwarfResolver(SharedString image)
 	if (elf == NULL)
 		return;
 
-	LOG("imageFile=%s symbolsFile=%s\n", imageFile->c_str(),
+	fprintf(stderr, "imageFile=%s symbolsFile=%s\n", imageFile->c_str(),
 	    symbolFile->c_str());
 
 	/*
@@ -79,6 +83,7 @@ DwarfResolver::~DwarfResolver()
 		dwarf_finish(dwarf, &derr);
 
 	elf_end(elf);
+	elf_end(imageElf);
 }
 
 Elf *
@@ -120,7 +125,7 @@ DwarfResolver::OpenSymbolFile(Elf* origElf)
 	if (debug_elf == NULL)
 		return (origElf);
 
-	elf_end(origElf);
+	imageElf = origElf;
 	return (debug_elf);
 }
 
@@ -177,8 +182,13 @@ DwarfResolver::HaveSymbolFile(Elf *origElf)
 
 		name = elf_strptr(origElf, shdrstrndx, shdr.sh_name);
 		if (name != NULL) {
-			if (strcmp(name, ".gnu_debuglink") == 0)
+			if (strcmp(name, ".gnu_debuglink") == 0) {
 				ParseDebuglink(section);
+			} else if (strcmp(name, ".text") == 0) {
+				if (gelf_getshdr(section, &textHeader) != NULL) {
+					textSection = section;
+				}
+			}
 		}
 	}
 
@@ -480,4 +490,29 @@ DwarfResolver::ResolveUnmapped(const FrameMap &frameMap) const
 {
 	for (auto & pair : frameMap)
 		pair.second->setUnmapped();
+}
+
+void
+DwarfResolver::ResolveTypes(const FrameMap &frames, BufferSampleFactory &factory)
+{
+	if (!DwarfValid() || textSection == nullptr) {
+		for (auto & [addr, frame] : frames) {
+			frame->SetBufferSample(factory.GetUnknownSample(), 0, 1);
+		}
+		return;
+	}
+
+	CompileUnitLookup cuLookup;
+	EnumerateCompileUnits(cuLookup);
+	MapFramesToCompileUnits(frames, cuLookup);
+
+	for (auto cuIt = cuLookup.begin(); cuIt != cuLookup.end(); ++cuIt) {
+		auto & value = cuIt->second;
+
+		if (value.GetFrames().empty())
+			continue;
+
+		DwarfSearch search(dwarf, value.GetValue(), imageFile, elfSymbols);
+		search.MapTypes(factory, textSection, textHeader, value.GetFrames());
+	}
 }

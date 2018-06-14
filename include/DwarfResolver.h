@@ -31,12 +31,17 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <libdwarf.h>
 #include <libelf.h>
+#include <gelf.h>
 
+class BufferSampleFactory;
+class Callframe;
 class DwarfCompileUnit;
 class DwarfCompileUnitDie;
+class MemoryOffset;
 
 template <typename T>
 class DwarfRangeLookup;
@@ -45,16 +50,19 @@ class DwarfResolver
 {
 private:
 	typedef DwarfRangeLookup<DwarfCompileUnitDie> CompileUnitLookup;
+	typedef std::vector<Callframe *> FrameList;
 
 	SharedString imageFile;
 	SharedString symbolFile;
 	SharedString symbolFilePath;
 
 	Elf *elf;
+	Elf *imageElf;
 	Dwarf_Debug dwarf;
 
 	SymbolMap elfSymbols;
-
+	Elf_Scn *textSection;
+	GElf_Shdr textHeader;
 
 	Elf * GetSymbolFile();
 	bool HaveSymbolFile(Elf *origElf);
@@ -83,6 +91,10 @@ private:
 	void MapFramesToCompileUnits(const FrameMap &frames, CompileUnitLookup &);
 	void MapFrames(CompileUnitLookup &);
 
+	MemoryOffset FindOffset();
+
+	void FindElfData(TargetAddr symAddr);
+
 public:
 	explicit DwarfResolver(SharedString image);
 	~DwarfResolver();
@@ -93,6 +105,7 @@ public:
 	DwarfResolver & operator=(DwarfResolver &&) = delete;
 
 	void Resolve(const FrameMap &frames);
+	void ResolveTypes(const FrameMap &frames, BufferSampleFactory &);
 };
 
 #endif

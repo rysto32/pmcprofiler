@@ -25,6 +25,8 @@
 #define DWARFSEARCH_H
 
 #include <libdwarf.h>
+#include <libelf.h>
+#include <gelf.h>
 
 #include <vector>
 
@@ -33,6 +35,7 @@
 #include "DwarfLocation.h"
 #include "SharedString.h"
 
+class BufferSampleFactory;
 class Callframe;
 class DwarfCompileUnitDie;
 class DwarfDieRanges;
@@ -60,7 +63,14 @@ private:
 	void MapAssembly(Callframe &frame);
 	void MapFrame(Callframe & frame, const DwarfLocationList &list);
 
+	void MapFramesToSubprograms(const FrameList & frameList, FrameList &unmapped);
+
 	void MapSubprogram(Dwarf_Die subprogram, const FrameList& frameList);
+	void MapSubprogramTypes(BufferSampleFactory &factory, Elf_Scn *textSection,
+	    const GElf_Shdr &textHdr, TargetAddr symAddr,
+	    Dwarf_Die subprogram, const FrameList& frameList);
+
+	Elf_Data * FindElfData(Elf_Scn *textSection, TargetAddr symAddr);
 
 public:
 	DwarfSearch(Dwarf_Debug, const DwarfCompileUnitDie &,
@@ -73,6 +83,9 @@ public:
 	DwarfSearch & operator=(DwarfSearch &&) = delete;
 
 	void MapFrames(const FrameList & frameList);
+
+	void MapTypes(BufferSampleFactory & factory, Elf_Scn *textSection,
+	    const GElf_Shdr &textHdr, const FrameList & frameList);
 };
 
 #endif

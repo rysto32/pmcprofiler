@@ -23,6 +23,9 @@
 
 #include "DwarfSearch.h"
 
+#include "Disassembler.h"
+
+#include "BufferSampleFactory.h"
 #include "Callframe.h"
 #include "Demangle.h"
 #include "DwarfCompileUnitDie.h"
@@ -32,6 +35,9 @@
 #include "DwarfSrcLinesList.h"
 #include "DwarfUtil.h"
 #include "MapUtil.h"
+#include "VariableLookup.h"
+
+#include <gelf.h>
 
 DwarfSearch::DwarfSearch(Dwarf_Debug dwarf, const DwarfCompileUnitDie &cu,
     SharedString imageFile, const SymbolMap & symbols)
@@ -167,15 +173,14 @@ DwarfSearch::MapFrame(Callframe & frame, const DwarfLocationList &list)
 }
 
 void
-DwarfSearch::MapFrames(const FrameList& frameList)
+DwarfSearch::MapFramesToSubprograms(const FrameList & frameList, FrameList &unmapped)
 {
-	FrameList assemblyFuncs;
 	for (auto frame : frameList) {
 		auto it = subprograms.Lookup(frame->getOffset());
 		if (it == subprograms.end()) {
 			LOG("Frame %lx mapped to no subroutine (assembly?)\n",
 			    frame->getOffset());
-			assemblyFuncs.push_back(frame);
+			unmapped.push_back(frame);
 			continue;
 		}
 
@@ -183,6 +188,14 @@ DwarfSearch::MapFrames(const FrameList& frameList)
 		    GetDieOffset(*it->second.GetValue()));
 		it->second.AddFrame(frame);
 	}
+
+}
+
+void
+DwarfSearch::MapFrames(const FrameList& frameList)
+{
+	FrameList assemblyFuncs;
+	MapFramesToSubprograms(frameList, assemblyFuncs);
 
 	for (auto & [addr, value] : subprograms) {
 		if (value.GetFrames().empty())
@@ -210,4 +223,82 @@ DwarfSearch::MapSubprogram(Dwarf_Die subprogram, const FrameList& frameList)
 	for (auto frame : frameList) {
 		MapFrame(*frame, list);
 	}
+}
+
+void
+DwarfSearch::MapTypes(BufferSampleFactory & factory, Elf_Scn *textSection,
+    const GElf_Shdr & textHdr, const FrameList & frameList)
+{
+	FrameList unmapped;
+	MapFramesToSubprograms(frameList, unmapped);
+
+	for (auto & [addr, value] : subprograms) {
+		if (value.GetFrames().empty())
+			continue;
+
+		MapSubprogramTypes(factory, textSection, textHdr, addr,
+		    *value.GetValue(), value.GetFrames());
+	}
+}
+
+void
+DwarfSearch::MapSubprogramTypes(BufferSampleFactory & factory, Elf_Scn *textSection,
+    const GElf_Shdr & textHdr, TargetAddr symAddr, Dwarf_Die subprogram,
+    const FrameList& frameList)
+{
+	VariableLookup vars(dwarf);
+
+	DwarfDieStack stack(imageFile, dwarf, cu, subprogram);
+	stack.FillSubprogramVars(vars);
+
+	const DwarfCompileUnitParams & params = cu.GetParams();
+	Elf_Data * textData = FindElfData(textSection, symAddr);
+
+	if (textData == nullptr) {
+		for (Callframe * fr : frameList) {
+			fr->SetBufferSample(factory.GetUnknownSample(), 0, 1);
+		}
+		return;
+	}
+
+	Disassembler disasm(textHdr, textData);
+
+	for (Callframe * frame : frameList) {
+		MemoryOffset off(disasm.GetInsnOffset(frame->getOffset()));
+		if (!off.IsDefined()) {
+			frame->SetBufferSample(factory.GetUnknownSample(), 0, 1);
+			continue;
+		}
+
+		DwarfDie typeDie = vars.FindRegType(off.GetReg(), frame->getOffset());
+
+		if (!typeDie) {
+			frame->SetBufferSample(factory.GetUnknownSample(), 0, 1);
+			continue;
+		}
+
+		BufferSample * sample = factory.GetSample(dwarf, params, typeDie);
+		frame->SetBufferSample(sample, off.GetOffset(), off.GetAccessSize());
+	}
+}
+
+Elf_Data *
+DwarfSearch::FindElfData(Elf_Scn *textSection, TargetAddr symAddr)
+{
+	GElf_Shdr header;
+	Elf_Data *data;
+
+	if (gelf_getshdr(textSection, &header) == NULL)
+		return (NULL);
+
+	data = NULL;
+	while ((data = elf_rawdata(textSection, data)) != NULL) {
+		//fprintf(stderr, "sh_addr: %lx off: %lx size: %lx\n", header.sh_addr, data->d_off, data->d_size);
+		GElf_Addr addr = header.sh_addr + data->d_off;
+		if (addr <= symAddr &&
+		   ((addr + data->d_size) > symAddr))
+			return (data);
+	}
+
+	return (nullptr);
 }

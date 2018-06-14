@@ -54,6 +54,11 @@ public:
 	{
 		return cu_offset_size;
 	}
+
+	Dwarf_Half GetPointerSize() const
+	{
+		return cu_pointer_size;
+	}
 };
 
 #endif

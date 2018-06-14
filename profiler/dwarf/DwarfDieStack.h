@@ -35,6 +35,7 @@
 
 class Callframe;
 class DwarfCompileUnitDie;
+class VariableLookup;
 
 class DwarfDieStack
 {
@@ -50,6 +51,8 @@ private:
 
 	void AddSubprogramSymbol(DwarfLocationList &list, const DwarfDieRanges &);
 	void AddInlineSymbol(DwarfLocationList &list, Dwarf_Die die);
+	void AddVariable(VariableLookup &vars, Dwarf_Die def);
+	DwarfDieOffset GetTypeOff(Dwarf_Die die);
 
 public:
 	DwarfDieStack(SharedString imageFile, Dwarf_Debug dwarf,
@@ -62,6 +65,7 @@ public:
 
 	void EnumerateSubprograms(DwarfRangeLookup<DwarfDie> &);
 	void FillSubprogramSymbols(DwarfLocationList &, const DwarfDieRanges &);
+	void FillSubprogramVars(VariableLookup &);
 };
 
 #endif

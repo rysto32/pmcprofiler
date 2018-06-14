@@ -139,7 +139,7 @@ DefaultBufferSampleFactory::GetTypeDie(Dwarf_Debug dwarf, const DwarfDie &die)
 
 	int error = dwarf_attr(*die, DW_AT_type, &subtypeAttr, &derr);
 	if (error != 0)
-		throw DwarfException("DW_AT_type not defined");
+		return DwarfDie();
 
 	Dwarf_Off subtypeOff;
 	error = dwarf_global_formref(subtypeAttr, &subtypeOff, &derr);
@@ -370,9 +370,15 @@ DefaultBufferSampleFactory::BuildTypeFromUnion(Dwarf_Debug dwarf, const DwarfCom
 std::unique_ptr<TargetType>
 DefaultBufferSampleFactory::BuiltTypeFromPointerType(Dwarf_Debug dwarf, const DwarfCompileUnitParams & params, const DwarfDie &type)
 {
-	DwarfDie pointeeType = GetTypeDie(dwarf, type);
+	DwarfDie pointeeDie = GetTypeDie(dwarf, type);
 
-	return std::make_unique<PointerType>(BuildType(dwarf, params, pointeeType), params.GetPointerSize());
+	const TargetType *pointee;
+	if (pointeeDie) {
+		pointee = &BuildType(dwarf, params, pointeeDie);
+	} else {
+		pointee = GetVoidType();
+	}
+	return std::make_unique<PointerType>(*pointee, params.GetPointerSize());
 }
 
 size_t

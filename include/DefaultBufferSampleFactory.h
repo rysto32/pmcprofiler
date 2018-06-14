@@ -84,6 +84,11 @@ private:
 	size_t GetMemberOffset(Dwarf_Debug dwarf, const DwarfDie & member);
 	size_t GetBlockOffset(Dwarf_Debug dwarf, Dwarf_Attribute attr);
 
+	const TargetType * GetVoidType() const
+	{
+		return &voidType;
+	}
+
 public:
 	DefaultBufferSampleFactory();
 	~DefaultBufferSampleFactory();

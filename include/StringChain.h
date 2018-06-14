@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "InlineFrame.h"
+#include "HashUtil.h"
 #include "SharedString.h"
 
 class StringChain

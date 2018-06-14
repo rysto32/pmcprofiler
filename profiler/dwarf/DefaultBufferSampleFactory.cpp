@@ -163,9 +163,6 @@ DefaultBufferSampleFactory::BuildTypeFromArray(Dwarf_Debug dwarf, const DwarfCom
 		throw DwarfException("Expected child die");
 
 	const DwarfDie & numElemsDie = listIt.Get();
-	++listIt;
-	if (listIt != list.end())
-		errx(1, "Expected only one child");
 
 	if (numElemsDie.GetTag() != DW_TAG_subrange_type) {
 		errx(1, "Expected subrange die");
@@ -177,6 +174,10 @@ DefaultBufferSampleFactory::BuildTypeFromArray(Dwarf_Debug dwarf, const DwarfCom
 	}
 
 	size_t numElems = numElemsDie.GetUnsignedAttr(DW_AT_count);
+
+	++listIt;
+	if (listIt != list.end())
+		errx(1, "Expected only one child");
 
 	return std::make_unique<ArrayType>(BuildType(dwarf, params, subdie), numElems);
 }

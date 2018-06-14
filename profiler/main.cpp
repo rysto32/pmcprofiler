@@ -93,8 +93,11 @@ main(int argc, char *argv[])
 	/* Workaround for libdwarf crash when processing some KLD modules. */
 	//dwarf_set_reloc_application(0);
 
-	while ((ch = getopt(argc, argv, "qlG:bf:F:o:p:t:r:m:T")) != -1) {
+	while ((ch = getopt(argc, argv, "bf:F:G:lm:o:p:qr:t:T")) != -1) {
 		switch (ch) {
+			case 'b':
+				printBoring = false;
+				break;
 			case 'f':
 				samplefile = optarg;
 				break;
@@ -102,19 +105,15 @@ main(int argc, char *argv[])
 				file = openOutFile(optarg);
 				printers.push_back(std::make_unique<FlameGraphProfilerPrinter>(file, threshold, true));
 				break;
-			case 'l':
-				showlines = true;
-				break;
-			case 'q':
-				g_quitOnError = true;
-				break;
 			case 'G':
 				file = openOutFile(optarg);
 				printers.push_back(std::make_unique<LeafProfilePrinter>(file, threshold, printBoring));
 				break;
-			case 'r':
-				file = openOutFile(optarg);
-				printers.push_back(std::make_unique<RootProfilePrinter>(file, threshold, true));
+			case 'l':
+				showlines = true;
+				break;
+			case 'm':
+				modulePath = optarg;
 				break;
 			case 'o':
 				file = openOutFile(optarg);
@@ -127,9 +126,12 @@ main(int argc, char *argv[])
 					usage();
 				pid_filter.insert(pid);
 				break;
-
-			case 'b':
-				printBoring = false;
+			case 'q':
+				g_quitOnError = true;
+				break;
+			case 'r':
+				file = openOutFile(optarg);
+				printers.push_back(std::make_unique<RootProfilePrinter>(file, threshold, true));
 				break;
 			case 't':
 				threshold = strtol(optarg, &temp, 0);
@@ -137,9 +139,6 @@ main(int argc, char *argv[])
 				if (*temp != '\0' || threshold < 0 || threshold > 100)
 					usage();
 
-				break;
-			case 'm':
-				modulePath = optarg;
 				break;
 			case 'T':
 				g_includeTemplates = true;

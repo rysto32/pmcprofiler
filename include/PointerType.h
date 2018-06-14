@@ -33,6 +33,9 @@ class PointerType : public TargetType
 public:
 	PointerType(const TargetType & t, size_t ptrSize);
 
+	bool ShallowEquals(const TargetType &) const final override;
+	bool ShallowEqualsPointer(const PointerType *) const final override;
+
 	bool EqualsPointer(const PointerType *) const final override;
 	bool operator==(const TargetType &) const final override;
 	size_t Hash() const final override;

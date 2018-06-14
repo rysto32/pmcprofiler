@@ -299,6 +299,8 @@ DefaultBufferSampleFactory::BuildStructuredType(Dwarf_Debug dwarf, const DwarfCo
 
 	auto ptr = std::make_unique<T>(tag, len);
 
+	dieMap.insert(std::make_pair(type.GetOffset(), ptr.get()));
+
 	DwarfDieList list(dwarf, *type);
 	for (auto it = list.begin(); it != list.end(); ++it) {
 		const DwarfDie & member = it.Get();

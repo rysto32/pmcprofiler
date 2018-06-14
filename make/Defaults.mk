@@ -15,5 +15,5 @@ CXX_STD=-std=c++20
 CXX_WARNFLAGS=-Wall -Werror
 # -Wno-reorder-init-list
 
-CFLAGS:=-I/usr/local/include -I$(TOPDIR)/include $(C_OPTIM) -g
+CFLAGS:=-I/usr/local/include -I$(TOPDIR)/include -I/usr/local/llvm-devel/include $(C_OPTIM) -g
 CXXFLAGS:=$(CXX_STD) $(CXX_WARNFLAGS)

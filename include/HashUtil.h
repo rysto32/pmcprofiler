@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Ryan Stone.  All rights reserved.
+// Copyright (c) 2018 Ryan Stone.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,62 +21,20 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#ifndef PROFILERTYPES_H
-#define PROFILERTYPES_H
+#ifndef HASHUTIL_H
+#define HASHUTIL_H
 
-#include <stdint.h>
-#include <stdio.h>
+#include <functional>
 
-#include <map>
-#include <memory>
-#include <set>
-#include <vector>
-
-typedef uintptr_t TargetAddr;
-
-extern bool g_includeTemplates;
-extern bool g_quitOnError;
-
-extern uint32_t g_filterFlags;
-const uint32_t PROFILE_USER = 0x0001;
-const uint32_t PROFILE_KERN = 0x0002;
-
-class Callchain;
-class Callframe;
-class SampleAggregation;
-class SharedString;
-
-struct AggCallChain
+/* Shamelessly stolen from boost::hash_combine. */
+template <typename T, typename Hash = std::hash<T> >
+size_t hash_combine(size_t seed, const T & val)
 {
-	const SampleAggregation *agg;
-	Callchain *chain;
+	Hash hash_value;
 
-	AggCallChain(const SampleAggregation * a, Callchain * c)
-	  : agg(a), chain(c)
-	{
-	}
+	seed ^= hash_value(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 
-	bool operator==(const AggCallChain & other) const
-	{
-		return agg == other.agg && chain == other.chain;
-	}
-};
+	return seed;
+}
 
-typedef std::vector<SampleAggregation*> AggregationList;
-typedef std::vector<AggCallChain> CallchainList;
-typedef std::map<TargetAddr, std::unique_ptr<Callframe> > FrameMap;
-typedef std::set<unsigned> LineLocationList;
-typedef std::map<TargetAddr, SharedString> SymbolMap;
-
-#ifdef LOG_ENABLED
-
-#define LOG(args...) \
-	fprintf(stderr, args)
-
-#else
-
-#define LOG(args...)
-
-#endif
-
-#endif
+#endif // HASHUTIL_H

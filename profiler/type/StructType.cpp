@@ -115,5 +115,6 @@ StructType::Hash() const
 bool
 StructType::StructMember::operator ==(const StructMember & other) const
 {
-	return name == other.name && offset == other.offset && type == other.type;
+	return name == other.name && offset == other.offset &&
+	    type.ShallowEquals(other.type);
 }

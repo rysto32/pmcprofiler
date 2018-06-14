@@ -38,6 +38,18 @@ PointerType::EqualsPointer(const PointerType *other) const
 }
 
 bool
+PointerType::ShallowEquals(const TargetType & other) const
+{
+	return other.ShallowEqualsPointer(this);
+}
+
+bool
+PointerType::ShallowEqualsPointer(const PointerType *other) const
+{
+	return &pointeeType == &other->pointeeType;
+}
+
+bool
 PointerType::operator ==(const TargetType & other) const
 {
 	return other.EqualsPointer(this);
@@ -46,5 +58,7 @@ PointerType::operator ==(const TargetType & other) const
 size_t
 PointerType::Hash() const
 {
-	return hash_combine(1, pointeeType);
+	// Hash based on the name of the pointed-to type.  This prevents
+	// infinite recursion when hashing a self-referential type.
+	return hash_combine(1, pointeeType.GetName());
 }

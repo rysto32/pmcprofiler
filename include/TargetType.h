@@ -74,6 +74,9 @@ public:
 	virtual bool EqualsSubroutine(const SubroutineType *) const;
 	virtual bool EqualsUnion(const UnionType *) const;
 
+	virtual bool ShallowEquals(const TargetType &) const;
+	virtual bool ShallowEqualsPointer(const PointerType *) const;
+
 	virtual bool operator==(const TargetType& other) const = 0;
 
 	bool operator!= (const TargetType & other) const

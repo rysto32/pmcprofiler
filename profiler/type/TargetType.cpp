@@ -71,3 +71,15 @@ TargetType::EqualsUnion(const UnionType *) const
 {
 	return false;
 }
+
+bool
+TargetType::ShallowEquals(const TargetType &other) const
+{
+	return *this == other;
+}
+
+bool
+TargetType::ShallowEqualsPointer(const PointerType *) const
+{
+	return false;
+}

@@ -37,6 +37,10 @@ typedef uintptr_t TargetAddr;
 extern bool g_includeTemplates;
 extern bool g_quitOnError;
 
+extern uint32_t g_filterFlags;
+const uint32_t PROFILE_USER = 0x0001;
+const uint32_t PROFILE_KERN = 0x0002;
+
 class Callchain;
 class Callframe;
 class SampleAggregation;

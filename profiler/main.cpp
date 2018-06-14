@@ -56,6 +56,8 @@ bool g_quitOnError = false;
 
 bool g_includeTemplates = false;
 
+uint32_t g_filterFlags = PROFILE_USER | PROFILE_KERN;
+
 FILE * openOutFile(const char * path)
 {
 	FILE * file;
@@ -93,7 +95,7 @@ main(int argc, char *argv[])
 	/* Workaround for libdwarf crash when processing some KLD modules. */
 	//dwarf_set_reloc_application(0);
 
-	while ((ch = getopt(argc, argv, "bf:F:G:lm:o:p:qr:t:T")) != -1) {
+	while ((ch = getopt(argc, argv, "bf:F:G:Klm:o:p:qr:t:TU")) != -1) {
 		switch (ch) {
 			case 'b':
 				printBoring = false;
@@ -108,6 +110,9 @@ main(int argc, char *argv[])
 			case 'G':
 				file = openOutFile(optarg);
 				printers.push_back(std::make_unique<LeafProfilePrinter>(file, threshold, printBoring));
+				break;
+			case 'K':
+				g_filterFlags = PROFILE_KERN;
 				break;
 			case 'l':
 				showlines = true;
@@ -142,6 +147,9 @@ main(int argc, char *argv[])
 				break;
 			case 'T':
 				g_includeTemplates = true;
+				break;
+			case 'U':
+				g_filterFlags = PROFILE_USER;
 				break;
 			case '?':
 			default:

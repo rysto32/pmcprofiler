@@ -93,6 +93,11 @@ Profiler::processEvent(const Sample& sample)
 		return;
 
 	bool kernel = sample.isKernel();
+	if (kernel && !(g_filterFlags & PROFILE_KERN))
+		return;
+	if (!kernel && !(g_filterFlags & PROFILE_USER))
+		return;
+
 	AddressSpace &space = GetAddressSpace(kernel, sample.getProcessID());
 
 	aggFactory.GetAggregation(sample).addSample(space, sample);

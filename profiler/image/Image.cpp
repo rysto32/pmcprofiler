@@ -64,6 +64,16 @@ Image::MapAllFrames()
 }
 
 void
+Image::MapAllTypes(BufferSampleFactory &factory)
+{
+	if (frameMap.empty())
+		return;
+
+	DwarfResolver resolver(imageFile);
+	resolver.ResolveTypes(frameMap, factory);
+}
+
+void
 Image::MapAllAsUnmapped()
 {
 	for (auto & [offset, frame] : frameMap)

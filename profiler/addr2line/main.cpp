@@ -1,6 +1,7 @@
 
 #include "Callframe.h"
 #include "DefaultImageFactory.h"
+#include "DefaultBufferSampleFactory.h"
 #include "Image.h"
 #include "SharedString.h"
 
@@ -25,7 +26,8 @@ main(int argc, char **argv)
 	if (elf_version(EV_CURRENT) == EV_NONE)
 		err(1, "libelf incompatible");
 
-	DefaultImageFactory factory;
+	DefaultBufferSampleFactory bufSampleFactory;
+	DefaultImageFactory factory(bufSampleFactory);
 	Image *image = factory.GetImage(argv[1]);
 	if (image->GetImageFile()->empty())
 		errx(1, "Could not open %s", argv[1]);

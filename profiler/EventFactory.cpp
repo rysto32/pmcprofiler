@@ -81,6 +81,11 @@ EventFactory::createEvents(Profiler& profiler)
 			case PMCLOG_TYPE_PROCFORK:
 			case PMCLOG_TYPE_USERDATA:
 			case PMCLOG_TYPE_SYSEXIT:
+#if __FreeBSD_version > 1200067
+			case PMCLOG_TYPE_THR_CREATE:
+			case PMCLOG_TYPE_THR_EXIT:
+			case PMCLOG_TYPE_PROC_CREATE:
+#endif
 				break;
 
 			case PMCLOG_TYPE_MAP_IN:

@@ -573,6 +573,11 @@ TEST_F(EventFactoryTestSuite, TestUnhandledEvents)
 		AddUnhandledTypeExpectation(cookie, PMCLOG_TYPE_USERDATA);
 		AddUnhandledTypeExpectation(cookie, PMCLOG_TYPE_MAP_OUT);
 		AddUnhandledTypeExpectation(cookie, PMCLOG_TYPE_PMCALLOCATEDYN);
+#if __FreeBSD_version > 1200067
+		AddUnhandledTypeExpectation(cookie, PMCLOG_TYPE_THR_CREATE);
+		AddUnhandledTypeExpectation(cookie, PMCLOG_TYPE_THR_EXIT);
+		AddUnhandledTypeExpectation(cookie, PMCLOG_TYPE_PROC_CREATE);
+#endif
 		AddUnhandledTypeExpectation(cookie, static_cast<pmclog_type>(1000));
 
 		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))

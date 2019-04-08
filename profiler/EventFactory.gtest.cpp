@@ -175,6 +175,7 @@ public:
 	GlobalLibpmcMock libpmcMock;
 	GlobalMock<ProfilerMocker> profilerMock;
 
+#ifdef PMCLOG_TYPE_PCSAMPLE
 	void
 	AddSampleExpectation(void * cookie, bool usermode, pid_t pid, TargetAddr pc)
 	{
@@ -203,6 +204,7 @@ public:
 		    .Times(1);
 
 	}
+#endif
 
 	void
 	AddCallchainExpectation(void * cookie, bool usermode,
@@ -342,6 +344,7 @@ TEST_F(EventFactoryTestSuite, TestEmptyPmclog)
 	EventFactory::createEvents(profiler);
 }
 
+#ifdef PMCLOG_TYPE_PCSAMPLE
 TEST_F(EventFactoryTestSuite, TestSingleSample)
 {
 	Profiler profiler("/root/pmc.log", false, "", asFactory, aggFactory,
@@ -375,6 +378,7 @@ TEST_F(EventFactoryTestSuite, TestSingleSample)
 	EventFactory::createEvents(profiler);
 
 }
+#endif
 
 TEST_F(EventFactoryTestSuite, TestSingleCallchain)
 {
@@ -556,7 +560,9 @@ TEST_F(EventFactoryTestSuite, TestUnhandledEvents)
 		AddUnhandledTypeExpectation(cookie, PMCLOG_TYPE_CLOSELOG);
 		AddUnhandledTypeExpectation(cookie, PMCLOG_TYPE_DROPNOTIFY);
 		AddUnhandledTypeExpectation(cookie, PMCLOG_TYPE_INITIALIZE);
+#ifdef PMCLOG_TYPE_MAPPINGCHANGE
 		AddUnhandledTypeExpectation(cookie, PMCLOG_TYPE_MAPPINGCHANGE);
+#endif
 		AddUnhandledTypeExpectation(cookie, PMCLOG_TYPE_PMCALLOCATE);
 		AddUnhandledTypeExpectation(cookie, PMCLOG_TYPE_PMCATTACH);
 		AddUnhandledTypeExpectation(cookie, PMCLOG_TYPE_PMCDETACH);

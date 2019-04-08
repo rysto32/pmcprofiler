@@ -70,7 +70,9 @@ EventFactory::createEvents(Profiler& profiler)
 			case PMCLOG_TYPE_CLOSELOG:
 			case PMCLOG_TYPE_DROPNOTIFY:
 			case PMCLOG_TYPE_INITIALIZE:
+#ifdef PMCLOG_TYPE_MAPPINGCHANGE
 			case PMCLOG_TYPE_MAPPINGCHANGE:
+#endif
 			case PMCLOG_TYPE_PMCALLOCATE:
 			case PMCLOG_TYPE_PMCATTACH:
 			case PMCLOG_TYPE_PMCDETACH:
@@ -90,9 +92,11 @@ EventFactory::createEvents(Profiler& profiler)
 				/* XXX Should handle this type of event. */
 				break;
 
+#ifdef PMCLOG_TYPE_PCSAMPLE
 			case PMCLOG_TYPE_PCSAMPLE:
 				profiler.processEvent(Sample(pmcEvent.pl_u.pl_s));
 				break;
+#endif
 
 			case PMCLOG_TYPE_CALLCHAIN:
 				profiler.processEvent(Sample(pmcEvent.pl_u.pl_cc));

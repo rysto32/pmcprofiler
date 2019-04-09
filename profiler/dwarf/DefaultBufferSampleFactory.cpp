@@ -111,8 +111,9 @@ DefaultBufferSampleFactory::BuildTypeFromDwarf(Dwarf_Debug dwarf, const DwarfCom
 	case DW_TAG_array_type:
 		return BuildTypeFromArray(dwarf, params, type);
 	case DW_TAG_base_type:
-	case DW_TAG_enumeration_type: // enums can be treated as ints for our purposes
 		return BuildTypeFromBaseType(dwarf, params, type);
+	case DW_TAG_enumeration_type: // enums can be treated as ints for our purposes
+		return BuildTypeFromEnum(dwarf, params, type);
 	case DW_TAG_const_type:
 	case DW_TAG_volatile_type:
 		return BuildTypeFromQualifier(dwarf, params, type);
@@ -186,6 +187,27 @@ std::unique_ptr<TargetType>
 DefaultBufferSampleFactory::BuildTypeFromBaseType(Dwarf_Debug dwarf, const DwarfCompileUnitParams & params, const DwarfDie &type)
 {
 	SharedString typeName = type.GetNameAttr();
+	return BuildNamedBaseType(dwarf, typeName, params, type);
+}
+
+std::unique_ptr<TargetType>
+DefaultBufferSampleFactory::BuildTypeFromEnum(Dwarf_Debug dwarf, const DwarfCompileUnitParams & params, const DwarfDie &type)
+{
+	std::ostringstream typeName;
+
+	if (type.HasNameAttr()) {
+		typeName << "enum " << *type.GetNameAttr();
+	} else {
+		typeName << "anon enum";
+	}
+	return BuildNamedBaseType(dwarf, typeName.str(), params, type);
+}
+
+std::unique_ptr<TargetType>
+DefaultBufferSampleFactory::BuildNamedBaseType(Dwarf_Debug dwarf,
+    SharedString typeName, const DwarfCompileUnitParams & params,
+    const DwarfDie &type)
+{
 	size_t len = type.GetUnsignedAttr(DW_AT_byte_size);
 
 	return std::make_unique<BasicType>(typeName, len);

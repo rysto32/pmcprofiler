@@ -64,6 +64,8 @@ private:
 	    const DwarfCompileUnitParams & params, const DwarfDie &type);
 	std::unique_ptr<TargetType> BuildTypeFromBaseType(Dwarf_Debug dwarf,
 	    const DwarfCompileUnitParams & params, const DwarfDie &type);
+	std::unique_ptr<TargetType> BuildTypeFromEnum(Dwarf_Debug dwarf,
+	    const DwarfCompileUnitParams & params, const DwarfDie &type);
 	std::unique_ptr<TargetType> BuildTypeFromQualifier(Dwarf_Debug dwarf,
 	     const DwarfCompileUnitParams & params, const DwarfDie &type);
 	std::unique_ptr<TargetType> BuiltTypeFromPointerType(Dwarf_Debug dwarf,
@@ -76,6 +78,12 @@ private:
 	    const DwarfCompileUnitParams & params, const DwarfDie &type);
 	std::unique_ptr<TargetType> BuildTypeFromUnion(Dwarf_Debug dwarf,
 	    const DwarfCompileUnitParams & params, const DwarfDie &type);
+
+
+
+	std::unique_ptr<TargetType> BuildNamedBaseType(Dwarf_Debug dwarf,
+	    SharedString name, const DwarfCompileUnitParams & params,
+	    const DwarfDie &type);
 
 	template <typename T>
 	std::unique_ptr<T> BuildStructuredType(Dwarf_Debug dwarf, const DwarfCompileUnitParams & params, const DwarfDie &type);

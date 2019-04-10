@@ -32,6 +32,8 @@
 
 #include <vector>
 
+size_t noDwarf, noText, disassembleFailed, findVarFailed;
+
 void
 TypeProfilePrinter::printProfile(const Profiler & profiler,
     const AggregationList & aggList)
@@ -57,6 +59,8 @@ TypeProfilePrinter::printProfile(const Profiler & profiler,
 			return a->GetTotalSamples() > b->GetTotalSamples();
 		});
 
+	fprintf(m_outfile, "No DWARF: %zd, No .text: %zd, Disassemble Failed: %zd, No Variable: %zd\n",
+	    noDwarf, noText, disassembleFailed, findVarFailed);
 	for (const auto * buffer : bufferList) {
 		fprintf(m_outfile, "%s: %zd samples\n", buffer->GetType().GetName()->c_str(), buffer->GetTotalSamples());
 	}

@@ -497,6 +497,7 @@ DwarfResolver::ResolveTypes(const FrameMap &frames, BufferSampleFactory &factory
 {
 	if (!DwarfValid() || textSection == nullptr) {
 		for (auto & [addr, frame] : frames) {
+			noDwarf++;
 			frame->SetBufferSample(factory.GetUnknownSample(), 0, 1);
 		}
 		return;

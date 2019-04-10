@@ -95,12 +95,11 @@ DefaultBufferSampleFactory::BuildType(Dwarf_Debug dwarf, const DwarfCompileUnitP
 
 	auto it = dieMap.find(dieOff);
 	if (it != dieMap.end()) {
-		fprintf(stderr, "Return cached type %p for %lx\n", it->second, type.GetOffset());
+		//fprintf(stderr, "Return cached type %p for %lx\n", it->second, type.GetOffset());
 		return *it->second;
 	}
 
-	fprintf(stderr, "Build type for %lx\n", type.GetOffset());
-	fflush(stdout);
+	//fprintf(stderr, "Build type for %lx\n", type.GetOffset());
 
 	std::unique_ptr<TargetType> newPtr = BuildTypeFromDwarf(dwarf, params, type);
 
@@ -111,10 +110,9 @@ DefaultBufferSampleFactory::BuildType(Dwarf_Debug dwarf, const DwarfCompileUnitP
 	const TargetType * insertType = inserted.first->first;
 
 	if (inserted.second) {
-		fprintf(stderr, "Built new type %p for %lx (%s)\n", insertType, type.GetOffset(), newPtr->GetName()->c_str());
-		fflush(stdout);
+		//fprintf(stderr, "Built new type %p for %lx (%s)\n", insertType, type.GetOffset(), newPtr->GetName()->c_str());
 	} else {
-		fprintf(stderr, "Return existing type %p for %lx (%s)\n", insertType, type.GetOffset(), newPtr->GetName()->c_str());
+		//fprintf(stderr, "Return existing type %p for %lx (%s)\n", insertType, type.GetOffset(), newPtr->GetName()->c_str());
 	}
 
 	// XXX we hold onto pointers to every copy of a type, in case that another

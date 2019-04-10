@@ -26,8 +26,7 @@
 
 TargetType::~TargetType()
 {
-	printf("Delete type %p (%s)\n", this, GetName()->c_str());
-	fflush(stdout);
+	//fprintf(stderr, "Delete type %p (%s)\n", this, GetName()->c_str());
 }
 
 bool

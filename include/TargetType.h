@@ -47,7 +47,7 @@ public:
 	{
 	}
 
-	virtual ~TargetType() = default;
+	virtual ~TargetType();
 
 	TargetType(const TargetType &) = delete;
 	TargetType(TargetType &&) = delete;
@@ -76,6 +76,7 @@ public:
 
 	virtual bool ShallowEquals(const TargetType &) const;
 	virtual bool ShallowEqualsPointer(const PointerType *) const;
+	virtual bool ShallowEqualsTypedef(const TypedefType *) const;
 
 	virtual bool operator==(const TargetType& other) const = 0;
 

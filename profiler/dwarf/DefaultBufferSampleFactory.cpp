@@ -38,7 +38,9 @@
 #include "DwarfException.h"
 #include "DwarfLocList.h"
 
-#include  "BufferSample.h"
+#include "BufferSample.h"
+
+#include <sstream>
 
 #include <dwarf.h>
 #include <err.h>
@@ -81,8 +83,12 @@ DefaultBufferSampleFactory::BuildType(Dwarf_Debug dwarf, const DwarfCompileUnitP
 
 	auto it = dieMap.find(dieOff);
 	if (it != dieMap.end()) {
+		fprintf(stderr, "Return cached type %p for %lx\n", it->second, type.GetOffset());
 		return *it->second;
 	}
+
+	fprintf(stderr, "Build type for %lx\n", type.GetOffset());
+	fflush(stdout);
 
 	std::unique_ptr<TargetType> newPtr = BuildTypeFromDwarf(dwarf, params, type);
 
@@ -90,14 +96,19 @@ DefaultBufferSampleFactory::BuildType(Dwarf_Debug dwarf, const DwarfCompileUnitP
 	// going to need one (we might only be instantiating this type because it's embedded
 	// in another type).  We'll allocate one in GetSample() on-demand.
 	auto inserted = sampleMap.insert(std::make_pair(newPtr.get(), nullptr));
+	const TargetType * insertType = inserted.first->first;
 
-	// If the insert succeeded then hold on to the unique_ptr to ensure that it's not
-	// freed when we return.
 	if (inserted.second) {
-		typeList.push_back(std::move(newPtr));
+		fprintf(stderr, "Built new type %p for %lx (%s)\n", insertType, type.GetOffset(), newPtr->GetName()->c_str());
+		fflush(stdout);
+	} else {
+		fprintf(stderr, "Return existing type %p for %lx (%s)\n", insertType, type.GetOffset(), newPtr->GetName()->c_str());
 	}
 
-	const TargetType * insertType = inserted.first->first;
+	// XXX we hold onto pointers to every copy of a type, in case that another
+	// type get a reference to it.  We need to find out a way to mitigate
+	// duplication
+	typeList.push_back(std::move(newPtr));
 	dieMap.insert(std::make_pair(dieOff, insertType));
 	return *insertType;
 }
@@ -218,8 +229,10 @@ DefaultBufferSampleFactory::BuildTypeFromQualifier(Dwarf_Debug dwarf,
     const DwarfCompileUnitParams & params, const DwarfDie &type)
 {
 	DwarfDie subdie = GetTypeDie(dwarf, type);
-	if (!subdie)
-		throw DwarfException("Could not get DIE of type");
+	if (!subdie) {
+		// No die for the type indicates a void type
+		return std::make_unique<BasicType>("void", 1);
+	}
 
 	// We just strip const from the type as we don't care.
 	return BuildTypeFromDwarf(dwarf, params, subdie);

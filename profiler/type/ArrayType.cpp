@@ -32,7 +32,7 @@ ArrayType::GetName(const TargetType &type, size_t members)
 {
 	std::ostringstream str;
 
-	str << *type.GetName() << "[" << members << "}";
+	str << *type.GetName() << "[" << members << "]";
 
 	return str.str();
 }

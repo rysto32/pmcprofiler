@@ -34,6 +34,8 @@ public:
 	TypedefType(SharedString name, const TargetType & type);
 
 	bool operator==(const TargetType &) const final override;
+	bool ShallowEquals(const TargetType & ) const final override;
+	bool ShallowEqualsTypedef(const TypedefType * ) const final override;
 	bool EqualsTypedef(const TypedefType *) const final override;
 	size_t Hash() const final override;
 };

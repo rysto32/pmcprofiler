@@ -61,6 +61,9 @@ StructType::AddAccess(size_t offset, size_t size, size_t samples)
 void
 StructType::AddMember(SharedString member, size_t offset, const TargetType &type)
 {
+	fprintf(stderr, "%s: Add member %s of type %s (%p) at offset %zx\n",
+	    GetName()->c_str(), member->c_str(), type.GetName()->c_str(),
+	    &type, offset);
 #ifndef NDEBUG
 	if (!members.empty()) {
 		const StructMember & mem = members.back();
@@ -68,7 +71,6 @@ StructType::AddMember(SharedString member, size_t offset, const TargetType &type
 		assert ((mem.offset + mem.type.GetSize()) <= offset);
 	}
 #endif
-
 	members.emplace_back(member, offset, type);
 }
 
@@ -106,6 +108,8 @@ StructType::Hash() const
 	for (auto & member : members) {
 		val = hash_combine(val, member.name);
 		val = hash_combine(val, member.offset);
+		val = hash_combine(val, member.bitSize);
+		val = hash_combine(val, member.bitOffset);
 		val = hash_combine(val, member.type);
 	}
 

@@ -34,16 +34,23 @@ private:
 	struct StructMember {
 		SharedString name;
 		size_t offset;
+		size_t bitOffset;
+		size_t bitSize;
 		const TargetType &type;
 
-		StructMember(SharedString n, size_t o, const TargetType & t)
-		  : name(n), offset(o), type(t)
+		StructMember(SharedString n, size_t o, size_t bitOff,
+		    size_t bitSz, const TargetType & t)
+		  : name(n),
+		    offset(o),
+		    bitOffset(bitOff),
+		    bitSize(bitSz),
+		    type(t)
 		{
 		}
 
 		bool operator==(const StructMember &) const;
 
-		bool operator!=(const StructMember & other) const
+		inline bool operator!=(const StructMember & other) const
 		{
 			return !(*this == other);
 		}

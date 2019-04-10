@@ -87,9 +87,11 @@ SubroutineType::EqualsSubroutine(const SubroutineType *other) const
 	auto myIt = argTypes.begin();
 	auto otIt = other->argTypes.begin();
 
-	while (myIt != argTypes.end()) {
+	while (myIt != argTypes.end() && otIt != other->argTypes.end()) {
 		if (**myIt != **otIt)
 			return false;
+		++myIt;
+		++otIt;
 	}
 
 	return true;

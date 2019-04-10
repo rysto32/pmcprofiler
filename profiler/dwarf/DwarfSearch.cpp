@@ -256,6 +256,7 @@ DwarfSearch::MapSubprogramTypes(BufferSampleFactory & factory, Elf_Scn *textSect
 
 	if (textData == nullptr) {
 		for (Callframe * fr : frameList) {
+			noText++;
 			fr->SetBufferSample(factory.GetUnknownSample(), 0, 1);
 		}
 		return;
@@ -268,6 +269,7 @@ DwarfSearch::MapSubprogramTypes(BufferSampleFactory & factory, Elf_Scn *textSect
 	for (Callframe * frame : frameList) {
 		MemoryOffset off(disasm.GetInsnOffset(frame->getOffset()));
 		if (!off.IsDefined()) {
+			disassembleFailed++;
 			frame->SetBufferSample(factory.GetUnknownSample(), 0, 1);
 			continue;
 		}
@@ -275,6 +277,7 @@ DwarfSearch::MapSubprogramTypes(BufferSampleFactory & factory, Elf_Scn *textSect
 		DwarfDie typeDie = vars.FindRegType(off.GetReg(), frame->getOffset());
 
 		if (!typeDie) {
+			findVarFailed++;
 			frame->SetBufferSample(factory.GetUnknownSample(), 0, 1);
 			continue;
 		}

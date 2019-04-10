@@ -54,7 +54,7 @@ TypeProfilePrinter::printProfile(const Profiler & profiler,
 	std::sort(bufferList.begin(), bufferList.end(),
 		[](const BufferSample *a, const BufferSample *b)
 		{
-			return a->GetTotalSamples() - b->GetTotalSamples();
+			return a->GetTotalSamples() > b->GetTotalSamples();
 		});
 
 	for (const auto * buffer : bufferList) {

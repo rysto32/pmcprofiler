@@ -24,6 +24,12 @@
 
 #include "TargetType.h"
 
+TargetType::~TargetType()
+{
+	printf("Delete type %p (%s)\n", this, GetName()->c_str());
+	fflush(stdout);
+}
+
 bool
 TargetType::EqualsArray(const ArrayType *) const
 {
@@ -80,6 +86,12 @@ TargetType::ShallowEquals(const TargetType &other) const
 
 bool
 TargetType::ShallowEqualsPointer(const PointerType *) const
+{
+	return false;
+}
+
+bool
+TargetType::ShallowEqualsTypedef(const TypedefType * ) const
 {
 	return false;
 }

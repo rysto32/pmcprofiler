@@ -38,6 +38,18 @@ TypedefType::operator==(const TargetType &other) const
 	return other.EqualsTypedef(this);
 }
 
+bool
+TypedefType::ShallowEquals(const TargetType & other) const
+{
+	return other.ShallowEqualsTypedef(this);
+}
+
+bool
+TypedefType::ShallowEqualsTypedef(const TypedefType * other) const
+{
+	return GetName() == other->GetName() && type.ShallowEquals(other->type);
+}
+
 bool TypedefType::EqualsTypedef(const TypedefType *other) const
 {
 	return GetName() == other->GetName() && type == other->type;

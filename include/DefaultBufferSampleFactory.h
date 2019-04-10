@@ -109,6 +109,8 @@ public:
 
 	BufferSample * GetSample(Dwarf_Debug dwarf, const DwarfCompileUnitParams & params, const DwarfDie & type) final override;
 	BufferSample * GetUnknownSample() final override;
+
+	void GetSamples(std::vector<BufferSample*> & list) const override;
 };
 
 #endif // DEFAULTDWARFTYPEFACTORY_H

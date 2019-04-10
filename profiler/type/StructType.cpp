@@ -26,6 +26,8 @@
 #include "HashUtil.h"
 #include "MapUtil.h"
 
+#include <err.h>
+
 StructType::StructType(SharedString tag, size_t size)
   : TargetType("struct " + *tag, size)
 {
@@ -68,10 +70,14 @@ StructType::AddMember(SharedString member, size_t offset, const TargetType &type
 	if (!members.empty()) {
 		const StructMember & mem = members.back();
 
-		assert ((mem.offset + mem.type.GetSize()) <= offset);
+		//assert ((mem.offset + mem.type.GetSize()) <= offset);
+		if (!((mem.offset + mem.type.GetSize()) <= offset)) {
+			warnx("%s: skipped bitfield %s", GetName()->c_str(),
+			    member->c_str());
+		}
 	}
 #endif
-	members.emplace_back(member, offset, type);
+	members.emplace_back(member, offset, 0, 0, type);
 }
 
 bool

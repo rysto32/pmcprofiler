@@ -33,6 +33,9 @@ UnionType::UnionType(SharedString tag, size_t size)
 void
 UnionType::AddMember(SharedString name, size_t, const TargetType & t)
 {
+	fprintf(stderr, "%s: Add member %s of type %s (%p)\n",
+	    GetName()->c_str(), name->c_str(), t.GetName()->c_str(),
+	    &t);
 	members.emplace_back(name, t);
 }
 
@@ -64,5 +67,5 @@ UnionType::Hash() const
 bool
 UnionType::UnionMember::operator==(const UnionMember & other) const
 {
-	return name == other.name && type == other.type;
+	return name == other.name && type.ShallowEquals(other.type);
 }

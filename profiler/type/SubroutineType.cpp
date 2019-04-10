@@ -75,7 +75,7 @@ SubroutineType::EqualsSubroutine(const SubroutineType *other) const
 	}
 
 	if (returnType != nullptr) {
-		if (*returnType != *other->returnType)
+		if (!returnType->ShallowEquals(*other->returnType))
 			return false;
 	} else {
 		assert (other->returnType == nullptr);
@@ -88,7 +88,7 @@ SubroutineType::EqualsSubroutine(const SubroutineType *other) const
 	auto otIt = other->argTypes.begin();
 
 	while (myIt != argTypes.end() && otIt != other->argTypes.end()) {
-		if (**myIt != **otIt)
+		if (!(*myIt)->ShallowEquals(**otIt))
 			return false;
 		++myIt;
 		++otIt;

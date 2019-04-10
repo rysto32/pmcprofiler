@@ -33,6 +33,7 @@ class BufferSample
 	std::vector<size_t> samples;
 	const TargetType & type;
 	size_t unknownSamples;
+	size_t totalSamples;
 
 public:
 	BufferSample(const TargetType &);
@@ -42,6 +43,11 @@ public:
 	const TargetType & GetType() const
 	{
 		return type;
+	}
+
+	size_t GetTotalSamples() const
+	{
+		return totalSamples;
 	}
 };
 

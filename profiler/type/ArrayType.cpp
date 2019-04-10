@@ -86,6 +86,19 @@ ArrayType::EqualsArray(const ArrayType *other) const
 	return type == other->type && numMembers == other->numMembers;
 }
 
+bool
+ArrayType::ShallowEquals(const TargetType & other) const
+{
+	return other.ShallowEqualsArray(this);
+}
+
+bool
+ArrayType::ShallowEqualsArray(const ArrayType * other) const
+{
+	return type.ShallowEquals(other->type)
+	    && numMembers == other->numMembers;
+}
+
 size_t
 ArrayType::Hash() const
 {

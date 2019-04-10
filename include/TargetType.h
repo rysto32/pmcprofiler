@@ -75,6 +75,7 @@ public:
 	virtual bool EqualsUnion(const UnionType *) const;
 
 	virtual bool ShallowEquals(const TargetType &) const;
+	virtual bool ShallowEqualsArray(const ArrayType *) const;
 	virtual bool ShallowEqualsPointer(const PointerType *) const;
 	virtual bool ShallowEqualsTypedef(const TypedefType *) const;
 

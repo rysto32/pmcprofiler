@@ -4,6 +4,8 @@ LIB :=	printers
 SRCS := \
 	CallchainProfilePrinter.cpp \
 	ProfilePrinter.cpp \
+	TypeProfilePrinter.cpp \
+
 
 TESTS := \
 	ProfilePrinter \

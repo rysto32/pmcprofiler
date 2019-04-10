@@ -32,6 +32,7 @@ __FBSDID("$FreeBSD$");
 #include "Profiler.h"
 #include "ProfilePrinter.h"
 #include "CallchainProfilePrinter.h"
+#include "TypeProfilePrinter.h"
 #include "SharedString.h"
 
 #include "llvm/Support/TargetSelect.h"
@@ -102,8 +103,9 @@ main(int argc, char *argv[])
 
 	/* Workaround for libdwarf crash when processing some KLD modules. */
 	//dwarf_set_reloc_application(0);
+	DefaultBufferSampleFactory bufFactory;
 
-	while ((ch = getopt(argc, argv, "bf:F:G:Klm:o:p:qr:t:TU")) != -1) {
+	while ((ch = getopt(argc, argv, "bf:F:G:Klm:o:p:qr:t:TUY:")) != -1) {
 		switch (ch) {
 			case 'b':
 				printBoring = false;
@@ -159,6 +161,10 @@ main(int argc, char *argv[])
 			case 'U':
 				g_filterFlags = PROFILE_USER;
 				break;
+			case 'Y':
+				file = openOutFile(optarg);
+				printers.push_back(std::make_unique<TypeProfilePrinter>(file, bufFactory));
+				break;
 			case '?':
 			default:
 				usage();
@@ -172,7 +178,6 @@ main(int argc, char *argv[])
 		printers.push_back(std::make_unique<FlatProfilePrinter>(stdout));
 
 	DefaultCallchainFactory ccFactory;
-	DefaultBufferSampleFactory bufFactory;
 	DefaultImageFactory imgFactory(bufFactory);
 	DefaultAddressSpaceFactory asFactory(imgFactory);
 	DefaultSampleAggregationFactory aggFactory(ccFactory);

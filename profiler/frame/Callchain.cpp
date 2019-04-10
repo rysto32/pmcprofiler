@@ -61,6 +61,12 @@ Callchain::getLeafFrame() const
 	return callframes.front().frame.getInlineFrames().front();
 }
 
+const Callframe&
+Callchain::getLeafCallframe() const
+{
+	return callframes.front().frame;
+}
+
 bool
 Callchain::isMapped() const
 {

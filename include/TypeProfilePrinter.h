@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Ryan Stone.
+// Copyright (c) 2019 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,83 +21,28 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
+#ifndef TYPE_PROFILE_PRINTER_H
+#define TYPE_PROFILE_PRINTER_H
 
-#include "TargetType.h"
+#include "ProfilePrinter.h"
 
-TargetType::~TargetType()
+#include <stdio.h>
+
+class BufferSampleFactory;
+
+class TypeProfilePrinter : public ProfilePrinter
 {
-	printf("Delete type %p (%s)\n", this, GetName()->c_str());
-	fflush(stdout);
-}
+private:
+	const BufferSampleFactory &sampleFactory;
 
-bool
-TargetType::EqualsArray(const ArrayType *) const
-{
-	return false;
-}
+public:
+	TypeProfilePrinter(FILE * file, BufferSampleFactory &f)
+	  : ProfilePrinter(file), sampleFactory(f)
+	{
+	}
 
-bool
-TargetType::EqualsBasic(const BasicType *) const
-{
-	return false;
-}
+	virtual void printProfile(const Profiler & profiler,
+	    const AggregationList & aggList) override;
+};
 
-bool
-TargetType::EqualsPadding(const PaddingType *) const
-{
-	return false;
-}
-
-bool
-TargetType::EqualsPointer(const PointerType *) const
-{
-	return false;
-}
-
-bool
-TargetType::EqualsTypedef(const TypedefType *) const
-{
-	return false;
-}
-
-bool
-TargetType::EqualsStruct(const StructType *) const
-{
-	return false;
-}
-
-bool
-TargetType::EqualsSubroutine(const SubroutineType *) const
-{
-	return false;
-}
-
-bool
-TargetType::EqualsUnion(const UnionType *) const
-{
-	return false;
-}
-
-bool
-TargetType::ShallowEquals(const TargetType &other) const
-{
-	return *this == other;
-}
-
-bool
-TargetType::ShallowEqualsArray(const ArrayType *) const
-{
-	return false;
-}
-
-bool
-TargetType::ShallowEqualsPointer(const PointerType *) const
-{
-	return false;
-}
-
-bool
-TargetType::ShallowEqualsTypedef(const TypedefType * ) const
-{
-	return false;
-}
+#endif

@@ -57,6 +57,15 @@ DefaultBufferSampleFactory::~DefaultBufferSampleFactory()
 
 }
 
+void
+DefaultBufferSampleFactory::GetSamples(std::vector<BufferSample*> & list) const
+{
+	for (const auto & [type, sample] : sampleMap) {
+		if (sample)
+			list.push_back(sample.get());
+	}
+}
+
 BufferSample *
 DefaultBufferSampleFactory::GetSample(Dwarf_Debug dwarf, const DwarfCompileUnitParams &params, const DwarfDie &typeDie)
 {
@@ -185,11 +194,21 @@ DefaultBufferSampleFactory::BuildTypeFromArray(Dwarf_Debug dwarf, const DwarfCom
 		errx(1, "Array starts at unexpected index %d", lowerBound);
 	}
 
-	size_t numElems = numElemsDie.GetUnsignedAttr(DW_AT_count);
+
+	size_t numElems;
+	if (numElemsDie.HasAttr(DW_AT_count)) {
+		numElems = numElemsDie.GetUnsignedAttr(DW_AT_count);
+	} else {
+		// flexible array member
+		numElems = 0;
+	}
 
 	++listIt;
-	if (listIt != list.end())
-		errx(1, "Expected only one child");
+	if (listIt != list.end()) {
+		//XXX
+		warnx("Not handling multi-dimensional array at die %lx", listIt.Get().GetOffset());
+		//errx(1, "Expected only one child");
+	}
 
 	return std::make_unique<ArrayType>(BuildType(dwarf, params, subdie), numElems);
 }
@@ -344,7 +363,13 @@ DefaultBufferSampleFactory::BuildStructuredType(Dwarf_Debug dwarf, const DwarfCo
 		if (member.GetTag() != DW_TAG_member)
 			continue;
 
-		SharedString memberName = member.GetNameAttr();
+		SharedString memberName;
+		if (member.HasNameAttr()) {
+			memberName = member.GetNameAttr();
+		} else {
+			// Anonymous member.
+			memberName = "";
+		}
 		size_t memberOff = GetMemberOffset(dwarf, member);
 		DwarfDie memberTypeDie = GetTypeDie(dwarf, member);
 		const TargetType & memberType = BuildType(dwarf, params, memberTypeDie);

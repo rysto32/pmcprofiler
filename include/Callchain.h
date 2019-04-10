@@ -93,6 +93,7 @@ public:
 	bool isMapped() const;
 
 	const InlineFrame & getLeafFrame() const;
+	const Callframe & getLeafCallframe() const;
 
 	void flatten(std::vector<const InlineFrame*> &) const;
 };

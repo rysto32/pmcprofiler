@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Ryan Stone.
+// Copyright (c) 2019 Ryan Stone.  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -21,83 +21,43 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
+#include "TypeProfilePrinter.h"
 
+#include "BufferSample.h"
+#include "BufferSampleFactory.h"
+#include "Callchain.h"
+#include "Callframe.h"
+#include "SampleAggregation.h"
 #include "TargetType.h"
 
-TargetType::~TargetType()
-{
-	printf("Delete type %p (%s)\n", this, GetName()->c_str());
-	fflush(stdout);
-}
+#include <vector>
 
-bool
-TargetType::EqualsArray(const ArrayType *) const
+void
+TypeProfilePrinter::printProfile(const Profiler & profiler,
+    const AggregationList & aggList)
 {
-	return false;
-}
+	CallchainList callchainList;
+	for (const auto & agg : aggList) {
+		agg->getCallchainList(callchainList);
+	}
 
-bool
-TargetType::EqualsBasic(const BasicType *) const
-{
-	return false;
-}
+	for (const auto & chainRec : callchainList) {
+		auto chain = chainRec.chain;
+		auto & frame = chain->getLeafCallframe();
 
-bool
-TargetType::EqualsPadding(const PaddingType *) const
-{
-	return false;
-}
+		frame.AddTypeSample(chain->getSampleCount());
+	}
 
-bool
-TargetType::EqualsPointer(const PointerType *) const
-{
-	return false;
-}
+	std::vector<BufferSample*> bufferList;
+	sampleFactory.GetSamples(bufferList);
 
-bool
-TargetType::EqualsTypedef(const TypedefType *) const
-{
-	return false;
-}
+	std::sort(bufferList.begin(), bufferList.end(),
+		[](const BufferSample *a, const BufferSample *b)
+		{
+			return a->GetTotalSamples() - b->GetTotalSamples();
+		});
 
-bool
-TargetType::EqualsStruct(const StructType *) const
-{
-	return false;
-}
-
-bool
-TargetType::EqualsSubroutine(const SubroutineType *) const
-{
-	return false;
-}
-
-bool
-TargetType::EqualsUnion(const UnionType *) const
-{
-	return false;
-}
-
-bool
-TargetType::ShallowEquals(const TargetType &other) const
-{
-	return *this == other;
-}
-
-bool
-TargetType::ShallowEqualsArray(const ArrayType *) const
-{
-	return false;
-}
-
-bool
-TargetType::ShallowEqualsPointer(const PointerType *) const
-{
-	return false;
-}
-
-bool
-TargetType::ShallowEqualsTypedef(const TypedefType * ) const
-{
-	return false;
+	for (const auto * buffer : bufferList) {
+		fprintf(m_outfile, "%s: %zd samples\n", buffer->GetType().GetName()->c_str(), buffer->GetTotalSamples());
+	}
 }

@@ -74,7 +74,7 @@ public:
 	DwarfDieRanges(Dwarf_Debug dwarf, Dwarf_Die die, const DwarfCompileUnitDie &);
 
 	DwarfDieRanges(DwarfDieRanges &&) noexcept = default;
-	DwarfDieRanges & operator=(DwarfDieRanges &&) = default;
+	DwarfDieRanges & operator=(DwarfDieRanges &&) = delete;
 
 	DwarfDieRanges(const DwarfDieRanges &) = delete;
 	DwarfDieRanges & operator=(const DwarfDieRanges &) = delete;

@@ -1,7 +1,7 @@
 
-CC=clang60
-CXX=clang++60
-LD=clang++60
+CC=clang-devel
+CXX=clang++-devel
+LD=clang++-devel
 
 #CWARNFLAGS.gcc += -Wno-expansion-to-defined -Wno-extra -Wno-unused-but-set-variable
 

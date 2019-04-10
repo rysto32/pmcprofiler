@@ -26,6 +26,8 @@
 
 #include <libdwarf.h>
 
+#include <vector>
+
 class BufferSample;
 class DwarfCompileUnitParams;
 class DwarfDie;
@@ -37,6 +39,8 @@ public:
 	    const DwarfCompileUnitParams & params, const DwarfDie & type) = 0;
 
 	virtual BufferSample * GetUnknownSample() = 0;
+
+	virtual void GetSamples(std::vector<BufferSample*> & list) const = 0;
 };
 
 #endif // DWARFTYPEFACTORY_H

@@ -97,6 +97,11 @@ public:
 	{
 		abort();
 	}
+
+	virtual void GetSamples(std::vector<BufferSample*> & list) const
+	{
+		abort();
+	}
 };
 
 void dwarf_dealloc(Dwarf_Debug, Dwarf_Ptr, Dwarf_Unsigned) {}

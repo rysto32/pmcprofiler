@@ -35,6 +35,9 @@ BufferSample::BufferSample(const TargetType & type)
 void
 BufferSample::AddSamples(size_t offset, size_t width, size_t numSamples)
 {
+
+	totalSamples += numSamples;
+
 	for (size_t i = 0; i < width; ++i) {
 		size_t byteOff = offset + i;
 		if (byteOff >= samples.size()) {

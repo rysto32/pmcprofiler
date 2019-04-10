@@ -23,6 +23,7 @@
 
 #include "Callframe.h"
 
+#include "BufferSample.h"
 #include "InlineFrame.h"
 #include "SharedString.h"
 
@@ -58,11 +59,22 @@ Callframe::setUnmapped()
 }
 
 void
-Callframe::SetBufferSample(const BufferSample *s, size_t offset, size_t width)
+Callframe::SetBufferSample(BufferSample *s, size_t offset, size_t width)
 {
 	assert (bufferSample == nullptr);
 
 	bufferSample = s;
 	bufferOffset = offset;
 	bufferWidth = width;
+}
+
+void
+Callframe::AddTypeSample(size_t count) const
+{
+	//assert (bufferSample != nullptr);
+	//XXX
+	if (bufferSample == nullptr)
+		return;
+
+	bufferSample->AddSamples(count, bufferOffset, bufferWidth);
 }

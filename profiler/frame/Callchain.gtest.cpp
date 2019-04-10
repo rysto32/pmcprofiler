@@ -23,6 +23,7 @@
 
 #include "Callchain.h"
 
+#include "BufferSample.h"
 #include "Callframe.h"
 #include "CallframeMapper.h"
 #include "InlineFrame.h"

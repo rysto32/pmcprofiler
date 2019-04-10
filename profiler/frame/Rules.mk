@@ -15,6 +15,7 @@ TESTS := \
 	InlineFrame \
 
 TEST_CALLCHAIN_SRCS := \
+	BufferSample.cpp \
 	Callchain.cpp \
 	Callframe.cpp \
 
@@ -25,6 +26,7 @@ TEST_CALLCHAIN_STDLIBS := \
 	gmock \
 
 TEST_CALLFRAME_SRCS := \
+	BufferSample.cpp \
 	Callframe.cpp \
 
 TEST_CALLFRAME_LIBS := \

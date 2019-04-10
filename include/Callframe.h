@@ -39,7 +39,7 @@ class Callframe
 	std::vector<InlineFrame> inlineFrames;
 	bool unmapped;
 
-	const BufferSample * bufferSample;
+	BufferSample * bufferSample;
 	size_t bufferOffset;
 	size_t bufferWidth;
 
@@ -57,7 +57,9 @@ public:
 	    uint64_t dwarfDieOffset);
 	void setUnmapped();
 
-	void SetBufferSample(const BufferSample *, size_t, size_t);
+	void SetBufferSample(BufferSample *, size_t, size_t);
+	void AddTypeSample(size_t count) const;
+
 
 	TargetAddr getOffset() const
 	{

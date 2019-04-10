@@ -55,6 +55,7 @@ private:
 	TypeList typeList;
 
 	BasicType voidType;
+	BasicType unknownType;
 	std::unique_ptr<BufferSample> defaultSample;
 
 	const TargetType & BuildType(Dwarf_Debug dwarf, const DwarfCompileUnitParams & params, const DwarfDie & type);

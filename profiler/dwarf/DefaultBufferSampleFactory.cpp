@@ -47,7 +47,8 @@
 
 DefaultBufferSampleFactory::DefaultBufferSampleFactory()
   : voidType("void", 1),
-    defaultSample(std::make_unique<BufferSample>(voidType))
+    unknownType("unknown", 0),
+    defaultSample(std::make_unique<BufferSample>(unknownType))
 {
 
 }
@@ -64,6 +65,8 @@ DefaultBufferSampleFactory::GetSamples(std::vector<BufferSample*> & list) const
 		if (sample)
 			list.push_back(sample.get());
 	}
+
+	list.push_back(defaultSample.get());
 }
 
 BufferSample *

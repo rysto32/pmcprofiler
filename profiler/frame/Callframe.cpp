@@ -59,12 +59,12 @@ Callframe::setUnmapped()
 }
 
 void
-Callframe::SetBufferSample(BufferSample *s, size_t offset, size_t width)
+Callframe::SetBufferSample(BufferSample *s, size_t off, size_t width)
 {
 	assert (bufferSample == nullptr);
 
 	bufferSample = s;
-	bufferOffset = offset;
+	bufferOffset = off;
 	bufferWidth = width;
 }
 
@@ -76,5 +76,5 @@ Callframe::AddTypeSample(size_t count) const
 	if (bufferSample == nullptr)
 		return;
 
-	bufferSample->AddSamples(count, bufferOffset, bufferWidth);
+	bufferSample->AddSamples(bufferOffset, bufferWidth, count);
 }

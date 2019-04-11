@@ -41,6 +41,11 @@ public:
 	size_t Hash() const final override;
 
 	void Accept(TypeVisitor & ) const override;
+
+	const TargetType & GetPointeeType() const
+	{
+		return pointeeType;
+	}
 };
 
 #endif // POINTERTYPE_H

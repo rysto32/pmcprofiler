@@ -69,6 +69,26 @@ public:
 	size_t Hash() const override final;
 
 	void Accept(TypeVisitor & ) const override;
+
+	size_t GetNumMembers() const
+	{
+		return members.size();
+	}
+
+	SharedString GetMemberName(size_t i) const
+	{
+		return members.at(i).name;
+	}
+
+	const TargetType & GetMemberType(size_t i) const
+	{
+		return members.at(i).type;
+	}
+
+	size_t GetMemberOffset(size_t i) const
+	{
+		return members.at(i).offset;
+	}
 };
 
 #endif // STRUCTTYPE_H

@@ -47,6 +47,16 @@ public:
 	size_t Hash() const final;
 
 	void Accept(TypeVisitor & ) const override;
+
+	const TargetType & GetMemberType() const
+	{
+		return type;
+	}
+
+	size_t GetNumMembers() const
+	{
+		return numMembers;
+	}
 };
 
 #endif // ARRAYTYPE_H

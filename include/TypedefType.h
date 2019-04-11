@@ -40,6 +40,11 @@ public:
 	size_t Hash() const final override;
 
 	void Accept(TypeVisitor & ) const override;
+
+	const TargetType & GetUnderlyingType() const
+	{
+		return type;
+	}
 };
 
 #endif // TYPEDEFTYPE_H

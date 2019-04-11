@@ -26,6 +26,7 @@
 #include "DwarfException.h"
 
 #include <err.h>
+#include "llvm/Support/raw_ostream.h"
 
 Disassembler::Disassembler(const GElf_Shdr &textHdr, Elf_Data *data)
   : llvmTripleStr(llvm::sys::getDefaultTargetTriple()), // XXX get triple for target
@@ -57,6 +58,15 @@ Disassembler::Disassembler(const GElf_Shdr &textHdr, Elf_Data *data)
 
 	// Set up the MCContext for creating symbols and MCExpr's.
 	ctx = std::make_unique<llvm::MCContext>(mai.get(), mri.get(), nullptr);
+
+	mcii = std::unique_ptr<llvm::MCInstrInfo>(target->createMCInstrInfo());
+	if (!mcii)
+		throw DwarfException("error: no instr info");
+
+	mcip = std::unique_ptr<llvm::MCInstPrinter>(target->createMCInstPrinter(TheTriple, mai->getAssemblerDialect(),
+	    *mai, *mcii, *mri));
+	if (!mcip)
+		throw DwarfException("error: no instr printer");
 
 	disasm = std::unique_ptr<const llvm::MCDisassembler>(target->createMCDisassembler(*sti, *ctx));
 	if (!disasm)
@@ -99,9 +109,11 @@ Disassembler::DecodeInst()
 {
 	if (inst.getOpcode() == 2227) {
 		// pop
+		fprintf(stderr, "Unhandled pop\n");
 		return MemoryOffset();
 	} else if (inst.getOpcode() == 2349) {
 		// push
+		fprintf(stderr, "Unhandled push\n");
 		return MemoryOffset();
 	}
 	// All instructions with memory operands use 6 MCOperands
@@ -124,6 +136,12 @@ Disassembler::DecodeInst()
 		}
 	}
 
+	std::string str;
+	llvm::raw_string_ostream os(str);
+
+	inst.dump_pretty(os, mcip.get());
+
+	fprintf(stderr, "Unhandled opcode %d (%s)\n", inst.getOpcode(), os.str().c_str());
 	return MemoryOffset();
 }
 

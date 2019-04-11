@@ -32,7 +32,7 @@
 
 #include <vector>
 
-size_t noDwarf, noText, disassembleFailed, findVarFailed;
+size_t noDwarf, noText, disassembleFailed, findRegFailed, findVarFailed;
 
 void
 TypeProfilePrinter::printProfile(const Profiler & profiler,
@@ -59,8 +59,8 @@ TypeProfilePrinter::printProfile(const Profiler & profiler,
 			return a->GetTotalSamples() > b->GetTotalSamples();
 		});
 
-	fprintf(m_outfile, "No DWARF: %zd, No .text: %zd, Disassemble Failed: %zd, No Variable: %zd\n",
-	    noDwarf, noText, disassembleFailed, findVarFailed);
+	fprintf(m_outfile, "No DWARF: %zd, No .text: %zd, Disassemble Failed: %zd, No Register: %zd, No Variable: %zd\n",
+	    noDwarf, noText, disassembleFailed, findRegFailed, findVarFailed);
 	for (const auto * buffer : bufferList) {
 		fprintf(m_outfile, "%s: %zd samples\n", buffer->GetType().GetName()->c_str(), buffer->GetTotalSamples());
 	}

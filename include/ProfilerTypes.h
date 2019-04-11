@@ -41,7 +41,7 @@ extern uint32_t g_filterFlags;
 const uint32_t PROFILE_USER = 0x0001;
 const uint32_t PROFILE_KERN = 0x0002;
 
-extern size_t noDwarf, noText, disassembleFailed, findVarFailed;
+extern size_t noDwarf, noText, disassembleFailed, findRegFailed, findVarFailed;
 
 class Callchain;
 class Callframe;

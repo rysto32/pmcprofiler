@@ -26,8 +26,7 @@
 #include "TargetType.h"
 
 BufferSample::BufferSample(const TargetType & type)
-  : samples(type.GetSize(), 0),
-    type(type),
+  : type(type),
     unknownSamples(0),
     totalSamples(0),
     firstAccessOffset(0)
@@ -40,13 +39,11 @@ BufferSample::AddSamples(size_t offset, size_t width, size_t numSamples)
 
 	totalSamples += numSamples;
 
+	if ((offset + width) > samples.size())
+		samples.resize(offset + width, 0);
+
 	for (size_t i = 0; i < width; ++i) {
-		size_t byteOff = offset + i;
-		if (byteOff >= samples.size()) {
-			unknownSamples += numSamples;
-			return;
-		}
-		samples.at(byteOff) += numSamples;
+		samples.at(offset + i) += numSamples;
 	}
 }
 

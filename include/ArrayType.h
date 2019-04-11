@@ -45,6 +45,8 @@ public:
 	bool ShallowEquals(const TargetType & ) const override final;
 	bool ShallowEqualsArray(const ArrayType * ) const override final;
 	size_t Hash() const final;
+
+	void Accept(TypeVisitor & ) override;
 };
 
 #endif // ARRAYTYPE_H

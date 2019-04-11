@@ -54,6 +54,8 @@ public:
 	bool EqualsUnion(const UnionType *other) const final override;
 	bool operator==(const TargetType &) const final override;
 	size_t Hash() const final override;
+
+	void Accept(TypeVisitor & ) override;
 };
 
 #endif // UNIONTYPE_H

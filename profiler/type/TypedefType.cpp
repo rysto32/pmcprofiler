@@ -24,6 +24,7 @@
 #include "TypedefType.h"
 
 #include "HashUtil.h"
+#include "TypeVisitor.h"
 
 TypedefType::TypedefType(SharedString name, const TargetType &type)
   : TargetType(name, type.GetSize()),
@@ -58,4 +59,10 @@ bool TypedefType::EqualsTypedef(const TypedefType *other) const
 size_t TypedefType::Hash() const
 {
 	return hash_combine(type.Hash(), GetName());
+}
+
+void
+TypedefType::Accept(TypeVisitor & v)
+{
+	v.Visit(*this);
 }

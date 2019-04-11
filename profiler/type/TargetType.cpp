@@ -23,6 +23,7 @@
 
 
 #include "TargetType.h"
+#include "TypeVisitor.h"
 
 TargetType::~TargetType()
 {

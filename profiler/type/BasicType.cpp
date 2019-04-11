@@ -24,6 +24,7 @@
 #include "BasicType.h"
 
 #include "HashUtil.h"
+#include "TypeVisitor.h"
 
 BasicType::BasicType(SharedString name, size_t size)
   : TargetType(name, size)
@@ -48,4 +49,10 @@ BasicType::Hash() const
 	std::hash<SharedString> hasher;
 
 	return hash_combine(hasher(GetName()), GetSize());
+}
+
+void
+BasicType::Accept(TypeVisitor & v)
+{
+	v.Visit(*this);
 }

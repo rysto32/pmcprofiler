@@ -35,6 +35,8 @@ class SubroutineType;
 class TypedefType;
 class UnionType;
 
+class TypeVisitor;
+
 class TargetType
 {
 private:
@@ -64,6 +66,8 @@ public:
 	{
 		return size;
 	}
+
+	virtual void Accept(TypeVisitor &) = 0;
 
 	virtual bool EqualsArray(const ArrayType *) const;
 	virtual bool EqualsBasic(const BasicType *) const;

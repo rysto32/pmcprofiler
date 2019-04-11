@@ -38,6 +38,8 @@ public:
 	bool ShallowEqualsTypedef(const TypedefType * ) const final override;
 	bool EqualsTypedef(const TypedefType *) const final override;
 	size_t Hash() const final override;
+
+	void Accept(TypeVisitor & ) override;
 };
 
 #endif // TYPEDEFTYPE_H

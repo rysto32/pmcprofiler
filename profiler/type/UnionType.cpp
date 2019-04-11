@@ -24,6 +24,7 @@
 #include "UnionType.h"
 
 #include "HashUtil.h"
+#include "TypeVisitor.h"
 
 UnionType::UnionType(SharedString tag, size_t size)
   : TargetType("union " + *tag, size)
@@ -68,4 +69,10 @@ bool
 UnionType::UnionMember::operator==(const UnionMember & other) const
 {
 	return name == other.name && type.ShallowEquals(other.type);
+}
+
+void
+UnionType::Accept(TypeVisitor & v)
+{
+	v.Visit(*this);
 }

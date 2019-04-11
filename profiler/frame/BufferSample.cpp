@@ -29,7 +29,8 @@ BufferSample::BufferSample(const TargetType & type)
   : samples(type.GetSize(), 0),
     type(type),
     unknownSamples(0),
-    totalSamples(0)
+    totalSamples(0),
+    firstAccessOffset(0)
 {
 }
 

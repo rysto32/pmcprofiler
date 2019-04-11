@@ -24,6 +24,9 @@
 #ifndef BUFFERSAMPLE_H
 #define BUFFERSAMPLE_H
 
+#include "ProfilerTypes.h"
+#include "SharedString.h"
+
 #include <vector>
 
 class TargetType;
@@ -34,6 +37,9 @@ class BufferSample
 	const TargetType & type;
 	size_t unknownSamples;
 	size_t totalSamples;
+
+	SharedString firstAccessImage;
+	TargetAddr firstAccessOffset;
 
 public:
 	BufferSample(const TargetType &);
@@ -48,6 +54,24 @@ public:
 	size_t GetTotalSamples() const
 	{
 		return totalSamples;
+	}
+
+	void SetFirstAccess(SharedString i, TargetAddr o)
+	{
+		if (firstAccessImage->empty()) {
+			firstAccessImage = i;
+			firstAccessOffset = o;
+		}
+	}
+
+	SharedString GetFirstAccessImage() const
+	{
+		return firstAccessImage;
+	}
+
+	TargetAddr GetFirstAccessOffset() const
+	{
+		return firstAccessOffset;
 	}
 };
 

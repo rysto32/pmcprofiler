@@ -46,7 +46,20 @@ BufferSample::AddSamples(size_t offset, size_t width, size_t numSamples)
 			unknownSamples += numSamples;
 			return;
 		}
-
 		samples.at(byteOff) += numSamples;
 	}
+}
+
+size_t
+BufferSample::GetNumSamples(size_t offset, size_t size) const
+{
+	size_t max = 0;
+	size_t end = std::min(offset + size, samples.size());
+
+	for (size_t i = offset; i < end; ++i) {
+		size_t sample = samples.at(i);
+		max = std::max(max, sample);
+	}
+
+	return max;
 }

@@ -51,9 +51,16 @@ public:
 		return type;
 	}
 
+	size_t GetNumSamples(size_t offset, size_t size) const;
+
 	size_t GetTotalSamples() const
 	{
 		return totalSamples;
+	}
+
+	size_t GetUnknownSamples() const
+	{
+		return unknownSamples;
 	}
 
 	void SetFirstAccess(SharedString i, TargetAddr o)

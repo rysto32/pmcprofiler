@@ -52,7 +52,7 @@ BasicType::Hash() const
 }
 
 void
-BasicType::Accept(TypeVisitor & v)
+BasicType::Accept(TypeVisitor & v) const
 {
 	v.Visit(*this);
 }

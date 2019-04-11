@@ -37,7 +37,7 @@ public:
 	bool EqualsBasic(const BasicType *) const override final;
 	size_t Hash() const override final;
 
-	void Accept(TypeVisitor & ) override;
+	void Accept(TypeVisitor & ) const override;
 };
 
 #endif // BASICTYPE_H

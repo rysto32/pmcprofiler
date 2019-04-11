@@ -35,7 +35,7 @@ public:
 	size_t Hash() const override final;
 	bool EqualsPadding(const PaddingType *) const override final;
 
-	void Accept(TypeVisitor & ) override;
+	void Accept(TypeVisitor & ) const override;
 };
 
 #endif // PADDINGTYPE_H

@@ -116,7 +116,7 @@ SubroutineType::Hash() const
 }
 
 void
-SubroutineType::Accept(TypeVisitor & v)
+SubroutineType::Accept(TypeVisitor & v) const
 {
 	v.Visit(*this);
 }

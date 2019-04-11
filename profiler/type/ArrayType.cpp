@@ -107,7 +107,7 @@ ArrayType::Hash() const
 }
 
 void
-ArrayType::Accept(TypeVisitor & v)
+ArrayType::Accept(TypeVisitor & v) const
 {
 	v.Visit(*this);
 }

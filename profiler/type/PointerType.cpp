@@ -65,7 +65,7 @@ PointerType::Hash() const
 }
 
 void
-PointerType::Accept(TypeVisitor & v)
+PointerType::Accept(TypeVisitor & v) const
 {
 	v.Visit(*this);
 }

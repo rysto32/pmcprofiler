@@ -67,7 +67,7 @@ public:
 		return size;
 	}
 
-	virtual void Accept(TypeVisitor &) = 0;
+	virtual void Accept(TypeVisitor &) const = 0;
 
 	virtual bool EqualsArray(const ArrayType *) const;
 	virtual bool EqualsBasic(const BasicType *) const;

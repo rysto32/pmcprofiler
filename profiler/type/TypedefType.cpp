@@ -62,7 +62,7 @@ size_t TypedefType::Hash() const
 }
 
 void
-TypedefType::Accept(TypeVisitor & v)
+TypedefType::Accept(TypeVisitor & v) const
 {
 	v.Visit(*this);
 }

@@ -24,6 +24,7 @@
 #include "SubroutineType.h"
 
 #include "HashUtil.h"
+#include "TypeVisitor.h"
 
 #include <sstream>
 
@@ -112,4 +113,10 @@ SubroutineType::Hash() const
 	}
 
 	return val;
+}
+
+void
+SubroutineType::Accept(TypeVisitor & v)
+{
+	v.Visit(*this);
 }

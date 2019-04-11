@@ -25,6 +25,7 @@
 
 #include "HashUtil.h"
 #include "MapUtil.h"
+#include "TypeVisitor.h"
 
 #include <err.h>
 
@@ -127,4 +128,10 @@ StructType::StructMember::operator ==(const StructMember & other) const
 {
 	return name == other.name && offset == other.offset &&
 	    type.ShallowEquals(other.type);
+}
+
+void
+StructType::Accept(TypeVisitor & v)
+{
+	v.Visit(*this);
 }

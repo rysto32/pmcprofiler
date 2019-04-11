@@ -43,6 +43,8 @@ public:
 	bool operator==(const TargetType &) const final override;
 	bool EqualsSubroutine(const SubroutineType *) const final override;
 	size_t Hash() const final override;
+
+	void Accept(TypeVisitor & ) override;
 };
 
 #endif // SUBROUTINETYPE_H

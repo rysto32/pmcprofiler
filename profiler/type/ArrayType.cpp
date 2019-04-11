@@ -24,6 +24,7 @@
 #include "ArrayType.h"
 
 #include "HashUtil.h"
+#include "TypeVisitor.h"
 
 #include <sstream>
 
@@ -103,4 +104,10 @@ size_t
 ArrayType::Hash() const
 {
 	return hash_combine(numMembers, type);
+}
+
+void
+ArrayType::Accept(TypeVisitor & v)
+{
+	v.Visit(*this);
 }

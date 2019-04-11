@@ -22,6 +22,7 @@
 // SUCH DAMAGE.
 
 #include "PaddingType.h"
+#include "TypeVisitor.h"
 
 PaddingType::PaddingType(size_t size)
   : TargetType("padding", size)
@@ -44,4 +45,10 @@ size_t
 PaddingType::Hash() const
 {
 	return reinterpret_cast<size_t>(this);
+}
+
+void
+PaddingType::Accept(TypeVisitor & v)
+{
+	v.Visit(*this);
 }

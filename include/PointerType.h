@@ -39,6 +39,8 @@ public:
 	bool EqualsPointer(const PointerType *) const final override;
 	bool operator==(const TargetType &) const final override;
 	size_t Hash() const final override;
+
+	void Accept(TypeVisitor & ) override;
 };
 
 #endif // POINTERTYPE_H

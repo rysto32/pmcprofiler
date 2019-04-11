@@ -24,6 +24,7 @@
 #include "PointerType.h"
 
 #include "HashUtil.h"
+#include "TypeVisitor.h"
 
 PointerType::PointerType(const TargetType &t, size_t ptrSize)
   : TargetType(*t.GetName() + "*", ptrSize),
@@ -61,4 +62,10 @@ PointerType::Hash() const
 	// Hash based on the name of the pointed-to type.  This prevents
 	// infinite recursion when hashing a self-referential type.
 	return hash_combine(1, pointeeType.GetName());
+}
+
+void
+PointerType::Accept(TypeVisitor & v)
+{
+	v.Visit(*this);
 }

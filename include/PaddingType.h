@@ -34,6 +34,8 @@ public:
 	bool operator==(const TargetType & other) const override final;
 	size_t Hash() const override final;
 	bool EqualsPadding(const PaddingType *) const override final;
+
+	void Accept(TypeVisitor & ) override;
 };
 
 #endif // PADDINGTYPE_H

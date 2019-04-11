@@ -39,7 +39,7 @@ public:
 	bool EqualsTypedef(const TypedefType *) const final override;
 	size_t Hash() const final override;
 
-	void Accept(TypeVisitor & ) override;
+	void Accept(TypeVisitor & ) const override;
 };
 
 #endif // TYPEDEFTYPE_H

@@ -72,7 +72,7 @@ UnionType::UnionMember::operator==(const UnionMember & other) const
 }
 
 void
-UnionType::Accept(TypeVisitor & v)
+UnionType::Accept(TypeVisitor & v) const
 {
 	v.Visit(*this);
 }

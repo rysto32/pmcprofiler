@@ -44,7 +44,7 @@ public:
 	bool EqualsSubroutine(const SubroutineType *) const final override;
 	size_t Hash() const final override;
 
-	void Accept(TypeVisitor & ) override;
+	void Accept(TypeVisitor & ) const override;
 };
 
 #endif // SUBROUTINETYPE_H

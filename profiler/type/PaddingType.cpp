@@ -48,7 +48,7 @@ PaddingType::Hash() const
 }
 
 void
-PaddingType::Accept(TypeVisitor & v)
+PaddingType::Accept(TypeVisitor & v) const
 {
 	v.Visit(*this);
 }

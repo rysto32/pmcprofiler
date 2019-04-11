@@ -131,7 +131,7 @@ StructType::StructMember::operator ==(const StructMember & other) const
 }
 
 void
-StructType::Accept(TypeVisitor & v)
+StructType::Accept(TypeVisitor & v) const
 {
 	v.Visit(*this);
 }

@@ -68,7 +68,7 @@ public:
 	bool EqualsStruct(const StructType * other) const override final;
 	size_t Hash() const override final;
 
-	void Accept(TypeVisitor & ) override;
+	void Accept(TypeVisitor & ) const override;
 };
 
 #endif // STRUCTTYPE_H

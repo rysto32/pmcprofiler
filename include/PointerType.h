@@ -40,7 +40,7 @@ public:
 	bool operator==(const TargetType &) const final override;
 	size_t Hash() const final override;
 
-	void Accept(TypeVisitor & ) override;
+	void Accept(TypeVisitor & ) const override;
 };
 
 #endif // POINTERTYPE_H

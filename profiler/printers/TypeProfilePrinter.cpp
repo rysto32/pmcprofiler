@@ -29,6 +29,7 @@
 #include "Callframe.h"
 #include "SampleAggregation.h"
 #include "TargetType.h"
+#include "TypePrinterVisitor.h"
 
 #include <vector>
 
@@ -62,6 +63,10 @@ TypeProfilePrinter::printProfile(const Profiler & profiler,
 	fprintf(m_outfile, "No DWARF: %zd, No .text: %zd, Disassemble Failed: %zd, No Register: %zd, No Variable: %zd\n",
 	    noDwarf, noText, disassembleFailed, findRegFailed, findVarFailed);
 	for (const auto * buffer : bufferList) {
-		fprintf(m_outfile, "%s: %zd samples\n", buffer->GetType().GetName()->c_str(), buffer->GetTotalSamples());
+		fprintf(m_outfile, "%s: %zd samples\n",
+		    buffer->GetType().GetName()->c_str(), buffer->GetTotalSamples());
+
+		TypePrinterVisitor v(m_outfile, *buffer);
+		buffer->GetType().Accept(v);
 	}
 }

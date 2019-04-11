@@ -37,6 +37,9 @@
 #include "MapUtil.h"
 #include "VariableLookup.h"
 
+#include "BufferSample.h"
+#include "TargetType.h"
+
 #include <gelf.h>
 
 DwarfSearch::DwarfSearch(Dwarf_Debug dwarf, const DwarfCompileUnitDie &cu,
@@ -287,6 +290,13 @@ DwarfSearch::MapSubprogramTypes(BufferSampleFactory & factory, Elf_Scn *textSect
 
 			BufferSample * sample = factory.GetSample(dwarf, params, typeDie);
 			frame->SetBufferSample(sample, off.GetOffset(), off.GetAccessSize());
+			sample->SetFirstAccess(imageFile, frame->getOffset());
+
+
+			fprintf(stderr, "Map %s:%lx to reg %d, off %x, type %s\n",
+			     imageFile->c_str(), frame->getOffset(),
+				off.GetReg(), off.GetOffset(),
+				sample->GetType().GetName()->c_str());
 		}
 	} catch (DwarfException &) {
 		disassembleFailed++;

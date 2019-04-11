@@ -29,6 +29,8 @@
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCDisassembler/MCDisassembler.h"
 #include "llvm/MC/MCInst.h"
+#include "llvm/MC/MCInstrInfo.h"
+#include "llvm/MC/MCInstPrinter.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSubtargetInfo.h"
@@ -50,6 +52,8 @@ class Disassembler
 	std::unique_ptr<const llvm::MCRegisterInfo> mri;
 	std::unique_ptr<const llvm::MCAsmInfo> mai;
 	std::unique_ptr<llvm::MCContext> ctx;
+	std::unique_ptr<llvm::MCInstrInfo> mcii;
+	std::unique_ptr<llvm::MCInstPrinter> mcip;
 	std::unique_ptr<const llvm::MCDisassembler> disasm;
 
 	llvm::ArrayRef<uint8_t> textBuf;

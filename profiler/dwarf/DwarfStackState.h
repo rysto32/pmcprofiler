@@ -48,7 +48,7 @@ public:
 	DwarfStackState(Dwarf_Debug dwarf, const DwarfCompileUnitDie &cu);
 
 	DwarfStackState(DwarfStackState &&) noexcept = default;
-	DwarfStackState & operator=(DwarfStackState && other) = default;
+	DwarfStackState & operator=(DwarfStackState && other) = delete;
 
 	DwarfStackState(const DwarfStackState &) = delete;
 	DwarfStackState & operator=(const DwarfStackState &) = delete;

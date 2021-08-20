@@ -21,14 +21,28 @@
 // OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
-#include "Disassembler.h"
+#include "DisassemblerImpl.h"
 
 #include "DwarfException.h"
 
 #include <err.h>
-#include "llvm/Support/raw_ostream.h"
 
-Disassembler::Disassembler(const GElf_Shdr &textHdr, Elf_Data *data)
+#include "llvm/Support/Host.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Target/TargetMachine.h"
+
+Disassembler::~Disassembler()
+{
+}
+
+std::unique_ptr<Disassembler> 
+Disassembler::Create(const GElf_Shdr & textHdr, Elf_Data *data)
+{
+
+	return std::make_unique<DisassemblerImpl>(textHdr, data);
+}
+
+DisassemblerImpl::DisassemblerImpl(const GElf_Shdr &textHdr, Elf_Data *data)
   : llvmTripleStr(llvm::sys::getDefaultTargetTriple()), // XXX get triple for target
     textBuf(static_cast<const uint8_t *>(data->d_buf), data->d_size),
     textOffset(textHdr.sh_addr + data->d_off)
@@ -39,6 +53,7 @@ Disassembler::Disassembler(const GElf_Shdr &textHdr, Elf_Data *data)
 //	    textHdr.sh_addr, data->d_off, textOffset);
 
 	llvm::Triple TheTriple(llvmTripleStr);
+	llvm::MCTargetOptions options;
 
 	target = llvm::TargetRegistry::lookupTarget("", TheTriple, llvmError);
 	if (target == NULL)
@@ -52,7 +67,8 @@ Disassembler::Disassembler(const GElf_Shdr &textHdr, Elf_Data *data)
 	if (!mri)
 		throw DwarfException("error: no register info");
 
-	mai = std::unique_ptr<const llvm::MCAsmInfo>(target->createMCAsmInfo(*mri, llvmTripleStr));
+	mai = std::unique_ptr<const llvm::MCAsmInfo>(target->createMCAsmInfo(*mri, llvmTripleStr,
+	    options));
 	if (!mai)
 		throw DwarfException("error: no assembly info");
 
@@ -74,13 +90,13 @@ Disassembler::Disassembler(const GElf_Shdr &textHdr, Elf_Data *data)
 }
 
 void
-Disassembler::InitFunc(TargetAddr funcStart)
+DisassemblerImpl::InitFunc(TargetAddr funcStart)
 {
 	nextInstOffset = funcStart - textOffset;
 }
 
 MemoryOffset
-Disassembler::GetInsnOffset(TargetAddr addr)
+DisassemblerImpl::GetInsnOffset(TargetAddr addr)
 {
 	TargetAddr targetOff = addr - textOffset;
 
@@ -91,13 +107,13 @@ Disassembler::GetInsnOffset(TargetAddr addr)
 }
 
 void
-Disassembler::DisassembleNext()
+DisassemblerImpl::DisassembleNext()
 {
 	llvm::MCDisassembler::DecodeStatus status;
 
 	uint64_t instSize;
 	status = disasm->getInstruction(inst, instSize, textBuf.slice(nextInstOffset),
-	    nextInstOffset, llvm::nulls(), llvm::nulls());
+	    nextInstOffset, llvm::nulls());
 	if (status == llvm::MCDisassembler::Fail || status == llvm::MCDisassembler::SoftFail)
 		throw DwarfException("Disasm failed");
 
@@ -105,7 +121,7 @@ Disassembler::DisassembleNext()
 }
 
 MemoryOffset
-Disassembler::DecodeInst()
+DisassemblerImpl::DecodeInst()
 {
 	if (inst.getOpcode() == 2227) {
 		// pop
@@ -146,7 +162,7 @@ Disassembler::DecodeInst()
 }
 
 int
-Disassembler::LlvmRegToDwarf(int llvmReg)
+DisassemblerImpl::LlvmRegToDwarf(int llvmReg)
 {
 	int dwarfRegNum = mri->getDwarfRegNum(llvmReg, false);
 

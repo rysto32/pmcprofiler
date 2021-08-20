@@ -24,6 +24,9 @@
 #ifndef MEMORYOFFSET_H
 #define MEMORYOFFSET_H
 
+#include <cinttypes>
+#include <cstddef>
+
 class MemoryOffset
 {
 public:

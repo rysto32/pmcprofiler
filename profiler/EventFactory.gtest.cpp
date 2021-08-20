@@ -213,10 +213,12 @@ public:
 		pmclog_ev event = {
 			.pl_state = PMCLOG_OK,
 			.pl_type = PMCLOG_TYPE_CALLCHAIN,
-			.pl_u.pl_cc = {
-				.pl_cpuflags = usermode ? PMC_CC_F_USERSPACE : 0u,
-				.pl_pid = static_cast<uint32_t>(pid),
-				.pl_npc = static_cast<uint32_t>(chain.size()),
+			.pl_u = {
+				.pl_cc = {
+					.pl_pid = static_cast<uint32_t>(pid),
+					.pl_cpuflags = usermode ? PMC_CC_F_USERSPACE : 0u,
+					.pl_npc = static_cast<uint32_t>(chain.size()),
+				},
 			},
 		};
 
@@ -249,9 +251,11 @@ public:
 		pmclog_ev event = {
 			.pl_state = PMCLOG_OK,
 			.pl_type = PMCLOG_TYPE_MAP_IN,
-			.pl_u.pl_mi = {
-				.pl_pid = pid,
-				.pl_start = start,
+			.pl_u = {
+				.pl_mi = {
+					.pl_pid = pid,
+					.pl_start = start,
+				},
 			}
 		};
 
@@ -274,9 +278,11 @@ public:
 		pmclog_ev event = {
 			.pl_state = PMCLOG_OK,
 			.pl_type = PMCLOG_TYPE_PROCEXEC,
-			.pl_u.pl_x = {
-				.pl_pid = pid,
-				.pl_entryaddr = start,
+			.pl_u = {
+				.pl_x = {
+					.pl_pid = pid,
+					.pl_entryaddr = start,
+				},
 			}
 		};
 

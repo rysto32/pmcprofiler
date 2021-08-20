@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Ryan Stone.
+// Copyright (c) 2021 Ryan Stone.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions
@@ -24,54 +24,22 @@
 #ifndef DISASSEMBLER_H
 #define DISASSEMBLER_H
 
-#include "llvm/ADT/Triple.h"
-#include "llvm/MC/MCAsmInfo.h"
-#include "llvm/MC/MCContext.h"
-#include "llvm/MC/MCDisassembler/MCDisassembler.h"
-#include "llvm/MC/MCInst.h"
-#include "llvm/MC/MCInstrInfo.h"
-#include "llvm/MC/MCInstPrinter.h"
-#include "llvm/MC/MCRegisterInfo.h"
-#include "llvm/MC/MCStreamer.h"
-#include "llvm/MC/MCSubtargetInfo.h"
-#include "llvm/Support/TargetRegistry.h"
-#include "llvm/Support/TargetSelect.h"
-
-#include <libelf.h>
-#include <gelf.h>
-#include <memory>
-
 #include "MemoryOffset.h"
 #include "ProfilerTypes.h"
 
+#include <memory>
+
+#include <libelf.h>
+#include <gelf.h>
+
 class Disassembler
 {
-	std::string llvmTripleStr;
-	const llvm::Target *target;
-	std::unique_ptr<llvm::MCSubtargetInfo> sti;
-	std::unique_ptr<const llvm::MCRegisterInfo> mri;
-	std::unique_ptr<const llvm::MCAsmInfo> mai;
-	std::unique_ptr<llvm::MCContext> ctx;
-	std::unique_ptr<llvm::MCInstrInfo> mcii;
-	std::unique_ptr<llvm::MCInstPrinter> mcip;
-	std::unique_ptr<const llvm::MCDisassembler> disasm;
-
-	llvm::ArrayRef<uint8_t> textBuf;
-	TargetAddr textOffset;
-
-	llvm::MCInst inst;
-	TargetAddr nextInstOffset;
-
-	void DisassembleNext();
-	MemoryOffset DecodeInst();
-
-	int LlvmRegToDwarf(int);
-
 public:
-	Disassembler(const GElf_Shdr & textHdr, Elf_Data *data);
-
-	void InitFunc(TargetAddr funcStart);
-	MemoryOffset GetInsnOffset(TargetAddr addr);
+	virtual ~Disassembler();
+	virtual void InitFunc(TargetAddr funcStart) = 0;
+	virtual MemoryOffset GetInsnOffset(TargetAddr addr) = 0;
+	
+	static std::unique_ptr<Disassembler> Create(const GElf_Shdr & textHdr, Elf_Data *data);
 };
 
-#endif // DISASSEMBLER_H
+#endif

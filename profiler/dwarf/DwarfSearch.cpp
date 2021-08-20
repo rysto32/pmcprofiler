@@ -265,15 +265,15 @@ DwarfSearch::MapSubprogramTypes(BufferSampleFactory & factory, Elf_Scn *textSect
 		return;
 	}
 
-	Disassembler disasm(textHdr, textData);
+	auto disasm = Disassembler::Create(textHdr, textData);
 	TargetAddr lastOffset = 0;
 
-	disasm.InitFunc(symAddr);
+	disasm->InitFunc(symAddr);
 
 	try {
 		for (Callframe * frame : frameList) {
 			lastOffset = frame->getOffset();
-			MemoryOffset off(disasm.GetInsnOffset(frame->getOffset()));
+			MemoryOffset off(disasm->GetInsnOffset(frame->getOffset()));
 			if (!off.IsDefined()) {
 				findRegFailed++;
 				frame->SetBufferSample(factory.GetUnknownSample(), 0, 1);

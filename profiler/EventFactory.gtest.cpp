@@ -222,10 +222,18 @@ public:
 			},
 		};
 
-		int i = 0;
-		for (TargetAddr pc : chain) {
-			event.pl_u.pl_cc.pl_pc[i] = pc + 1;
-			i++;
+		for (int i = 0; i < chain.size(); ++i) {
+			/*
+			 * XXX Because kernel backtraces can now contain
+			 * userland addresses, Sample will ignore addresses in
+			 * kernel callchains that is less than 0x100000000.  This
+			 * hack ensures that our test addresses look like kernel
+			 * addresses to Sample.
+			 */
+			if (!usermode) {
+				chain[i] |= 0xffffffff00000000ULL;
+			}
+			event.pl_u.pl_cc.pl_pc[i] = chain[i] + 1;
 		}
 
 		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))

@@ -31,6 +31,7 @@
 #include <unordered_map>
 
 #include <algorithm>
+#include <limits>
 #include <vector>
 
 class Sample
@@ -39,14 +40,28 @@ class Sample
 	pid_t m_processID;
 	std::vector<uintptr_t> m_address;
 
+	static bool IsKernel(uintptr_t pc)
+	{
+		return pc > std::numeric_limits<uint32_t>::max();
+	}
+
 public:
 	Sample(const pmclog_ev_callchain & event)
-	  : m_isKernel(!PMC_CALLCHAIN_CPUFLAGS_TO_USERMODE(event.pl_cpuflags)),
+	  : m_isKernel(IsKernel(event.pl_pc[0])),
 	m_processID(event.pl_pid)
 	{
 		uint32_t i;
-		for (i = 0; i < event.pl_npc; i++)
+		for (i = 0; i < event.pl_npc; i++) {
+			/*
+			 * Callchains can now include kernel code and the
+			 * backtrace of the userland code that called into
+			 * the kernel.  That isn't supported yet, so cut off
+			 * the backtrace at the transition from kernel to user.
+			 */
+			if (IsKernel(event.pl_pc[i]) != m_isKernel)
+				break;
 			m_address.push_back(event.pl_pc[i]-1);
+		}
 	}
 
 	Sample(const pmclog_ev_pcsample & event)

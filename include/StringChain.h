@@ -73,7 +73,7 @@ public:
 		hash_valid = false;
 	}
 
-	const SharedString& back()
+	const SharedString& back() const
 	{
 		return vec.back();
 	}
@@ -91,12 +91,12 @@ public:
 		}
 	};
 
-	iterator begin()
+	iterator begin() const
 	{
 		return vec.begin();
 	}
 
-	iterator end()
+	iterator end() const
 	{
 		return vec.end();
 	}

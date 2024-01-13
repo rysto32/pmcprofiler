@@ -131,7 +131,7 @@ public:
 
 struct LeafProcessStrategy
 {
-	typedef std::vector<const InlineFrame*>::iterator iterator;
+	typedef std::vector<const InlineFrame*>::const_iterator iterator;
 
 	iterator begin(std::vector<const InlineFrame*> & vec) const
 	{
@@ -150,7 +150,7 @@ struct LeafProcessStrategy
 
 struct RootProcessStrategy
 {
-	typedef std::vector<const InlineFrame*>::reverse_iterator iterator;
+	typedef std::vector<const InlineFrame*>::const_reverse_iterator iterator;
 
 	iterator begin(std::vector<const InlineFrame*> & vec) const;
 	iterator end(std::vector<const InlineFrame*> & vec) const;

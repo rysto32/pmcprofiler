@@ -251,7 +251,7 @@ RootProcessStrategy::begin(std::vector<const InlineFrame*> & vec) const
 {
 	iterator it = vec.rbegin();
 
-	while (it != end(vec) && !(*it)->isMapped()) {
+	while (it != vec.rend() && !(*it)->isMapped()) {
 		++it;
 	}
 

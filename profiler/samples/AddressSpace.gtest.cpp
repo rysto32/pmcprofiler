@@ -524,9 +524,9 @@ TEST_F(AddressSpaceTestSuite, TestProcessExecNoTextHdr)
 
 		GElf_Phdr phdr = (GElf_Phdr) {
 			.p_type = PT_LOAD,
-			.p_memsz = 0,
 			.p_flags = PF_R | PF_X,
-			.p_vaddr = 0x2000
+			.p_vaddr = 0x2000,
+			.p_memsz = 0,
 
 		};
 		EXPECT_CALL(*libelf, gelf_getphdr(elf, 0, _))
@@ -535,9 +535,9 @@ TEST_F(AddressSpaceTestSuite, TestProcessExecNoTextHdr)
 
 		phdr = {
 			.p_type = PT_DYNAMIC,
-			.p_memsz = 0x1000,
 			.p_flags = PF_R | PF_X,
-			.p_vaddr = 0x2000
+			.p_vaddr = 0x2000,
+			.p_memsz = 0x1000,
 		};
 		EXPECT_CALL(*libelf, gelf_getphdr(elf, 1, _))
 		  .Times(1)
@@ -545,9 +545,9 @@ TEST_F(AddressSpaceTestSuite, TestProcessExecNoTextHdr)
 
 		phdr = (GElf_Phdr) {
 			.p_type = PT_LOAD,
-			.p_memsz = 0x1000,
 			.p_flags = PF_R | PF_W,
-			.p_vaddr = 0x2000
+			.p_vaddr = 0x2000,
+			.p_memsz = 0x1000,
 
 		};
 		EXPECT_CALL(*libelf, gelf_getphdr(elf, 2, _))
@@ -556,9 +556,9 @@ TEST_F(AddressSpaceTestSuite, TestProcessExecNoTextHdr)
 
 		phdr = (GElf_Phdr) {
 			.p_type = PT_INTERP,
-			.p_memsz = 0x1000,
 			.p_flags = PF_R | PF_X,
-			.p_vaddr = 0x2000
+			.p_vaddr = 0x2000,
+			.p_memsz = 0x1000,
 
 		};
 		EXPECT_CALL(*libelf, gelf_getphdr(elf, 3, _))
@@ -611,9 +611,9 @@ TEST_F(AddressSpaceTestSuite, TestProcessExecTextHdrPresent)
 
 		GElf_Phdr phdr = (GElf_Phdr) {
 			.p_type = PT_LOAD,
-			.p_memsz = 0,
 			.p_flags = PF_R | PF_X,
-			.p_vaddr = 0x2000
+			.p_vaddr = 0x2000,
+			.p_memsz = 0,
 
 		};
 		EXPECT_CALL(*libelf, gelf_getphdr(elf, 0, _))
@@ -622,9 +622,9 @@ TEST_F(AddressSpaceTestSuite, TestProcessExecTextHdrPresent)
 
 		phdr = {
 			.p_type = PT_LOAD,
-			.p_memsz = 0x1000,
 			.p_flags = PF_R | PF_X,
-			.p_vaddr = exeLoadAddr
+			.p_vaddr = exeLoadAddr,
+			.p_memsz = 0x1000,
 		};
 		EXPECT_CALL(*libelf, gelf_getphdr(elf, 1, _))
 		  .Times(1)

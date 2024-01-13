@@ -53,9 +53,9 @@ TEST(CallchainTestSuite, TestGetters)
 	EXPECT_CALL(mapper, mapFrame(0x543)).WillOnce(ReturnRef(cf));
 
 	pmclog_ev_pcsample event = {
-		.pl_usermode = 0,
-		.pl_pid = 123,
 		.pl_pc = 0x544,
+		.pl_pid = 123,
+		.pl_usermode = 0,
 	};
 
 	Sample s(event);
@@ -90,9 +90,9 @@ TEST(CallchainTestSuite, TestGetSelfFrame)
 	EXPECT_CALL(mapper, mapFrame(off)).WillOnce(ReturnRef(cf));
 
 	pmclog_ev_pcsample event = {
-		.pl_usermode = 0,
-		.pl_pid = 123,
 		.pl_pc = off + 1,
+		.pl_pid = 123,
+		.pl_usermode = 0,
 	};
 
 	Sample s(event);
@@ -125,8 +125,8 @@ TEST(CallchainTestSuite, TestFlatten)
 	MockFrameMapper mapper;
 
 	pmclog_ev_callchain event = {
-		.pl_cpuflags = PMC_CC_F_USERSPACE,
 		.pl_pid = 123,
+		.pl_cpuflags = PMC_CC_F_USERSPACE,
 		.pl_npc = 0,
 	};
 
@@ -170,9 +170,9 @@ TEST(CallchainTestSuite, TestAddSample)
 	EXPECT_CALL(mapper, mapFrame(0x459)).WillOnce(ReturnRef(cf));
 
 	pmclog_ev_pcsample event = {
-		.pl_usermode = 0,
-		.pl_pid = 123,
 		.pl_pc = 0x45a,
+		.pl_pid = 123,
+		.pl_usermode = 0,
 	};
 
 	Sample s(event);

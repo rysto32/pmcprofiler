@@ -52,6 +52,11 @@ public:
 
 		bool operator==(const FuncLocKey & other) const;
 
+		bool operator!=(const FuncLocKey & other) const
+		{
+			return !(*this == other);
+		}
+
 		struct hasher
 		{
 			// XXX I would like a better hash function here

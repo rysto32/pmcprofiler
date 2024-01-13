@@ -325,6 +325,19 @@ public:
 		        Return(0)
 		    ));
 	}
+
+	void
+	AddEofExpectation(void * cookie)
+	{
+		pmclog_ev event = {
+			.pl_state = PMCLOG_EOF,
+		};
+
+		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
+		    .Times(1).WillOnce(DoAll(
+		        SetArgPointee<1>(event),
+		        Return(-1)));
+	}
 };
 
 TEST_F(EventFactoryTestSuite, TestEmptyPmclog)
@@ -347,8 +360,7 @@ TEST_F(EventFactoryTestSuite, TestEmptyPmclog)
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
 		    .Times(1).WillOnce(Return(cookie));
 
-		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
-		    .Times(1).WillOnce(Return(-1));
+		AddEofExpectation(cookie);
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
@@ -381,8 +393,7 @@ TEST_F(EventFactoryTestSuite, TestSingleSample)
 
 		AddSampleExpectation(cookie, true, 17498, 0xbadd);
 
-		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
-		    .Times(1).WillOnce(Return(-1));
+		AddEofExpectation(cookie);
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
@@ -415,8 +426,7 @@ TEST_F(EventFactoryTestSuite, TestSingleCallchain)
 
 		AddCallchainExpectation(cookie, false, 90746, {0xe569d, 0x54896, 0x49564});
 
-		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
-		    .Times(1).WillOnce(Return(-1));
+		AddEofExpectation(cookie);
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
@@ -450,8 +460,7 @@ TEST_F(EventFactoryTestSuite, TestMaxDepth)
 		AddCallchainExpectation(cookie, false, 90746,
 		    {0xf9d2, 0x296487, 0xefe892, 0x59dab});
 
-		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
-		    .Times(1).WillOnce(Return(-1));
+		AddEofExpectation(cookie);
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
@@ -482,8 +491,7 @@ TEST_F(EventFactoryTestSuite, TestMapIn)
 
 		AddMapInExpectation(cookie, 231, 0xfffe9398, "/lib/libthr.so.3");
 
-		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
-		    .Times(1).WillOnce(Return(-1));
+		AddEofExpectation(cookie);
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
@@ -513,8 +521,7 @@ TEST_F(EventFactoryTestSuite, TestExec)
 
 		AddExecExpectation(cookie, 1654, "/usr/bin/c++", 0xfed0);
 
-		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
-		    .Times(1).WillOnce(Return(-1));
+		AddEofExpectation(cookie);
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
@@ -589,8 +596,7 @@ TEST_F(EventFactoryTestSuite, TestUnhandledEvents)
 		AddUnhandledTypeExpectation(cookie, PMCLOG_TYPE_PMCALLOCATEDYN);
 		AddUnhandledTypeExpectation(cookie, static_cast<pmclog_type>(1000));
 
-		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
-		    .Times(1).WillOnce(Return(-1));
+		AddEofExpectation(cookie);
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);
@@ -642,8 +648,7 @@ TEST_F(EventFactoryTestSuite, TestMultipleCallchains)
 		    {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 		     17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32});
 
-		EXPECT_CALL(*libpmcMock, pmclog_read(cookie, _))
-		    .Times(1).WillOnce(Return(-1));
+		AddEofExpectation(cookie);
 
 		EXPECT_CALL(*libpmcMock, pmclog_close(cookie))
 		    .Times(1);

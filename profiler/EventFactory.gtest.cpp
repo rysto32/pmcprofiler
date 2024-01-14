@@ -289,7 +289,7 @@ public:
 			.pl_u = {
 				.pl_x = {
 					.pl_pid = pid,
-					.pl_entryaddr = start,
+					.pl_dynaddr = start,
 				},
 			}
 		};

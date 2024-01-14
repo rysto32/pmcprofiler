@@ -421,14 +421,14 @@ DwarfResolver::AddCompileUnitSrcLines(SharedPtr<DwarfCompileUnitDie> cu,
 	 * address for this CU.
 	 */
 	lo = src.GetAddr();
-	while (1) {
-		auto lastIt = srcIt;
-		++srcIt;
-		if (srcIt == srcLines.end()) {
-			src = *lastIt;
-			hi = src.GetAddr();
-			break;
+	hi = lo;
+	while (srcIt != srcLines.end()) {
+		DwarfSrcLine src(*srcIt);
+		Dwarf_Unsigned addr = src.GetAddr();
+		if (addr > hi) {
+			hi = addr;
 		}
+		++srcIt;
 	}
 	AddCompileUnitRange(cu, lo, hi, cuLookup);
 }

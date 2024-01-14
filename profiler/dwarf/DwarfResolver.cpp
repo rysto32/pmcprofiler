@@ -331,10 +331,27 @@ DwarfResolver::SearchCompileUnit(SharedPtr<DwarfCompileUnitDie> cu,
 		return (SearchCompileUnitRanges(cu, range_off, cuLookup));
 	}
 
+	LOG("No ranges: %s", dwarf_errmsg(derr));
+
 	err_lo = dwarf_attrval_unsigned(cu->GetDie(), DW_AT_low_pc, &low_pc, &derr);
 	err_hi = dwarf_attrval_unsigned(cu->GetDie(), DW_AT_high_pc, &high_pc, &derr);
 	if (err_lo == DW_DLV_OK && err_hi == DW_DLV_OK) {
-// 		LOG("%lx: low/high pc = %lx/%lx\n", GetDieOffset(cu.GetDie()), low_pc, high_pc);
+		Dwarf_Attribute high_attr;
+		error = dwarf_attr(cu->GetDie(), DW_AT_high_pc, &high_attr, &derr);
+		if (error == DW_DLV_OK) {
+			Dwarf_Half form;
+			error = dwarf_whatform(high_attr, &form, &derr);
+			if (error == DW_DLV_OK) {
+				switch (form) {
+				case DW_FORM_data1:
+				case DW_FORM_data2:
+				case DW_FORM_data4:
+				case DW_FORM_data8:
+					high_pc = low_pc + high_pc;
+					break;
+				}
+			}
+		}
 		AddCompileUnitRange(cu, low_pc, high_pc, cuLookup);
 		return;
 	}

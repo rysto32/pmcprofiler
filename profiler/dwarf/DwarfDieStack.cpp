@@ -108,9 +108,9 @@ DwarfDieStack::EnumerateSubprograms(DwarfRangeLookup<DwarfDie> &map)
 			SharedPtr<DwarfDie> diePtr =
 			    SharedPtr<DwarfDie>::make(state.TakeLeafDie());
 
-// 			LOG("Take %lx from state\n", GetDieOffset(**diePtr));
+// 			LOG("Take %lx from state", GetDieOffset(**diePtr));
 			for (const auto & range : state.GetRanges()) {
-// 				LOG("Insert %lx at %lx-%lx\n",
+// 				LOG("Insert %lx at %lx-%lx",
 // 				    GetDieOffset(**diePtr), range.low, range.high);
 				map.insert(range.low, range.high, diePtr);
 			}
@@ -130,7 +130,7 @@ DwarfDieStack::AddSubprogramSymbol(DwarfLocationList &list, const DwarfDieRanges
 	DwarfSubprogramInfo info(dwarf, die);
 
 	for (const auto & range : ranges) {
-//  		LOG("Add subprogram covering %lx-%lx\n", range.low, range.high);
+//  		LOG("Add subprogram covering %lx-%lx", range.low, range.high);
 		list.insert(std::make_pair(range.low, SharedPtr<DwarfLocation>::make(
 		    range.low, range.high, info.GetFunc(), info.GetLine())));
 	}
@@ -142,7 +142,7 @@ DwarfDieStack::AddInlineSymbol(DwarfLocationList &list, Dwarf_Die die)
 	DwarfSubprogramInfo info(dwarf, die);
 
 	for (const auto & range : dieStack.back().GetRanges()) {
-//  		LOG("Add inline %lx covering %lx-%lx\n", GetDieOffset(die), range.low, range.high);
+//  		LOG("Add inline %lx covering %lx-%lx", GetDieOffset(die), range.low, range.high);
 		AddDwarfSymbol(list, range.low, range.high,
 		    GetCallFile(die), GetCallLine(die), info.GetFunc(),
 		    GetDieOffset(die));
@@ -157,7 +157,7 @@ DwarfDieStack::FillSubprogramSymbols(DwarfLocationList& list,
 
 	size_t stackPos = dieStack.size();
 
-// 	LOG("*** Start scan for inlines in %lx\n", GetDieOffset(topDie));
+// 	LOG("*** Start scan for inlines in %lx", GetDieOffset(topDie));
 	while (1) {
 		while (dieStack.size() >= stackPos && !dieStack.back()) {
 			dieStack.pop_back();

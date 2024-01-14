@@ -39,6 +39,31 @@ DwarfDieOffset GetDieOffset(Dwarf_Die die)
 	return (offset);
 }
 
+DwarfDieOffset GetCUOffset(Dwarf_Die die)
+{
+	Dwarf_Error derr;
+	Dwarf_Off offset;
+	int error;
+
+	error = dwarf_die_CU_offset(die, &offset, &derr);
+	if (error != 0)
+		throw DwarfException("dwarf_dieoffset failed");
+	return (offset);
+}
+
+DwarfDieOffset GetCUOffsetRange(Dwarf_Die die)
+{
+	Dwarf_Error derr;
+	Dwarf_Off offset, len;
+	int error;
+
+	error = dwarf_die_CU_offset_range(die, &offset, &len, &derr);
+	if (error != 0)
+		throw DwarfException("dwarf_dieoffset failed");
+	return (offset);
+
+}
+
 Dwarf_Half GetDieTag(Dwarf_Die die)
 {
 	Dwarf_Error derr;

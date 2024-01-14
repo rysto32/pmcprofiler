@@ -61,7 +61,7 @@ DwarfResolver::DwarfResolver(SharedString image)
 	if (elf == NULL)
 		return;
 
-	LOG("imageFile=%s symbolsFile=%s\n", imageFile->c_str(),
+	LOG("imageFile=%s symbolsFile=%s", imageFile->c_str(),
 	    symbolFile->c_str());
 
 	/*
@@ -222,7 +222,7 @@ void
 DwarfResolver::ResolveDwarf(const FrameMap &frameMap)
 {
 
-	LOG("DwarfResolve %s\n", imageFile->c_str());
+	LOG("DwarfResolve %s", imageFile->c_str());
 
 	CompileUnitLookup cuLookup;
 
@@ -306,10 +306,11 @@ DwarfResolver::ProcessCompileUnit(const DwarfCompileUnit & cu,
 		if (tag == DW_TAG_compile_unit) {
 			try {
 				SearchCompileUnit(die, cuLookup);
-			} catch (const DwarfException &)
+			} catch (const DwarfException & msg)
 			{
 				// swallow it and continue.  libdwarf
 				// errors are not fatal.
+				LOG("DwarfException: %s", msg.what());
 			}
 		}
 
@@ -352,6 +353,7 @@ void
 DwarfResolver::AddCompileUnitRange(SharedPtr<DwarfCompileUnitDie> cu,
     Dwarf_Unsigned low_pc, Dwarf_Unsigned high_pc, CompileUnitLookup & cuLookup)
 {
+	LOG("%lx+%lx: low/high pc = %lx/%lx", GetCUOffsetRange(cu->GetDie()), GetCUOffset(cu->GetDie()), low_pc, high_pc);
 	cuLookup.insert(low_pc, high_pc, cu);
 }
 

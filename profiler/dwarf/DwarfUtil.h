@@ -30,6 +30,8 @@
 typedef uint64_t DwarfDieOffset;
 
 DwarfDieOffset GetDieOffset(Dwarf_Die die);
+DwarfDieOffset GetCUOffset(Dwarf_Die die);
+DwarfDieOffset GetCUOffsetRange(Dwarf_Die die);
 Dwarf_Half GetDieTag(Dwarf_Die die);
 
 #ifdef GNU_LIBDWARF

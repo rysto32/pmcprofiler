@@ -26,6 +26,9 @@
 
 #include "DwarfArray.h"
 #include "DwarfException.h"
+#include "DwarfUtil.h"
+
+#include <format>
 
 struct DwarfSrcLinesDeleter
 {
@@ -47,8 +50,9 @@ class DwarfSrcLinesList : public DwarfArray<Dwarf_Line, DwarfSrcLinesDeleter>
 		int error;
 
 		error = dwarf_srclines(die, &array, &count, &derr);
-		if (error != DW_DLV_OK)
-			throw DwarfException("dwarf_srclines failed");
+		if (error != DW_DLV_OK) {
+			throw DwarfException(std::format("dwarf_srclines failed on {}: {}", GetDieOffset(die), dwarf_errmsg(derr)));
+		}
 
 		return Super::Array(array, count);
 	}

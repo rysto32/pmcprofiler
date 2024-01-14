@@ -131,7 +131,7 @@ void AddDwarfSymbol(DwarfLocationList & list, TargetAddr low, TargetAddr high, A
 	auto ptr = DwarfLocationPtr::make(low, high,
 		args..., current);
 
-	LOG("Add symbol %p covering %lx-%lx for %lx, current is %p (end=%lx)\n", ptr.get(),
+	LOG("Add symbol %p covering %lx-%lx for %lx, current is %p (end=%lx)", ptr.get(),
 	    low, high, ptr->GetDwarfDieOffset(), current.get(), current->GetEnd());
 
 	list[low] = ptr;
@@ -141,7 +141,7 @@ void AddDwarfSymbol(DwarfLocationList & list, TargetAddr low, TargetAddr high, A
 		}
 		if (current) {
 			list.insert({high, current});
-			LOG("Reinsert %p at %lx\n", current.get(), high);
+			LOG("Reinsert %p at %lx", current.get(), high);
 		}
 	}
 }

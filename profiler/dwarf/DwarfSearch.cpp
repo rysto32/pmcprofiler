@@ -84,7 +84,7 @@ DwarfSearch::AddLeafSymbol(DwarfLocationList &list, const DwarfSrcLine & src,
 	/* WTF LLVM? */
 	if (src.GetAddr() == nextAddr)
 		return;
-// 	LOG("Add leaf symbol covering %lx-%lx\n", src.GetAddr(), nextAddr);
+// 	LOG("Add leaf symbol covering %lx-%lx", src.GetAddr(), nextAddr);
 	AddDwarfSymbol(list, src.GetAddr(), nextAddr, src.GetFile(imageFile), src.GetLine(),
 	    "", GetDieOffset(cu.GetDie()));
 }
@@ -93,7 +93,7 @@ void
 DwarfSearch::FillLeafSymbols(const DwarfDieRanges & ranges, DwarfLocationList &list)
 {
 
-	LOG("*** Start scan of srclines\n");
+	LOG("*** Start scan of srclines");
 	while (srcIt != srcLines.end()) {
 		DwarfSrcLine src(*srcIt);
 		if (ranges.Succeeds(src.GetAddr())) {
@@ -173,13 +173,13 @@ DwarfSearch::MapFrames(const FrameList& frameList)
 	for (auto frame : frameList) {
 		auto it = subprograms.Lookup(frame->getOffset());
 		if (it == subprograms.end()) {
-			LOG("Frame %lx mapped to no subroutine (assembly?)\n",
+			LOG("Frame %lx mapped to no subroutine (assembly?)",
 			    frame->getOffset());
 			assemblyFuncs.push_back(frame);
 			continue;
 		}
 
-		LOG("Frame %lx mapped to subprogram die %lx\n", frame->getOffset(),
+		LOG("Frame %lx mapped to subprogram die %lx", frame->getOffset(),
 		    GetDieOffset(*it->second.GetValue()));
 		it->second.AddFrame(frame);
 	}

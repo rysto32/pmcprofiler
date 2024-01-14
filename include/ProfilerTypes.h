@@ -79,10 +79,12 @@ size_t hash_combine(size_t seed, const T & val)
 	return seed;
 }
 
+#define LOG_ENABLED
+
 #ifdef LOG_ENABLED
 
-#define LOG(args...) \
-	fprintf(stderr, args)
+#define LOG(str, args...) \
+	fprintf(stderr, str "\n", ## args)
 
 #else
 

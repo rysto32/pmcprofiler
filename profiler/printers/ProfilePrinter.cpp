@@ -87,6 +87,9 @@ ProfilePrinter::insertFuncLoc(FuncLocMap &locMap, const InlineFrame &frame, cons
 	FuncLocKey key(frame.getFile(), frame.getFunc());
 	auto insertPos = locMap.insert(std::make_pair(key,
 	    FunctionLocation(frame, chain)));
+
+// 	fprintf(stderr, "Insert %s:%s into %p: success=%d\n", key.file->c_str(), key.func->c_str(),
+// 	    &locMap, insertPos.second);
 	if (!insertPos.second)
 		insertPos.first->second.AddSample(frame, chain.getSampleCount());
 }
@@ -126,13 +129,16 @@ ProfilePrinter::getFunctionLocations(const SampleAggregation &agg,
 		if (chainMap) {
 			StringChain strChain;
 			strChain.push_back(**jt);
+// 			fprintf(stderr, "Insert frame %s\n", (*jt)->getFunc()->c_str());
 
 			for (++jt; jt != jt_end; ++jt) {
 				const auto & frame = **jt;
 
-				auto insert = chainMap->insert(std::make_pair(strChain, FuncLocMap(1)));
-				insertFuncLoc(insert.first->second, frame, *chain);
+				auto [it, success] = chainMap->insert(std::make_pair(strChain, FuncLocMap(1)));
+// 				fprintf(stderr, "Strchain existed: %d\n", !success);
+				insertFuncLoc(it->second, frame, *chain);
 
+// 				fprintf(stderr, "Insert frame %s\n", frame.getFunc()->c_str());
 				strChain.push_back(frame);
 			}
 		}

@@ -25,20 +25,21 @@
 #define DWARFEXCEPTION_H
 
 #include <exception>
+#include <string>
 
 class DwarfException : public std::exception
 {
 private:
-	const char *msg;
+	std::string msg;
 public:
-	DwarfException(const char * msg)
+	DwarfException(const std::string & msg)
 	  : msg(msg)
 	{
 	}
 
 	virtual const char *what() const noexcept
 	{
-		return msg;
+		return msg.c_str();
 	}
 };
 

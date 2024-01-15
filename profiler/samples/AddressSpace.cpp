@@ -82,7 +82,7 @@ AddressSpace::getLoadAddr(const std::string &executable)
 		 * the entry point in the ELF header and comparing that
 		 * to the actual entry point given to hwpmc
 		 */
-		addr = phdr.p_vaddr;
+		addr = phdr.p_vaddr & (-phdr.p_align);
 		goto cleanup;
 	}
 
@@ -133,9 +133,10 @@ AddressSpace::mapImage(TargetAddr start, Image* image)
 		loadOffset = 0;
 		executable = image;
 	} else {
-		loadOffset = start;
+		loadOffset = start - getLoadAddr(*image->GetImageFile());
 	}
 
+	LOG("%p: Loaded %s at offset %lx", this, image->GetImageFile()->c_str(), start);
 	loadableImageMap.insert(std::make_pair(start,
 	    LoadedImage(image, loadOffset)));
 }

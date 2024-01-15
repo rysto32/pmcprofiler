@@ -42,7 +42,7 @@ class Sample
 
 	static bool IsKernel(uintptr_t pc)
 	{
-		return pc > std::numeric_limits<uint32_t>::max();
+		return (pc & 0x1000000000000000UL);
 	}
 
 public:
@@ -76,7 +76,7 @@ public:
 		return m_isKernel;
 	}
 
-	unsigned getProcessID() const
+	pid_t getProcessID() const
 	{
 		return m_processID;
 	}

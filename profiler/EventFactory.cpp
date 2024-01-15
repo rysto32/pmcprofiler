@@ -105,13 +105,17 @@ EventFactory::createEvents(Profiler& profiler)
 			case PMCLOG_TYPE_PROCEXEC:
 				profiler.processEvent(ProcessExec(pmcEvent.pl_u.pl_x.pl_pid,
 				    std::string(pmcEvent.pl_u.pl_x.pl_pathname),
-				    pmcEvent.pl_u.pl_x.pl_entryaddr));
+				    pmcEvent.pl_u.pl_x.pl_dynaddr));
 				break;
 
 			default:
-				warn("unknown pmc event type %d\n", pmcEvent.pl_type);
+				warnx("unknown pmc event type %d", pmcEvent.pl_type);
 
 		}
+	}
+
+	if (pmcEvent.pl_state != PMCLOG_EOF) {
+		err(1, "Got error reading from samples file");
 	}
 
 	pmclog_close(logCookie);

@@ -42,19 +42,54 @@ DwarfDieRanges::DwarfDieRanges(Dwarf_Debug dwarf, Dwarf_Die die,
 	Reinit(die);
 }
 
+std::optional<Dwarf_Unsigned> 
+DwarfDieRanges::LookupRangesOffset(Dwarf_Die die, Dwarf_Error * derr)
+{
+	Dwarf_Attribute attrib;
+	Dwarf_Half form;
+	Dwarf_Unsigned range_off;
+	int error;
+
+	error = dwarf_attr(die, DW_AT_ranges, &attrib, derr);
+	if (error != DW_DLV_OK) {
+		return {};
+	}
+
+	error = dwarf_whatform(attrib, &form, derr);
+	if (error != DW_DLV_OK) {
+		return {};
+	}
+
+	switch (form) {
+	case DW_FORM_rnglistx:
+		error = dwarf_formudata(attrib, &range_off, derr);
+		break;
+	default:
+		error = dwarf_global_formref(attrib, &range_off, derr);
+		break;
+	}
+
+	if (error != DW_DLV_OK) {
+		fprintf(stderr, "warning: failed to fetch value of DW_AT_ranges; this may impair reliability of profiling data");
+		return {};
+	}
+
+	return range_off;
+}
+
 void
 DwarfDieRanges::Reinit(Dwarf_Die die)
 {
 	Dwarf_Error derr;
-	Dwarf_Unsigned low_pc, high_pc, off;
+	Dwarf_Unsigned low_pc, high_pc;
 	int error;
 
 	Reset();
 	this->die = die;
 
-	error = dwarf_attrval_unsigned(die, DW_AT_ranges, &off, &derr);
-	if (error == DW_DLV_OK) {
-		InitFromRanges(die, off);
+	auto off = LookupRangesOffset(die, &derr);
+	if (off) {
+		InitFromRanges(die, *off);
 		return;
 	}
 

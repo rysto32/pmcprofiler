@@ -79,6 +79,8 @@ public:
 	DwarfDieRanges(const DwarfDieRanges &) = delete;
 	DwarfDieRanges & operator=(const DwarfDieRanges &) = delete;
 
+	static std::optional<Dwarf_Unsigned> LookupRangesOffset(Dwarf_Die die, Dwarf_Error * derr);
+
 	void Reinit(Dwarf_Die die);
 	void Reset();
 

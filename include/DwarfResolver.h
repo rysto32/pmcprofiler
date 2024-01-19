@@ -30,6 +30,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include <libdwarf.h>
@@ -68,6 +69,8 @@ private:
 	void ResolveDwarf(const FrameMap &frames);
 	void ResolveElf(const FrameMap &frames) const;
 	void ResolveUnmapped(const FrameMap &frames) const;
+
+	std::optional<Dwarf_Unsigned> LookupRangesOffset(Dwarf_Die die, Dwarf_Error * derr);
 
 	void FillElfSymbolMap(Elf *imageElf, Elf_Scn *section);
 

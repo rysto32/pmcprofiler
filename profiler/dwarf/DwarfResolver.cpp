@@ -28,6 +28,7 @@
 #include "DwarfCompileUnit.h"
 #include "DwarfCompileUnitDie.h"
 #include "DwarfDieList.h"
+#include "DwarfDieRanges.h"
 #include "DwarfRangeLookup.h"
 #include "DwarfException.h"
 #include "DwarfRangeList.h"
@@ -323,12 +324,12 @@ DwarfResolver::SearchCompileUnit(SharedPtr<DwarfCompileUnitDie> cu,
     CompileUnitLookup & cuLookup)
 {
 	Dwarf_Error derr;
-	Dwarf_Unsigned range_off, low_pc, high_pc;
+	Dwarf_Unsigned low_pc, high_pc;
 	int error, err_lo, err_hi;
 
-	error = dwarf_attrval_unsigned(cu->GetDie(), DW_AT_ranges, &range_off, &derr);
-	if (error == DW_DLV_OK) {
-		return (SearchCompileUnitRanges(cu, range_off, cuLookup));
+	auto range_off = DwarfDieRanges::LookupRangesOffset(cu->GetDie(), &derr);
+	if (range_off) {
+		return (SearchCompileUnitRanges(cu, *range_off, cuLookup));
 	}
 
 	LOG("No ranges: %s", dwarf_errmsg(derr));

@@ -554,7 +554,7 @@ TEST_F(EventFactoryTestSuite, TestLogOpenFail)
 		const int fd = 4841;
 		mockOpen.ExpectOpen("./output/callchains", O_RDONLY, fd);
 		EXPECT_CALL(*libpmcMock, pmclog_open(fd))
-		    .Times(1).WillOnce(Return(NULL));
+		    .Times(1).WillOnce(Return(nullptr));
 		mockOpen.ExpectClose(fd, 0);
 	}
 

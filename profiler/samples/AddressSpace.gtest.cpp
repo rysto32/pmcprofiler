@@ -340,10 +340,10 @@ TEST_F(AddressSpaceTestSuite, TestProcessExecElfBeginFailed)
 
 		const int fd = 128;
 		mockOpen.ExpectOpen("/usr/bin/top", O_RDONLY, 128);
-		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, NULL))
+		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, nullptr))
 		  .Times(1)
-		  .WillOnce(Return(NULL));
-		EXPECT_CALL(*libelf, elf_end(NULL))
+		  .WillOnce(Return(nullptr));
+		EXPECT_CALL(*libelf, elf_end(nullptr))
 		  .Times(1);
 
 		auto * img = factory.ExpectGetImage("/usr/bin/top");
@@ -381,7 +381,7 @@ TEST_F(AddressSpaceTestSuite, TestProcessExecGetPhdrnumFailed)
 		InSequence seq;
 		const int fd = 128;
 		mockOpen.ExpectOpen("/usr/bin/top", O_RDONLY, 128);
-		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, NULL))
+		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, nullptr))
 		  .Times(1)
 		  .WillOnce(Return(elf));
 		EXPECT_CALL(*libelf, elf_getphdrnum(elf, _))
@@ -425,7 +425,7 @@ TEST_F(AddressSpaceTestSuite, TestProcessExecZeroPhdrs)
 		InSequence seq;
 		const int fd = 128;
 		mockOpen.ExpectOpen("/usr/bin/top", O_RDONLY, 128);
-		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, NULL))
+		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, nullptr))
 		  .Times(1)
 		  .WillOnce(Return(elf));
 		EXPECT_CALL(*libelf, elf_getphdrnum(elf, _))
@@ -469,7 +469,7 @@ TEST_F(AddressSpaceTestSuite, TestProcessExecGetPhdrFailed)
 		InSequence seq;
 		const int fd = 128;
 		mockOpen.ExpectOpen("/usr/bin/top", O_RDONLY, 128);
-		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, NULL))
+		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, nullptr))
 		  .Times(1)
 		  .WillOnce(Return(elf));
 		EXPECT_CALL(*libelf, elf_getphdrnum(elf, _))
@@ -477,7 +477,7 @@ TEST_F(AddressSpaceTestSuite, TestProcessExecGetPhdrFailed)
 		  .WillOnce(DoAll(SetArgPointee<1>(size_t(3)), Return(0)));
 		EXPECT_CALL(*libelf, gelf_getphdr(elf, 0, _))
 		  .Times(1)
-		  .WillOnce(Return(NULL));
+		  .WillOnce(Return(nullptr));
 		EXPECT_CALL(*libelf, elf_end(elf))
 		  .Times(1);
 
@@ -515,7 +515,7 @@ TEST_F(AddressSpaceTestSuite, TestProcessExecNoTextHdr)
 		InSequence seq;
 		const int fd = 128;
 		mockOpen.ExpectOpen("/usr/bin/top", O_RDONLY, 128);
-		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, NULL))
+		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, nullptr))
 		  .Times(1)
 		  .WillOnce(Return(elf));
 		EXPECT_CALL(*libelf, elf_getphdrnum(elf, _))
@@ -602,7 +602,7 @@ TEST_F(AddressSpaceTestSuite, TestProcessExecTextHdrPresent)
 		InSequence seq;
 		const int fd = 128;
 		mockOpen.ExpectOpen("/usr/bin/top", O_RDONLY, 128);
-		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, NULL))
+		EXPECT_CALL(*libelf, elf_begin(fd, ELF_C_READ, nullptr))
 		  .Times(1)
 		  .WillOnce(Return(elf));
 		EXPECT_CALL(*libelf, elf_getphdrnum(elf, _))

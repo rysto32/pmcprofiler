@@ -57,7 +57,7 @@ EventFactory::createEvents(Profiler& profiler)
 	}
 
 	logCookie = pmclog_open(fd);
-	if (logCookie == NULL) {
+	if (logCookie == nullptr) {
 		warn("Could not open log file!\n");
 		close(fd);
 		return;

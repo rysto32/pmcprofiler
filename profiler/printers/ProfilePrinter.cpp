@@ -49,13 +49,15 @@ ProfilePrinter::FuncLocKey::FuncLocKey(SharedString file, SharedString func)
 bool
 ProfilePrinter::FuncLocKey::operator==(const FuncLocKey & other) const
 {
-	return file == other.file && func == other.func;
+	// XXX dwarf is giving us a different src file name for different
+// 	// functions causing us to duplicate stacks incorrectly
+	return /*file == other.file &&*/ func == other.func;
 }
 
 size_t
 ProfilePrinter::FuncLocKey::hasher::operator()(const FuncLocKey & key) const
 {
-	size_t hash = std::hash<std::string>{}(*key.file);
+	size_t hash = /*std::hash<std::string>{}(*key.file);*/ 0;
 
 	return hash_combine(hash, *key.func);
 }

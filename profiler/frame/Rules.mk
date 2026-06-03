@@ -28,6 +28,7 @@ TEST_CALLFRAME_SRCS := \
 
 TEST_CALLFRAME_LIBS := \
 	sharedptr \
+	abi \
 
 TEST_INLINEFRAME_LIBS := \
 	sharedptr \

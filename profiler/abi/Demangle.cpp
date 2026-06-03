@@ -33,20 +33,22 @@ Demangle(SharedString name)
 	char *demangled;
 	char *dst, *src;
 	int angle_count;
-	size_t len;
 	int status;
 
 	/*
 	 * abi::__cxa_demangle doesn't work on all non-mangled symbol names,
 	 * so do a hacky test for a mangled name before trying to demangle it.
 	 */
-	if (name->substr(0, 2) != "_Z")
-		return (name);
+	// if (name->substr(0, 2) != "_Z")
+	// 	return (name);
 
-	len = 0;
-	demangled = (abi::__cxa_demangle(name->c_str(), NULL, &len, &status));
+	demangled = (abi::__cxa_demangle(name->c_str(), NULL, nullptr, &status));
 
-	if (demangled == NULL)
+	if (status != 0) {
+		LOG("cxa_demangle failure: %d", status);
+	}
+
+	if (demangled == NULL || status != 0)
 		return (name);
 
 	// If template arguments are included in the output, it tends to be

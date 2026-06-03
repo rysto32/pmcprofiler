@@ -24,8 +24,11 @@
 #include <gtest/gtest.h>
 
 #include "Callframe.h"
+#include "Demangle.h"
 
 #include "TestPrinter/SharedString.h"
+
+bool g_includeTemplates;
 
 TEST(CallframeTestSuite, GetOffset)
 {
@@ -34,6 +37,9 @@ TEST(CallframeTestSuite, GetOffset)
 
 	Callframe fr2(0xffffffff8069d5feUL, "arg2");
 	ASSERT_EQ(fr2.getOffset(), 0xffffffff8069d5feUL);
+
+	ASSERT_EQ(Demangle("_ZNSt3__16vectorINS_4pairIN8StarRail6Combat8StatTypeENS3_14StatAuditEntryEEENS_9allocatorIS6_EEE24__emplace_back_slow_pathIJS6_EEEvDpOT_"),
+	    "void std::__1::vector<std::__1::pair<StarRail::Combat::StatType, StarRail::Combat::StatAuditEntry>, std::__1::allocator<std::__1::pair<StarRail::Combat::StatType, StarRail::Combat::StatAuditEntry>>>::__emplace_back_slow_path<std::__1::pair<StarRail::Combat::StatType, StarRail::Combat::StatAuditEntry>>(std::__1::pair<StarRail::Combat::StatType, StarRail::Combat::StatAuditEntry>&&)");
 }
 
 TEST(CallframeTestSuite, Unmapped)
